@@ -1,0 +1,1 @@
+export const envExample = { MONGODB_URI: 'mongodb+srv://username:password@cluster.mongodb.net/spg' }; // Set this in Cloudflare, never commit the real value.

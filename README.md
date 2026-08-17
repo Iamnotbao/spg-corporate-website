@@ -1,30 +1,25 @@
 # SPG Corporate Website
 
-Corporate website for SPG with a careers page and Cloudflare Pages Functions API.
+Corporate website and recruitment platform draft for Công ty TNHH Chí Hùng (SPG), Tân Uyên, Bình Dương.
 
-## Stack
+## Public-source notes
 
-- React + Vite
-- Cloudflare Pages Functions
-- MongoDB Atlas M0 (optional persistence)
+Public sources describe Chí Hùng as established in 2000 in Tân Uyên, Bình Dương and operating in footwear manufacturing, including sports shoes and related footwear components. These details should be confirmed by the company before production. [Source: Sports Gear group business page; public company directories]
 
-## Run locally
+## Structure
 
-```bash
-npm install
-npm run dev
-```
-
-## API
-
-- `GET /api/jobs` returns job listings. It currently includes fallback data so the site works before MongoDB is configured.
-- `POST /api/applications` accepts `jobId`, `name`, `email`, `phone`, and `message`.
+- `src/`: React frontend.
+- `functions/api/jobs/`: jobs API.
+- `functions/api/applications/`: application API.
+- `functions/_shared/`: shared response helpers and sample data.
+- `public/images/`: place for approved company-owned images.
 
 ## Free deployment
 
-1. Create a MongoDB Atlas M0 cluster.
-2. Deploy this repository as a Cloudflare Pages project.
-3. Set `MONGODB_URI` in Cloudflare environment variables. Do not commit the real URI.
-4. Configure the build command as `npm run build` and output directory as `dist`.
+- Frontend/API: Cloudflare Pages Free.
+- Database: MongoDB Atlas M0 Free.
+- Build command: `npm run build`.
+- Output directory: `dist`.
+- Add `MONGODB_URI` as a Cloudflare secret only; never commit it.
 
-The current API intentionally uses fallback data and acknowledges applications without persistence until a MongoDB-compatible Cloudflare adapter is selected. This keeps the frontend deployable without secrets while the database is being configured.
+The current API uses fallback data and does not persist applications until a MongoDB-compatible Cloudflare adapter is configured.
