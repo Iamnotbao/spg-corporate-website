@@ -1,25 +1,35 @@
 # SPG Corporate Website
 
-Corporate website and recruitment platform draft for Công ty TNHH Chí Hùng (SPG), Tân Uyên, Bình Dương.
+Corporate website and recruitment platform for Công ty TNHH Chí Hùng (SPG), Tân Uyên, Bình Dương.
 
-## Public-source notes
+## Stack
 
-Public sources describe Chí Hùng as established in 2000 in Tân Uyên, Bình Dương and operating in footwear manufacturing, including sports shoes and related footwear components. These details should be confirmed by the company before production. [Source: Sports Gear group business page; public company directories]
+- React + Vite
+- Cloudflare Pages Functions
+- MongoDB Atlas M0
 
-## Structure
+## Local setup
 
-- `src/`: React frontend.
-- `functions/api/jobs/`: jobs API.
-- `functions/api/applications/`: application API.
-- `functions/_shared/`: shared response helpers and sample data.
-- `public/images/`: place for approved company-owned images.
+```bash
+npm install
+npm run dev
+```
 
-## Free deployment
+For MongoDB local testing, create a local `.env` file containing `MONGODB_URI`, then run:
 
-- Frontend/API: Cloudflare Pages Free.
-- Database: MongoDB Atlas M0 Free.
-- Build command: `npm run build`.
-- Output directory: `dist`.
-- Add `MONGODB_URI` as a Cloudflare secret only; never commit it.
+```bash
+npm run test:mongodb
+```
 
-The current API uses fallback data and does not persist applications until a MongoDB-compatible Cloudflare adapter is configured.
+## API
+
+- `GET /api/health`: checks API and MongoDB status without exposing secrets.
+- `GET /api/jobs`: reads published jobs from MongoDB; uses fallback data if MongoDB is unavailable.
+- `GET /api/posts`: reads published activity posts from MongoDB.
+- `POST /api/applications`: validates and stores applications in MongoDB.
+
+## Cloudflare deployment
+
+Add `MONGODB_URI` as an encrypted Secret for both Production and Preview in the Cloudflare Pages project. Never commit the real URI to GitHub.
+
+The database name is `spg`. Collections used are `jobs`, `posts`, and `applications`.
