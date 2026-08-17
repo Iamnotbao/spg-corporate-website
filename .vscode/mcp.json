@@ -3,7 +3,7 @@
     {
       "type": "promptString",
       "id": "perplexity-api-key",
-      "description": "Perplexity API key",
+      "description": "Perplexity API Key",
       "password": true
     }
   ],
