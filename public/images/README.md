@@ -1,1 +1,0 @@
-Add only company-owned or properly licensed images here. The current website uses CSS artwork until official SPG/Chi Hung images are provided.

@@ -1,1 +1,0 @@
-{"scripts":{"dev":"vite","build":"vite build","preview":"vite preview","test:mongodb":"node scripts/test-mongodb.js"},"dependencies":{"@vitejs/plugin-react":"latest","dotenv":"latest","mongodb":"latest","react":"latest","react-dom":"latest","vite":"latest"},"devDependencies":{}}
