@@ -1,0 +1,19 @@
+{
+  "inputs": [
+    {
+      "type": "promptString",
+      "id": "perplexity-api-key",
+      "description": "Perplexity API key",
+      "password": true
+    }
+  ],
+  "servers": {
+    "perplexity": {
+      "type": "http",
+      "url": "https://api.perplexity.ai/mcp",
+      "headers": {
+        "Authorization": "Bearer ${input:perplexity-api-key}"
+      }
+    }
+  }
+}
