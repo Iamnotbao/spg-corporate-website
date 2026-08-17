@@ -1,35 +1,16 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, ChevronLeft, ChevronRight, Clock3 } from 'lucide-react';
+import { ArrowRight, Clock3 } from 'lucide-react';
 import { api } from './api';
 
 export default function PublicApp() {
   const [posts, setPosts] = useState([]);
   const [jobs, setJobs] = useState([]);
-  const [slide, setSlide] = useState(0);
 
   useEffect(() => {
     api.getPosts().then(setPosts).catch(() => setPosts([]));
     api.getJobs().then(setJobs).catch(() => setJobs([]));
   }, []);
-
-  const featuredPosts = useMemo(() => posts.slice(0, 3), [posts]);
-  const currentPost = featuredPosts[slide] || featuredPosts[0];
-
-  useEffect(() => {
-    if (slide >= featuredPosts.length) setSlide(0);
-  }, [featuredPosts.length, slide]);
-
-  useEffect(() => {
-    if (featuredPosts.length < 2) return undefined;
-    const timer = setInterval(() => {
-      setSlide((value) => (value + 1) % featuredPosts.length);
-    }, 5000);
-    return () => clearInterval(timer);
-  }, [featuredPosts.length]);
-
-  const next = () => setSlide((value) => (value + 1) % Math.max(featuredPosts.length, 1));
-  const previous = () => setSlide((value) => (value - 1 + Math.max(featuredPosts.length, 1)) % Math.max(featuredPosts.length, 1));
 
   return (
     <main className="public-app">
@@ -48,11 +29,7 @@ export default function PublicApp() {
       <section className="section news-section">
         <div className="container">
           <div className="section-heading"><div><p className="eyebrow">INSIGHTS</p><h2>Featured articles</h2></div><Link to="/articles">View all <ArrowRight size={16} /></Link></div>
-          {currentPost ? <article className="article-carousel">
-            <img src={currentPost.imageUrl || '/images/placeholder.jpg'} alt="" />
-            <div className="article-carousel-content"><p className="eyebrow">{currentPost.category || 'SPG Insights'}</p><h3>{currentPost.title}</h3><p>{currentPost.excerpt || currentPost.content?.slice(0, 180)}</p><Link to={`/articles/${currentPost._id}`}>Read article <ArrowRight size={16} /></Link></div>
-            <div className="carousel-controls"><button onClick={previous} aria-label="Previous article"><ChevronLeft size={20} /></button><span>{slide + 1} / {featuredPosts.length}</span><button onClick={next} aria-label="Next article"><ChevronRight size={20} /></button></div>
-          </article> : <p className="empty-state">No articles available.</p>}
+          <div className="article-grid">{posts.slice(0, 3).map((post) => <Link className="article-card" to={`/articles/${post._id}`} key={post._id}><img src={post.imageUrl || '/images/placeholder.jpg'} alt="" /><div><p className="eyebrow">{post.category || 'SPG Insights'}</p><h3>{post.title}</h3><p>{post.excerpt || post.content?.slice(0, 140)}</p><span>Read article <ArrowRight size={16} /></span></div></Link>)}</div>
         </div>
       </section>
 
