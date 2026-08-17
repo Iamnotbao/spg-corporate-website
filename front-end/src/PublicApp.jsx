@@ -1,3 +1,62 @@
-import { useEffect, useState } from 'react';
-const API_URL=import.meta.env.VITE_API_URL||'';const LOGO_URL=import.meta.env.VITE_LOGO_URL||'https://res.cloudinary.com/dko7da9fu/image/upload/v1786948861/logo_iauj25.png';
-export default function PublicApp(){const[jobs,setJobs]=useState([]);const[posts,setPosts]=useState([]);const[slide,setSlide]=useState(0);const[menu,setMenu]=useState(false);const[article,setArticle]=useState(null);const[apply,setApply]=useState(null);const[form,setForm]=useState({name:'',email:'',phone:'',position:'',message:'',cvUrl:''});const[msg,setMsg]=useState('');useEffect(()=>{fetch(`${API_URL}/api/jobs`).then(r=>r.json()).then(d=>setJobs(d.data||[])).catch(()=>{});fetch(`${API_URL}/api/posts`).then(r=>r.json()).then(d=>setPosts(d.data||[])).catch(()=>{});},[]);useEffect(()=>{if(posts.length<2)return;const t=setInterval(()=>setSlide(s=>(s+1)%posts.length),5000);return()=>clearInterval(t)},[posts.length]);const nav=(id)=>{setMenu(false);document.getElementById(id)?.scrollIntoView({behavior:'smooth'})};async function submit(e){e.preventDefault();setMsg('Đang gửi...');try{const r=await fetch(`${API_URL}/api/applications`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...form,position:form.position||apply?.title})});if(!r.ok)throw new Error('Gửi hồ sơ thất bại.');setMsg('Đã gửi hồ sơ thành công.');setForm({name:'',email:'',phone:'',position:'',message:'',cvUrl:''})}catch(e){setMsg(e.message)}}async function upload(e){const f=e.target.files?.[0];if(!f)return;const d=new FormData();d.append('file',f);d.append('upload_preset',import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET||'spg-images');const r=await fetch(`https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME||'dko7da9fu'}/raw/upload`,{method:'POST',body:d});const x=await r.json();if(x.secure_url)setForm(v=>({...v,cvUrl:x.secure_url}));else setMsg('Upload CV thất bại.')}return <><header><a className="brand" href="#home"><img src={LOGO_URL} alt="CHI HUNG VIETNAM"/><span>SPG<span className="dot">.</span></span></a><button className="menu-toggle" onClick={()=>setMenu(!menu)} aria-label="Mở menu">☰</button><nav className={menu?'open':''}>{[['about','Giới thiệu'],['news','Tin tức'],['careers','Tuyển dụng'],['contact','Liên hệ']].map(([id,t])=><button key={id} onClick={()=>nav(id)}>{t}</button>)}</nav></header><main><section id="home" className="hero reveal"><div><p className="eyebrow">CÔNG TY TNHH CHÍ HÙNG · SPG</p><h1>Built with<br/><em>purpose.</em></h1><p className="lead">Đồng hành cùng chuỗi giá trị giày thể thao bằng năng lực sản xuất, con người và tinh thần phát triển bền vững.</p><button className="button" onClick={()=>nav('about')}>Khám phá SPG ↗</button></div><div className="hero-card"><img src={LOGO_URL} alt="CHI HUNG VIETNAM"/><p>Quality. People. Progress.</p></div></section><section id="about" className="section two reveal"><div><p className="eyebrow">VỀ CHÚNG TÔI</p><h2>Chất lượng tạo nên<br/><em>niềm tin.</em></h2></div><div><p>Công ty TNHH Chí Hùng là doanh nghiệp sản xuất giày dép tại Tân Uyên, Bình Dương, thuộc hệ sinh thái SPG.</p><p>Chúng tôi hướng đến môi trường chuyên nghiệp, an toàn và tôn trọng con người.</p></div></section><section id="news" className="section news reveal"><p className="eyebrow">TIN TỨC & GIỚI THIỆU</p><h2>Stories from<br/><em>CHI HUNG.</em></h2>{posts.length>0&&<div className="slider"><article><img src={posts[slide].imageUrl||LOGO_URL} alt={posts[slide].title}/><div><h3>{posts[slide].title}</h3><p>{posts[slide].excerpt||posts[slide].content}</p><button className="text-button" onClick={()=>setArticle(posts[slide])}>Đọc bài ↗</button></div></article><div className="slider-controls"><button onClick={()=>setSlide((slide-1+posts.length)%posts.length)} aria-label="Bài trước">←</button>{posts.map((_,i)=><button className={i===slide?'active':''} onClick={()=>setSlide(i)} aria-label={`Bài ${i+1}`} key={i}>●</button>)}<button onClick={()=>setSlide((slide+1)%posts.length)} aria-label="Bài sau">→</button></div></div>}</section><section id="careers" className="section careers reveal"><p className="eyebrow">CƠ HỘI NGHỀ NGHIỆP</p><h2>Grow with<br/><em>SPG.</em></h2><div className="jobs">{jobs.map(j=><article className="job" key={j._id||j.id}><div>{j.imageUrl&&<img className="job-img" src={j.imageUrl} alt={j.title}/>}<h3>{j.title}</h3><p>{j.type} · {j.location}</p><small>{j.description}</small></div><button className="text-button" onClick={()=>setApply(j)}>Ứng tuyển ↗</button></article>)}</div></section><section id="contact" className="contact reveal"><p className="eyebrow">LIÊN HỆ</p><h2>Cùng tạo nên<br/><em>điều tốt hơn.</em></h2><p>Khu phố Mỹ Hiệp, phường Thái Hòa, thành phố Tân Uyên, Bình Dương</p></section></main><footer>© 2026 Công ty TNHH Chí Hùng · SPG</footer>{article&&<div className="modal-backdrop" onClick={()=>setArticle(null)}><article className="modal" onClick={e=>e.stopPropagation()}><button className="modal-close" onClick={()=>setArticle(null)}>×</button><img src={article.imageUrl||LOGO_URL} alt={article.title}/><h2>{article.title}</h2><p>{article.content||article.excerpt}</p></article></div>}{apply&&<div className="modal-backdrop" onClick={()=>setApply(null)}><form className="modal application-form" onSubmit={submit} onClick={e=>e.stopPropagation()}><button type="button" className="modal-close" onClick={()=>setApply(null)}>×</button><h2>Ứng tuyển</h2><p>{apply.title}</p><input required placeholder="Họ và tên" value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/><input required type="email" placeholder="Email" value={form.email} onChange={e=>setForm({...form,email:e.target.value})}/><input placeholder="Số điện thoại" value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})}/><textarea placeholder="Giới thiệu bản thân" value={form.message} onChange={e=>setForm({...form,message:e.target.value})}/><input type="file" accept=".pdf,.doc,.docx" onChange={upload}/>{form.cvUrl&&<small>CV đã tải lên</small>}<button className="button" disabled={msg==='Đang gửi...'}>{msg==='Đang gửi...'?'Đang gửi...':'Gửi hồ sơ'}</button>{msg&&<p className="form-message">{msg}</p>}</form></div>}</>}
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { ArrowRight, ChevronLeft, ChevronRight, Clock3 } from 'lucide-react';
+import { api } from './api';
+
+export default function PublicApp() {
+  const [posts, setPosts] = useState([]);
+  const [jobs, setJobs] = useState([]);
+  const [slide, setSlide] = useState(0);
+
+  useEffect(() => {
+    api.getPosts().then(setPosts).catch(() => setPosts([]));
+    api.getJobs().then(setJobs).catch(() => setJobs([]));
+  }, []);
+
+  const featuredPosts = useMemo(() => posts.slice(0, 3), [posts]);
+  const currentPost = featuredPosts[slide] || featuredPosts[0];
+
+  useEffect(() => {
+    if (slide >= featuredPosts.length) setSlide(0);
+  }, [featuredPosts.length, slide]);
+
+  useEffect(() => {
+    if (featuredPosts.length < 2) return undefined;
+    const timer = setInterval(() => {
+      setSlide((value) => (value + 1) % featuredPosts.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [featuredPosts.length]);
+
+  const next = () => setSlide((value) => (value + 1) % Math.max(featuredPosts.length, 1));
+  const previous = () => setSlide((value) => (value - 1 + Math.max(featuredPosts.length, 1)) % Math.max(featuredPosts.length, 1));
+
+  return (
+    <main className="public-app">
+      <section className="hero-section">
+        <div className="container hero-grid">
+          <div>
+            <p className="eyebrow">SPG CORPORATE</p>
+            <h1>Beyond Excellence</h1>
+            <p className="hero-copy">Strategic growth, operational excellence and lasting value for the businesses we build.</p>
+            <Link className="button button-primary" to="/about">Discover SPG <ArrowRight size={18} /></Link>
+          </div>
+          <div className="hero-visual" aria-hidden="true" />
+        </div>
+      </section>
+
+      <section className="section news-section">
+        <div className="container">
+          <div className="section-heading"><div><p className="eyebrow">INSIGHTS</p><h2>Featured articles</h2></div><Link to="/articles">View all <ArrowRight size={16} /></Link></div>
+          {currentPost ? <article className="article-carousel">
+            <img src={currentPost.imageUrl || '/images/placeholder.jpg'} alt="" />
+            <div className="article-carousel-content"><p className="eyebrow">{currentPost.category || 'SPG Insights'}</p><h3>{currentPost.title}</h3><p>{currentPost.excerpt || currentPost.content?.slice(0, 180)}</p><Link to={`/articles/${currentPost._id}`}>Read article <ArrowRight size={16} /></Link></div>
+            <div className="carousel-controls"><button onClick={previous} aria-label="Previous article"><ChevronLeft size={20} /></button><span>{slide + 1} / {featuredPosts.length}</span><button onClick={next} aria-label="Next article"><ChevronRight size={20} /></button></div>
+          </article> : <p className="empty-state">No articles available.</p>}
+        </div>
+      </section>
+
+      <section className="section careers-section"><div className="container"><div className="section-heading"><div><p className="eyebrow">CAREERS</p><h2>Build the future with us</h2></div><Link to="/careers">Explore opportunities <ArrowRight size={16} /></Link></div><div className="job-grid">{jobs.slice(0, 3).map((job) => <Link className="job-card" to={`/careers/${job._id}`} key={job._id}><h3>{job.title}</h3><p>{job.location}</p><span><Clock3 size={16} /> {job.type || 'Full-time'}</span></Link>)}</div></div></section>
+    </main>
+  );
+}
