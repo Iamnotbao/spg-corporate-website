@@ -2,11 +2,11 @@ import jwt from 'jsonwebtoken';
 import { getCollection } from '../config/db.js';
 import { toObjectId } from '../utils/objectId.js';
 
-const adminPassword = () => process.env.ADMIN_PASSWORD || 'admin123';
+const adminPassword = () => String(process.env.ADMIN_PASSWORD || 'admin123').trim();
 
 export function verify(req, res) {
-  const password = String(req.body?.password || '');
-  if (password !== adminPassword()) return res.status(401).json({ error: 'Invalid admin password' });
+  const password = String(req.body?.password ?? req.body?.adminPassword ?? '').trim();
+  if (!password || password !== adminPassword()) return res.status(401).json({ error: 'Invalid admin password' });
 
   const secret = process.env.JWT_SECRET || 'local-development-secret';
   const token = jwt.sign({ role: 'admin' }, secret, { expiresIn: '8h' });
