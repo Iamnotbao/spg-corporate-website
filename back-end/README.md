@@ -1,7 +1,43 @@
-# SPG Backend
+# SPG Corporate Backend
 
-Render: Root directory `back-end`, build command `npm install`, start command `npm start`.
+## Local development
 
-Set the variables in `.env.example` in Render. Never commit the real MongoDB URI.
+```bash
+cd back-end
+npm install
+npm run dev
+```
 
-Endpoints: `/health`, `/api/jobs`, `/api/posts`, `/api/applications`, `/api/settings/logo`.
+`npm run dev` starts the API with Nodemon and automatically restarts it when files in `src/` change.
+
+For a normal production-style start:
+
+```bash
+npm start
+```
+
+## Environment variables
+
+Copy the example file:
+
+```bash
+cp .env.example .env
+```
+
+On Windows PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Fill in the MongoDB, JWT, frontend URL, and Cloudinary values in `.env`. Never commit `.env`.
+
+## Frontend
+
+Run the frontend in another terminal:
+
+```bash
+cd front-end
+npm install
+npm run dev
+```
