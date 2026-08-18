@@ -41,6 +41,7 @@ export const uploadBuffer = (buffer, options = {}) => new Promise((resolve, reje
       access_mode: options.accessMode,
       public_id: options.publicId,
       overwrite: options.overwrite,
+      context: options.context,
     },
     (error, result) => (error ? reject(error) : resolve(result)),
   );
@@ -57,6 +58,11 @@ export const uploadCv = async (file, options = {}) => uploadBuffer(file.buffer, 
   ...options,
   folder: options.folder || 'spg/cv',
   resourceType: 'raw',
+  context: {
+    ...(options.context || {}),
+    original_filename: file.originalname,
+    original_mimetype: file.mimetype,
+  },
 });
 
 export const destroyAsset = async (publicId, resourceType = 'image') => {
