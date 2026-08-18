@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import './admin.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:10000/api';
 
@@ -38,18 +39,8 @@ export default function Admin() {
         <p className="admin-subtitle">Sign in to manage your website content.</p>
         <form className="admin-login-form" onSubmit={handleSubmit}>
           <label htmlFor="admin-password">Password</label>
-          <input
-            id="admin-password"
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            placeholder="Enter admin password"
-            autoComplete="current-password"
-            required
-          />
-          <button type="submit" disabled={loading}>
-            {loading ? 'Signing in...' : 'Sign in'}
-          </button>
+          <input id="admin-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Enter admin password" autoComplete="current-password" required />
+          <button type="submit" disabled={loading}>{loading ? 'Signing in...' : 'Sign in'}</button>
           {error && <p className="admin-error" role="alert">{error}</p>}
         </form>
       </section>
