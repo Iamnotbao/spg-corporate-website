@@ -14,6 +14,7 @@
     "dotenv": "latest",
     "express": "latest",
     "jsonwebtoken": "latest",
+    "mongodb": "latest",
     "mongoose": "latest",
     "multer": "latest"
   },
