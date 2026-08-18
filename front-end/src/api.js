@@ -1,19 +1,3 @@
 const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
-
-async function request(path, options = {}) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
-    ...options,
-  });
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(payload.error || `Request failed: ${response.status}`);
-  return payload.data ?? payload;
-}
-
-export const api = {
-  getPosts: () => request('/api/posts'),
-  getJobs: () => request('/api/jobs'),
-  getPost: (id) => request(`/api/posts/${id}`),
-  getJob: (id) => request(`/api/jobs/${id}`),
-  submitApplication: (data) => request('/api/applications', { method: 'POST', body: JSON.stringify(data) }),
-};
+async function request(path, options = {}) { const response = await fetch(`${API_BASE_URL}${path}`, { headers: { 'Content-Type': 'application/json', ...(options.headers || {}) }, ...options }); const payload = await response.json().catch(() => ({})); if (!response.ok) throw new Error(payload.error || `Request failed: ${response.status}`); return payload.data ?? payload; }
+export const api = { getPosts: () => request('/api/posts'), getJobs: () => request('/api/jobs'), getPost: id => request(`/api/posts/${id}`), getJob: id => request(`/api/jobs/${id}`), submitApplication: data => request('/api/applications', { method: 'POST', body: JSON.stringify(data) }) };
