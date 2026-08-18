@@ -53,6 +53,12 @@ export const uploadFile = async (file, options = {}) => uploadBuffer(file.buffer
   resourceType: options.resourceType || getResourceType(file),
 });
 
+export const uploadCv = async (file, options = {}) => uploadBuffer(file.buffer, {
+  ...options,
+  folder: options.folder || 'spg/cv',
+  resourceType: 'raw',
+});
+
 export const destroyAsset = async (publicId, resourceType = 'image') => {
   if (!configured) return;
   return cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
