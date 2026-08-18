@@ -1,3 +1,61 @@
-import crypto from 'node:crypto';
+import { v2 as cloudinary } from 'cloudinary';
 import { env } from '../config/env.js';
-export async function uploadCv(file) { const { cloudName, apiKey, apiSecret, uploadPreset } = env.cloudinary; if (!cloudName || !apiKey || !apiSecret) throw new Error('Cloudinary CV upload is not configured'); const timestamp = Math.floor(Date.now() / 1000); const folder = 'spg/cv'; const signature = crypto.createHash('sha1').update(`folder=${folder}&timestamp=${timestamp}${apiSecret}`).digest('hex'); const form = new FormData(); form.append('file', new Blob([file.buffer], { type: file.mimetype }), file.originalname); form.append('api_key', apiKey); form.append('timestamp', String(timestamp)); form.append('folder', folder); form.append('signature', signature); if (uploadPreset) form.append('upload_preset', uploadPreset); const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`, { method: 'POST', body: form }); const data = await response.json(); if (!response.ok || !data.secure_url) throw new Error(data.error?.message || 'CV upload failed'); return { url: data.secure_url, publicId: data.public_id, resourceType: data.resource_type }; }
+
+const configured = Boolean(
+  env.cloudinary.cloudName &&
+  env.cloudinary.apiKey &&
+  env.cloudinary.apiSecret,
+);
+
+if (configured) {
+  cloudinary.config({
+    cloud_name: env.cloudinary.cloudName,
+    api_key: env.cloudinary.apiKey,
+    api_secret: env.cloudinary.apiSecret,
+    secure: true,
+  });
+}
+
+const getResourceType = (file) => {
+  const mime = String(file?.mimetype || '').toLowerCase();
+  const originalName = String(file?.originalname || '').toLowerCase();
+  const isDocument = mime === 'application/pdf' ||
+    mime.includes('word') ||
+    mime.includes('officedocument') ||
+    /\.(pdf|doc|docx|xls|xlsx|ppt|pptx|txt)$/i.test(originalName);
+
+  return isDocument ? 'raw' : 'image';
+};
+
+export const uploadBuffer = (buffer, options = {}) => new Promise((resolve, reject) => {
+  if (!configured) {
+    reject(new Error('Cloudinary upload is not configured'));
+    return;
+  }
+
+  const stream = cloudinary.uploader.upload_stream(
+    {
+      folder: options.folder || 'spg',
+      resource_type: options.resourceType || 'auto',
+      type: options.type,
+      access_mode: options.accessMode,
+      public_id: options.publicId,
+      overwrite: options.overwrite,
+    },
+    (error, result) => (error ? reject(error) : resolve(result)),
+  );
+
+  stream.end(buffer);
+});
+
+export const uploadFile = async (file, options = {}) => uploadBuffer(file.buffer, {
+  ...options,
+  resourceType: options.resourceType || getResourceType(file),
+});
+
+export const destroyAsset = async (publicId, resourceType = 'image') => {
+  if (!configured) return;
+  return cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
+};
+
+export const isCloudinaryConfigured = () => configured;
