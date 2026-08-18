@@ -18,9 +18,7 @@ export function getAdminToken() { return localStorage.getItem('spg_admin_token')
 export function getApplicationCvUrl(id) { return getApiUrl(`/admin/applications/${encodeURIComponent(id)}/cv`); }
 
 export async function downloadApplicationCv(id) {
-  const response = await fetch(getApplicationCvUrl(id), {
-    headers: { Authorization: `Bearer ${getAdminToken()}` },
-  });
+  const response = await fetch(getApplicationCvUrl(id), { headers: { Authorization: `Bearer ${getAdminToken()}` } });
   if (!response.ok) {
     const text = await response.text();
     let payload;
@@ -51,4 +49,12 @@ export async function adminDelete(type, id) { return apiFetch(`/admin/${type}/${
 export async function adminApplications() { return apiFetch('/admin/applications'); }
 export async function adminLogo() { return apiFetch('/admin/settings/logo'); }
 export async function adminUpdateLogo(url) { return apiFetch('/admin/settings/logo', { method: 'PUT', body: JSON.stringify({ url }) }); }
+
+export const api = {
+  get: async (path, options = {}) => apiFetch(path, { ...options, method: 'GET' }),
+  post: async (path, body, options = {}) => apiFetch(path, { ...options, method: 'POST', body: JSON.stringify(body) }),
+  put: async (path, body, options = {}) => apiFetch(path, { ...options, method: 'PUT', body: JSON.stringify(body) }),
+  del: async (path, options = {}) => apiFetch(path, { ...options, method: 'DELETE' }),
+};
+
 export { API_URL };
