@@ -1,48 +1,52 @@
-# SPG Corporate Frontend
+# SPG Frontend
 
-## Local development
+Ứng dụng React gồm website công khai và dashboard quản trị nội dung.
 
-```bash
-cd front-end
+## Chạy local
+
+```powershell
+Copy-Item .env.example .env.local
 npm install
 npm run dev
 ```
 
-Open the local Vite URL shown in the terminal.
+Mở `http://localhost:5173`. Dashboard nằm tại `/admin`.
 
-## Backend URL
+`VITE_API_URL` có thể là origin của backend (`http://localhost:10000`) hoặc URL
+đầy đủ có `/api` (`http://localhost:10000/api`). Client sẽ chuẩn hóa hai dạng này.
 
-Create `front-end/.env.local`:
+## Scripts
 
-```env
-VITE_API_URL=http://localhost:5000/api
+```powershell
+npm run dev          # Vite development server
+npm run build        # Production build
+npm run preview      # Xem production build local
+npm run lint         # Kiểm tra JavaScript/React hooks
+npm run format       # Format toàn bộ source
+npm run format:check # Kiểm tra format trong CI
 ```
 
-For the deployed backend:
-
-```env
-VITE_API_URL=https://spg-backend-gtbv.onrender.com/api
-```
-
-After changing `.env.local`, restart Vite.
-
-## Production build
-
-```bash
-npm run build
-```
-
-## Project structure
+## Cấu trúc `src`
 
 ```text
 src/
-├── api.js
-├── services/
-│   └── applicationService.js
-├── Admin.jsx
-├── PublicApp.jsx
-├── App.jsx
-└── index.css
+├── app/                  Router cấp ứng dụng
+├── features/
+│   ├── admin/            Dashboard, hooks và component quản trị
+│   └── public/           Trang công khai, detail và component website
+├── services/             HTTP client và API theo từng miền nghiệp vụ
+├── styles/               Global, public và admin styles
+└── main.jsx              Entry point
 ```
 
-The frontend currently keeps the main route composition in `Admin.jsx` and API/application concerns in separate service modules. Additional page-level extraction can be done without changing API behavior.
+Component chỉ xử lý trình bày và tương tác. Mọi lời gọi backend nằm trong
+`services/`; state lấy dữ liệu dùng hook theo từng feature.
+
+## Biến môi trường
+
+Xem `.env.example`. Không commit `.env.local`.
+
+- `VITE_API_URL`: backend API.
+- `VITE_LOGO_URL`: logo công khai, có thể để trống để dùng wordmark SPG.
+- Ảnh từ editor admin được gửi qua API đã xác thực; khóa Cloudinary chỉ nằm ở
+  back-end.

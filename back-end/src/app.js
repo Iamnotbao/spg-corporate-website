@@ -1,34 +1,48 @@
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import adminRoutes from './routes/admin.routes.js';
-import publicRoutes from './routes/public.routes.js';
-
-dotenv.config();
+import express from "express";
+import cors from "cors";
+import helmet from "helmet";
+import adminRoutes from "./routes/admin.routes.js";
+import publicRoutes from "./routes/public.routes.js";
+import { env } from "./config/env.js";
+import { errorHandler, notFound } from "./middleware/errors.js";
 
 const app = express();
 
+if (process.env.NODE_ENV === "production") {
+  app.set("trust proxy", 1);
+}
+
 const normalizeOrigin = (value) => {
-  if (!value) return '';
-  return value.trim().replace(/^=+/, '').replace(/\/$/, '');
+  if (!value) return "";
+  return value.trim().replace(/^=+/, "").replace(/\/$/, "");
 };
 
-const configuredOrigins = String(process.env.FRONTEND_URL || 'http://localhost:5173')
-  .split(',')
+const configuredOrigins = String(env.frontendUrl)
+  .split(",")
   .map(normalizeOrigin)
   .filter(Boolean);
 
-app.use(cors({
-  origin(origin, callback) {
-    if (!origin || configuredOrigins.includes(origin)) return callback(null, true);
-    return callback(new Error(`CORS origin not allowed: ${origin}`));
-  },
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin || configuredOrigins.includes(origin))
+        return callback(null, true);
 
+      const error = new Error(`CORS origin not allowed: ${origin}`);
+      error.status = 403;
+      return callback(error);
+    },
+    credentials: true,
+    exposedHeaders: ["Content-Disposition"],
+  }),
+);
+
+app.use(helmet());
 app.use(express.json());
-app.use('/api/admin', adminRoutes);
-app.use('/api', publicRoutes);
-app.get('/health', (_, res) => res.json({ ok: true }));
+app.use("/api/admin", adminRoutes);
+app.use("/api", publicRoutes);
+app.get("/health", (_, res) => res.json({ ok: true }));
+app.use(notFound);
+app.use(errorHandler);
 
 export default app;

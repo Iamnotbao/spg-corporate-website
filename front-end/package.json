@@ -3,7 +3,33 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+<<<<<<< Updated upstream
   "scripts": {"dev":"vite","build":"vite build","preview":"vite preview"},
   "dependencies": {"@vitejs/plugin-react":"latest","react":"latest","react-dom":"latest","react-router-dom":"latest","vite":"latest"},
   "devDependencies": {}
+=======
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint src",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "react-router-dom": "latest",
+    "vite": "latest"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.8.1",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.4",
+    "globals": "^17.11.0",
+    "prettier": "^3.9.6"
+  }
+>>>>>>> Stashed changes
 }

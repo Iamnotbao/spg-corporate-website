@@ -1,0 +1,186 @@
+import {
+  ADMIN_TOKEN_KEY,
+  API_URL,
+  ApiError,
+  apiRequest,
+  getAdminToken,
+  setAdminToken,
+} from './httpClient.js';
+
+const CONTENT_TYPES = new Set(['posts', 'jobs']);
+
+function assertContentType(type) {
+  if (!CONTENT_TYPES.has(type)) {
+    throw new Error(`Loại nội dung không hợp lệ: ${type}`);
+  }
+}
+
+export { ADMIN_TOKEN_KEY, getAdminToken, setAdminToken };
+
+export async function loginAdmin(password) {
+  const payload = await apiRequest('/admin/verify', {
+    method: 'POST',
+    body: { password },
+  });
+
+  if (!payload?.token) throw new Error('Máy chủ không trả về phiên đăng nhập.');
+  setAdminToken(payload.token);
+  return payload;
+}
+
+export async function verifyAdminSession(options = {}) {
+  return apiRequest('/admin/session', {
+    method: 'GET',
+    auth: true,
+    signal: options.signal,
+  });
+}
+
+export async function listAdminContent(type, options = {}) {
+  assertContentType(type);
+  const params = new URLSearchParams({
+    page: String(options.page || 1),
+    pageSize: String(options.pageSize || 10),
+  });
+
+  if (options.search) params.set('search', options.search);
+  if (options.published !== '' && options.published != null) {
+    params.set('published', String(options.published));
+  }
+  if (type === 'jobs' && options.jobType) params.set('type', options.jobType);
+  if (type === 'jobs' && options.location) {
+    params.set('location', options.location);
+  }
+
+  return apiRequest(`/admin/${type}?${params.toString()}`, {
+    method: 'GET',
+    auth: true,
+    signal: options.signal,
+  });
+}
+
+export async function createAdminContent(type, payload) {
+  assertContentType(type);
+  return apiRequest(`/admin/${type}`, {
+    method: 'POST',
+    auth: true,
+    body: payload,
+  });
+}
+
+export async function updateAdminContent(type, id, payload) {
+  assertContentType(type);
+  return apiRequest(`/admin/${type}/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    auth: true,
+    body: payload,
+  });
+}
+
+export async function deleteAdminContent(type, id) {
+  assertContentType(type);
+  return apiRequest(`/admin/${type}/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    auth: true,
+  });
+}
+
+export async function bulkDeleteAdminContent(type, ids) {
+  assertContentType(type);
+  return apiRequest(`/admin/${type}/bulk-delete`, {
+    method: 'POST',
+    auth: true,
+    body: { ids },
+  });
+}
+
+export async function listAdminApplications(options = {}) {
+  const params = new URLSearchParams({
+    page: String(options.page || 1),
+    pageSize: String(options.pageSize || 10),
+  });
+  if (options.search) params.set('search', options.search);
+
+  return apiRequest(`/admin/applications?${params.toString()}`, {
+    method: 'GET',
+    auth: true,
+    signal: options.signal,
+  });
+}
+
+export async function uploadAdminImage(file, folder = 'spg/content') {
+  const formData = new FormData();
+  formData.append('image', file);
+  formData.append('folder', folder);
+  const payload = await apiRequest('/admin/uploads/images', {
+    method: 'POST',
+    auth: true,
+    body: formData,
+  });
+
+  if (!payload?.data?.url) throw new Error('Máy chủ không trả về URL ảnh.');
+  return payload.data;
+}
+
+function filenameFromDisposition(disposition) {
+  if (!disposition) return '';
+  const utf8Match = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+  if (utf8Match) {
+    try {
+      return decodeURIComponent(utf8Match[1]);
+    } catch {
+      return '';
+    }
+  }
+  return disposition.match(/filename="?([^";]+)"?/i)?.[1] || '';
+}
+
+function safeDownloadFilename(value, mime = '') {
+  const extensionByMime = {
+    'application/msword': 'doc',
+    'application/pdf': 'pdf',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+  };
+  const extension = extensionByMime[String(mime).split(';', 1)[0].toLowerCase()] || 'pdf';
+  const safeName = String(value || 'ung-vien-CV')
+    .replace(/\\/g, '/')
+    .split('/')
+    .pop()
+    .replace(/[\p{Cc}\\/:*?"<>|]+/gu, '-')
+    .replace(/[. ]+$/g, '')
+    .trim();
+
+  return /\.(pdf|doc|docx)$/i.test(safeName)
+    ? safeName
+    : `${safeName || 'ung-vien-CV'}.${extension}`;
+}
+
+export async function downloadAdminApplicationCv(id) {
+  const token = getAdminToken();
+  const response = await fetch(
+    `${API_URL}/admin/applications/${encodeURIComponent(id)}/cv`,
+    {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    },
+  );
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null);
+    throw new ApiError(payload?.error || 'Không thể tải CV.', response.status, payload);
+  }
+
+  const blob = await response.blob();
+  const filename = safeDownloadFilename(
+    filenameFromDisposition(response.headers.get('Content-Disposition')),
+    blob.type,
+  );
+  const objectUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+
+  anchor.href = objectUrl;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1_000);
+}

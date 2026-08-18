@@ -1,0 +1,77 @@
+export function getItemId(item) {
+  return String(item?._id?.$oid || item?._id || item?.id || '');
+}
+
+export function getItemSummary(item) {
+  return (
+    item?.summary || item?.excerpt || item?.description || 'Chưa có nội dung tóm tắt.'
+  );
+}
+
+export function formatAdminDate(value) {
+  if (!value) return '—';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '—';
+  return new Intl.DateTimeFormat('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(date);
+}
+
+export function isUnauthorized(error) {
+  return error?.status === 401 || error?.status === 403;
+}
+
+export function getErrorMessage(error, fallback = 'Đã có lỗi xảy ra.') {
+  if (error?.name === 'AbortError') return '';
+  return error?.message || fallback;
+}
+
+export function getPaginationItems(currentPage, totalPages) {
+  const current = Math.max(1, Number(currentPage) || 1);
+  const total = Math.max(1, Number(totalPages) || 1);
+
+  if (total <= 7) {
+    return Array.from({ length: total }, (_, index) => index + 1);
+  }
+
+  const items = [1];
+  const rangeStart = Math.max(2, current - 1);
+  const rangeEnd = Math.min(total - 1, current + 1);
+
+  if (rangeStart > 2) items.push('start-ellipsis');
+  for (let page = rangeStart; page <= rangeEnd; page += 1) items.push(page);
+  if (rangeEnd < total - 1) items.push('end-ellipsis');
+  items.push(total);
+
+  return items;
+}
+
+export function normalizeContentPayload(type, form) {
+  const common = {
+    title: String(form.title || '').trim(),
+    summary: String(form.summary || '').trim(),
+    imageUrl: String(form.imageUrl || '').trim(),
+    imagePublicId: String(form.imagePublicId || '').trim(),
+    published: form.published !== false,
+  };
+
+  if (type === 'posts') {
+    return {
+      ...common,
+      excerpt: common.summary,
+      content: String(form.content || '').trim(),
+    };
+  }
+
+  return {
+    ...common,
+    description: String(form.description || '').trim(),
+    location: String(form.location || '').trim(),
+    type: String(form.type || 'Full-time').trim(),
+    salary: String(form.salary || '').trim(),
+    benefits: String(form.benefits || '').trim(),
+    workingHours: String(form.workingHours || '').trim(),
+  };
+}
