@@ -50,11 +50,17 @@ export async function adminApplications() { return apiFetch('/admin/applications
 export async function adminLogo() { return apiFetch('/admin/settings/logo'); }
 export async function adminUpdateLogo(url) { return apiFetch('/admin/settings/logo', { method: 'PUT', body: JSON.stringify({ url }) }); }
 
+const publicResource = (type) => async (params = '') => publicList(type, params);
+
 export const api = {
   get: async (path, options = {}) => apiFetch(path, { ...options, method: 'GET' }),
   post: async (path, body, options = {}) => apiFetch(path, { ...options, method: 'POST', body: JSON.stringify(body) }),
   put: async (path, body, options = {}) => apiFetch(path, { ...options, method: 'PUT', body: JSON.stringify(body) }),
   del: async (path, options = {}) => apiFetch(path, { ...options, method: 'DELETE' }),
+  getPosts: publicResource('posts'),
+  getJobs: publicResource('jobs'),
+  getPost: async (id) => apiFetch(`/public/posts/${encodeURIComponent(id)}`),
+  getJob: async (id) => apiFetch(`/public/jobs/${encodeURIComponent(id)}`),
 };
 
 export { API_URL };
