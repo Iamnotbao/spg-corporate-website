@@ -1,14 +1,28 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-export async function apiFetch(path, options = {}) {
+function authHeaders(extra = {}) {
   const token = localStorage.getItem('spg_admin_token');
-  const headers = new Headers(options.headers || {});
-  if (token) headers.set('Authorization', `Bearer ${token}`);
-  if (!(options.body instanceof FormData) && options.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
-  const response = await fetch(`${API_URL}${path}`, { ...options, headers });
+  return {
+    ...extra,
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+}
+
+export async function apiFetch(path, options = {}) {
+  const headers = new Headers(authHeaders(options.headers || {}));
+  if (!(options.body instanceof FormData) && options.body && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+
+  const response = await fetch(`${API_URL}${path}`, {
+    ...options,
+    headers,
+  });
+
   const text = await response.text();
   let payload = null;
   try { payload = text ? JSON.parse(text) : null; } catch { payload = text; }
+
   if (!response.ok) throw new Error(payload?.error || 'Request failed');
   return payload;
 }
@@ -18,13 +32,17 @@ export function getAdminToken() { return localStorage.getItem('spg_admin_token')
 export function getApplicationCvUrl(id) { return getApiUrl(`/admin/applications/${encodeURIComponent(id)}/cv`); }
 
 export async function downloadApplicationCv(id) {
-  const response = await fetch(getApplicationCvUrl(id), { headers: { Authorization: `Bearer ${getAdminToken()}` } });
+  const response = await fetch(getApplicationCvUrl(id), {
+    headers: authHeaders(),
+  });
+
   if (!response.ok) {
     const text = await response.text();
     let payload;
     try { payload = JSON.parse(text); } catch { payload = null; }
     throw new Error(payload?.error || 'Không thể tải CV');
   }
+
   const blob = await response.blob();
   const disposition = response.headers.get('Content-Disposition') || '';
   const match = disposition.match(/filename="?([^";]+)"?/i);
