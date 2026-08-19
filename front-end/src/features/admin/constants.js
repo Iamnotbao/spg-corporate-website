@@ -1,8 +1,9 @@
 export const ADMIN_SECTIONS = [
-  { key: 'overview', label: 'Tổng quan', icon: 'overview' },
-  { key: 'posts', label: 'Bài viết', icon: 'posts' },
-  { key: 'jobs', label: 'Tuyển dụng', icon: 'jobs' },
-  { key: 'applications', label: 'Hồ sơ ứng tuyển', icon: 'applications' },
+  { key: 'overview', label: 'Tổng quan', icon: 'overview', roles: ['admin', 'employee'] },
+  { key: 'posts', label: 'Bài viết', icon: 'posts', roles: ['admin', 'employee'] },
+  { key: 'jobs', label: 'Tuyển dụng', icon: 'jobs', roles: ['admin', 'employee'] },
+  { key: 'applications', label: 'Hồ sơ ứng tuyển', icon: 'applications', roles: ['admin'] },
+  { key: 'users', label: 'Người dùng', icon: 'users', roles: ['admin'] },
 ];
 
 export const CONTENT_LABELS = {
