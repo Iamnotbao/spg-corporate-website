@@ -10,6 +10,7 @@ import {
 import { getPublicCommunications } from "../controllers/communications.controller.js";
 import { listPublicCategories } from "../controllers/category.controller.js";
 import { listPublicLanguages } from "../controllers/language.controller.js";
+import { getPublicSiteProfile } from "../controllers/siteProfile.controller.js";
 import * as chatController from "../controllers/chat.controller.js";
 import { addRealtimeClient } from "../utils/realtime.js";
 import { cvUpload, validateCvSignature } from "../middleware/upload.js";
@@ -36,6 +37,7 @@ router.get("/posts", asyncHandler(listPosts));
 router.get("/categories", asyncHandler(listPublicCategories));
 router.get("/languages", asyncHandler(listPublicLanguages));
 router.get("/communications", asyncHandler(getPublicCommunications));
+router.get("/site-profile", asyncHandler(getPublicSiteProfile));
 router.get("/events", addRealtimeClient);
 
 router.get("/chat/settings", asyncHandler(chatController.getPublicChatSettings));
