@@ -1,3 +1,4 @@
+import ThemeToggle from '../../shared/ThemeToggle.jsx';
 import { ADMIN_SECTIONS } from '../constants.js';
 import AdminIcon from './AdminIcon.jsx';
 
@@ -65,6 +66,7 @@ export default function AdminLayout({
             <h1>{headerTitle}</h1>
           </div>
           <div className="admin-header__actions">
+            <ThemeToggle compact />
             <div className="admin-account-chip">
               <div>
                 <strong>{currentUser?.displayName || currentUser?.username || 'SPG User'}</strong>
