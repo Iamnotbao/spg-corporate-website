@@ -1,64 +1,43 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import ThemeToggle from '../../shared/ThemeToggle.jsx';
+import { usePublicMessages } from '../i18n.js';
 import Brand from './Brand.jsx';
 import LanguageSwitcher from './LanguageSwitcher.jsx';
 
-const navigation = [
-  {
-    label: 'Giới thiệu',
-    href: '/#about',
-    children: [
-      ['Giá trị cốt lõi', '/#about'],
-      ['Tầm nhìn & sứ mệnh', '/#about'],
-      ['Con số & dấu ấn', '/#about'],
-      ['Hành trình phát triển', '/#journey'],
-      ['Đối tác & hợp tác', '/#services'],
-      ['Vị trí công ty', '/#contact'],
-      ['Thành tựu đạt được', '/#journey'],
-      ['Cảnh quan nội bộ', '/#careers'],
-    ],
-  },
-  {
-    label: 'Dịch vụ',
-    href: '/#services',
-    children: [
-      ['Vận tải & giao nhận', '/#services'],
-      ['Kho bãi & phân phối', '/#services'],
-      ['Tư vấn chuỗi cung ứng', '/#services'],
-      ['Quy trình vận hành', '/#process'],
-    ],
-  },
-  {
-    label: 'Tin tức',
-    href: '/#news',
-    children: [
-      ['Hoạt động', '/#news'],
-      ['Phát triển nhân tài', '/#news'],
-      ['Công đoàn', '/#news'],
-      ['Tin doanh nghiệp', '/#news'],
-    ],
-  },
-  {
-    label: 'Tuyển dụng',
-    href: '/#careers',
-    children: [
-      ['Vị trí đang tuyển', '/#careers'],
-      ['Môi trường làm việc', '/#careers'],
-      ['Gửi hồ sơ', '/#careers'],
-    ],
-  },
-];
-
 export default function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { t } = usePublicMessages();
+
+  const navigation = useMemo(() => [
+    {
+      label: t('about'),
+      href: '/#about',
+      children: [
+        [t('coreValues'), '/#about'], [t('vision'), '/#about'], [t('highlights'), '/#about'],
+        [t('journey'), '/#journey'], [t('partners'), '/#services'], [t('location'), '/#contact'],
+        [t('achievements'), '/#journey'], [t('workplace'), '/#careers'],
+      ],
+    },
+    {
+      label: t('services'), href: '/#services', children: [
+        [t('transport'), '/#services'], [t('warehouse'), '/#services'], [t('consulting'), '/#services'], [t('process'), '/#process'],
+      ],
+    },
+    {
+      label: t('news'), href: '/#news', children: [
+        [t('activities'), '/#news'], [t('talent'), '/#news'], [t('union'), '/#news'], [t('companyNews'), '/#news'],
+      ],
+    },
+    {
+      label: t('careers'), href: '/#careers', children: [
+        [t('openings'), '/#careers'], [t('workEnvironment'), '/#careers'], [t('apply'), '/#careers'],
+      ],
+    },
+  ], [t]);
 
   useEffect(() => {
     if (!menuOpen) return undefined;
-
-    const closeOnEscape = (event) => {
-      if (event.key === 'Escape') setMenuOpen(false);
-    };
-
+    const closeOnEscape = (event) => { if (event.key === 'Escape') setMenuOpen(false); };
     window.addEventListener('keydown', closeOnEscape);
     return () => window.removeEventListener('keydown', closeOnEscape);
   }, [menuOpen]);
@@ -69,7 +48,6 @@ export default function SiteHeader() {
     <header className={`public-header public-header--hamburger${menuOpen ? ' is-open' : ''}`}>
       <div className="public-container public-header__inner">
         <Brand onNavigate={closeMenu} />
-
         <div className="public-header__utilities">
           <LanguageSwitcher />
           <ThemeToggle compact />
@@ -78,61 +56,33 @@ export default function SiteHeader() {
             type="button"
             aria-controls="public-site-navigation"
             aria-expanded={menuOpen}
-            aria-label={menuOpen ? 'Đóng trình đơn' : 'Mở trình đơn'}
+            aria-label={menuOpen ? t('closeMenu') : t('openMenu')}
             onClick={() => setMenuOpen((open) => !open)}
-          >
-            <span />
-            <span />
-            <span />
-          </button>
+          ><span /><span /><span /></button>
         </div>
       </div>
 
-      <button
-        aria-label="Đóng trình đơn"
-        className={`public-menu-scrim${menuOpen ? ' is-open' : ''}`}
-        onClick={closeMenu}
-        tabIndex={menuOpen ? 0 : -1}
-        type="button"
-      />
+      <button aria-label={t('closeMenu')} className={`public-menu-scrim${menuOpen ? ' is-open' : ''}`} onClick={closeMenu} tabIndex={menuOpen ? 0 : -1} type="button" />
 
-      <div
-        className={`public-mega-menu${menuOpen ? ' is-open' : ''}`}
-        id="public-site-navigation"
-        aria-hidden={!menuOpen}
-      >
+      <div className={`public-mega-menu${menuOpen ? ' is-open' : ''}`} id="public-site-navigation" aria-hidden={!menuOpen}>
         <div className="public-container public-mega-menu__inner">
           <div className="public-mega-menu__intro">
             <span className="public-mega-menu__kicker">Chí Hùng SPG</span>
-            <strong>Khám phá</strong>
-            <p>Thông tin doanh nghiệp, hoạt động, tin tức và cơ hội nghề nghiệp.</p>
-            <a href="/#contact" onClick={closeMenu}>
-              Liên hệ với SPG <span aria-hidden="true">↗</span>
-            </a>
+            <strong>{t('explore')}</strong>
+            <p>{t('menuIntro')}</p>
+            <a href="/#contact" onClick={closeMenu}>{t('contact')} <span aria-hidden="true">↗</span></a>
           </div>
 
-          <nav className="public-mega-menu__nav" aria-label="Điều hướng chính">
+          <nav className="public-mega-menu__nav" aria-label={t('navLabel')}>
             {navigation.map((group, index) => (
-              <section
-                className="public-mega-menu__group"
-                key={group.label}
-                style={{ '--menu-order': index }}
-              >
+              <section className="public-mega-menu__group" key={group.label} style={{ '--menu-order': index }}>
                 <a className="public-mega-menu__title" href={group.href} onClick={closeMenu}>
-                  <span>{String(index + 1).padStart(2, '0')}</span>
-                  <strong>{group.label}</strong>
-                  <i aria-hidden="true">↗</i>
+                  <span>{String(index + 1).padStart(2, '0')}</span><strong>{group.label}</strong><i aria-hidden="true">↗</i>
                 </a>
                 <div className="public-mega-menu__subnav">
                   {group.children.map(([label, href], childIndex) => (
-                    <a
-                      href={href}
-                      key={`${group.label}-${label}`}
-                      onClick={closeMenu}
-                      style={{ '--sub-order': childIndex }}
-                    >
-                      <span>{label}</span>
-                      <i aria-hidden="true">→</i>
+                    <a href={href} key={`${group.label}-${label}`} onClick={closeMenu} style={{ '--sub-order': childIndex }}>
+                      <span>{label}</span><i aria-hidden="true">→</i>
                     </a>
                   ))}
                 </div>
