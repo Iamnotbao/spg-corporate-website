@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import SafeImage from './SafeImage.jsx';
+import '../../../styles/detail-carousel-auto.css';
 
 const AUTO_DELAY = 5500;
 
