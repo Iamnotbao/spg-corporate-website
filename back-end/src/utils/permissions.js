@@ -28,6 +28,8 @@ export const PERMISSIONS = [
   "chat.read",
   "chat.reply",
   "chat.settings",
+  "media.read",
+  "media.delete",
   "settings.read",
   "settings.update",
 ];
