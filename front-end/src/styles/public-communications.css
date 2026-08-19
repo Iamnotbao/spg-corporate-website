@@ -1,0 +1,235 @@
+.public-event-banner {
+  position: relative;
+  z-index: 125;
+  overflow: hidden;
+  background: #0b2545;
+  color: #fff;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.public-event-banner--event { background: linear-gradient(90deg, #0b2545, #123d4a); }
+.public-event-banner--info { background: linear-gradient(90deg, #183d60, #245778); }
+.public-event-banner--highlight { background: linear-gradient(90deg, #6f341f, #a9542e); }
+
+.public-event-banner__inner {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  overflow: hidden;
+  font-size: 0.84rem;
+}
+
+.public-event-banner__pulse {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #8de0bd;
+  box-shadow: 0 0 0 0 rgba(141, 224, 189, 0.45);
+  animation: spgPulse 1.9s infinite;
+}
+
+.public-event-banner__marquee {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.public-event-banner__marquee > div {
+  width: max-content;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  white-space: nowrap;
+  animation: spgBannerFloat 16s ease-in-out infinite alternate;
+}
+
+.public-event-banner__marquee span { color: rgba(255, 255, 255, 0.76); }
+
+.public-event-banner a {
+  flex: 0 0 auto;
+  color: #fff;
+  text-decoration: none;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: transform 180ms ease, opacity 180ms ease;
+}
+.public-event-banner a:hover { transform: translateX(3px); opacity: 0.82; }
+
+.public-notification-dock {
+  position: fixed;
+  right: 22px;
+  top: 92px;
+  z-index: 118;
+}
+
+.public-notification-button {
+  position: relative;
+  width: 46px;
+  height: 46px;
+  border: 1px solid rgba(11, 37, 69, 0.12);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.96);
+  color: #0b2545;
+  box-shadow: 0 10px 30px rgba(11, 37, 69, 0.14);
+  cursor: pointer;
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+
+.public-notification-button:hover,
+.public-notification-button.is-open {
+  transform: translateY(-2px) rotate(-4deg) scale(1.03);
+  box-shadow: 0 14px 36px rgba(11, 37, 69, 0.2);
+}
+
+.public-notification-button svg {
+  width: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.public-notification-button > span {
+  position: absolute;
+  right: -2px;
+  top: -3px;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 5px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: #d76d34;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  animation: spgBadgePop 260ms ease;
+}
+
+.public-notification-panel {
+  position: absolute;
+  right: 0;
+  top: 58px;
+  width: min(410px, calc(100vw - 32px));
+  max-height: 520px;
+  overflow: auto;
+  border: 1px solid rgba(11, 37, 69, 0.1);
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 22px 60px rgba(11, 37, 69, 0.2);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px) scale(0.98);
+  transform-origin: top right;
+  transition: opacity 180ms ease, transform 180ms ease, visibility 180ms ease;
+}
+
+.public-notification-panel.is-open {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+}
+
+.public-notification-panel__heading {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 18px 14px;
+  border-bottom: 1px solid rgba(11, 37, 69, 0.08);
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(10px);
+}
+
+.public-notification-panel__heading > div:first-child { display: grid; gap: 2px; }
+.public-notification-panel__heading small { color: #d76d34; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; }
+.public-notification-panel__heading strong { font-size: 1.1rem; }
+.public-notification-panel__heading-actions { display: flex; align-items: center; gap: 6px; }
+.public-notification-panel__heading-actions button {
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #647770;
+  cursor: pointer;
+  font-size: 0.72rem;
+  padding: 7px 8px;
+  transition: background 150ms ease, color 150ms ease;
+}
+.public-notification-panel__heading-actions button:last-child { font-size: 1.4rem; line-height: 1; }
+.public-notification-panel__heading-actions button:hover { background: #f1f6f4; color: #0b2545; }
+
+.public-notification-panel__list { display: grid; }
+.public-notification-panel__list > article {
+  display: grid;
+  grid-template-columns: 10px 1fr;
+  gap: 12px;
+  padding: 15px 18px;
+  border-bottom: 1px solid rgba(11, 37, 69, 0.07);
+  transition: background 160ms ease, opacity 160ms ease;
+}
+.public-notification-panel__list > article.is-unread { background: #f8fbfa; }
+.public-notification-panel__list > article.is-read { opacity: 0.68; }
+.public-notification-panel__list > article:hover { background: #f3f8f6; opacity: 1; }
+
+.public-notification-dot {
+  width: 8px;
+  height: 8px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: #5e8ab3;
+}
+.public-notification-dot.is-event { background: #d76d34; }
+.public-notification-dot.is-warning { background: #b84040; }
+
+.public-notification-copy > a { color: inherit; text-decoration: none; }
+.public-notification-copy strong { display: block; color: #0b2545; }
+.public-notification-copy p { margin: 4px 0 0; color: #647770; font-size: 0.84rem; line-height: 1.45; }
+
+.public-notification-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+.public-notification-actions button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #597169;
+  cursor: pointer;
+  font-size: 0.7rem;
+  font-weight: 700;
+  transition: color 150ms ease;
+}
+.public-notification-actions button:hover { color: #d76d34; }
+.public-notification-panel__empty { padding: 24px !important; text-align: center; color: #647770; }
+
+.public-shell:has(.public-event-banner) .public-notification-dock { top: 132px; }
+
+@keyframes spgPulse {
+  70% { box-shadow: 0 0 0 8px rgba(141, 224, 189, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(141, 224, 189, 0); }
+}
+@keyframes spgBadgePop { from { transform: scale(0.4); } to { transform: scale(1); } }
+@keyframes spgBannerFloat { from { transform: translateX(0); } to { transform: translateX(-34px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .public-event-banner__pulse,
+  .public-event-banner__marquee > div,
+  .public-notification-button > span { animation: none; }
+}
+
+@media (max-width: 700px) {
+  .public-event-banner__inner { min-height: 42px; }
+  .public-event-banner__marquee span { display: none; }
+  .public-notification-dock { right: 14px; top: 82px; }
+  .public-shell:has(.public-event-banner) .public-notification-dock { top: 126px; }
+}
