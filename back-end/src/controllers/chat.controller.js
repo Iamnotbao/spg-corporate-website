@@ -76,8 +76,8 @@ function automatedReply(text, settings) {
   if (/cv|h[oồ] s[oơ]|resume/.test(normalized)) {
     return "Bạn có thể gửi CV trực tiếp trong trang chi tiết vị trí tuyển dụng. Hồ sơ sẽ được lưu để bộ phận phụ trách xem xét.";
   }
-  if (/dịch vụ|dich vu|logistics|vận tải|van tai|kho/.test(normalized)) {
-    return "Bạn có thể xem thông tin dịch vụ trên website hoặc để lại nhu cầu cụ thể; admin SPG sẽ tiếp tục trao đổi với bạn.";
+  if (/sản xuất|san xuat|giày|giay|footwear|factory|nhà máy|nha may|cắt|cat|may|lắp ráp|lap rap|chất lượng|chat luong/.test(normalized)) {
+    return "Bạn có thể xem mục Sản xuất và Quy trình sản xuất để tìm hiểu nội dung công khai về hoạt động sản xuất giày tại Chí Hùng SPG. Nếu cần thông tin doanh nghiệp cụ thể chưa có trên website, admin SPG sẽ hỗ trợ thêm.";
   }
   if (/li[eê]n h[eệ]|contact|địa chỉ|dia chi|điện thoại|dien thoai/.test(normalized)) {
     return "Bạn có thể mở mục Liên hệ trên website. Nếu cần trao đổi trực tiếp, cứ để lại nội dung ở đây để admin phản hồi.";

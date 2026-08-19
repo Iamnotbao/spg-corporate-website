@@ -7,6 +7,7 @@ import './styles/communications.css';
 import './styles/categories.css';
 import './styles/languages.css';
 import './styles/chat.css';
+import './styles/site-profile.css';
 import ApplicationsPanel from './components/ApplicationsPanel.jsx';
 import AdminLayout from './components/AdminLayout.jsx';
 import AdminLogin from './components/AdminLogin.jsx';
@@ -18,6 +19,7 @@ import ContentEditor from './components/ContentEditor.jsx';
 import ContentWorkspace from './components/ContentWorkspace.jsx';
 import LanguagesPanel from './components/LanguagesPanel.jsx';
 import OverviewPanel from './components/OverviewPanel.jsx';
+import SiteProfilePanel from './components/SiteProfilePanel.jsx';
 import UsersPanel from './components/UsersPanel.jsx';
 import { AdminToast } from './components/AdminFeedback.jsx';
 import { ADMIN_SECTIONS, CONTENT_LABELS } from './constants.js';
@@ -92,52 +94,24 @@ export default function AdminApp() {
   );
 
   const headerTitle = useMemo(() => {
-    if (editor) {
-      return `${editor.item ? 'Chỉnh sửa' : 'Tạo'} ${CONTENT_LABELS[editor.type].singular}`;
-    }
+    if (editor) return `${editor.item ? 'Chỉnh sửa' : 'Tạo'} ${CONTENT_LABELS[editor.type].singular}`;
     return ADMIN_SECTIONS.find((item) => item.key === section)?.label || 'Quản trị';
   }, [editor, section]);
 
   if (auth.status !== 'signedIn') {
-    return (
-      <AdminLogin
-        checking={auth.status === 'checking'}
-        error={auth.error}
-        onSubmit={auth.login}
-        submitting={auth.submitting}
-      />
-    );
+    return <AdminLogin checking={auth.status === 'checking'} error={auth.error} onSubmit={auth.login} submitting={auth.submitting} />;
   }
 
   return (
-    <AdminLayout
-      activeSection={editor?.type || section}
-      currentUser={auth.user}
-      headerTitle={headerTitle}
-      onLogout={auth.logout}
-      onNavigate={navigate}
-    >
+    <AdminLayout activeSection={editor?.type || section} currentUser={auth.user} headerTitle={headerTitle} onLogout={auth.logout} onNavigate={navigate}>
       {editor ? (
-        <ContentEditor
-          item={editor.item}
-          key={`${editor.type}-${editor.item?._id?.$oid || editor.item?._id || 'new'}`}
-          onBack={() => setEditor(null)}
-          onSave={handleSave}
-          onUnauthorized={auth.handleUnauthorized}
-          type={editor.type}
-        />
+        <ContentEditor item={editor.item} key={`${editor.type}-${editor.item?._id?.$oid || editor.item?._id || 'new'}`} onBack={() => setEditor(null)} onSave={handleSave} onUnauthorized={auth.handleUnauthorized} type={editor.type} />
       ) : section === 'overview' ? (
         <OverviewPanel onNavigate={navigate} onUnauthorized={auth.handleUnauthorized} />
+      ) : section === 'site-profile' ? (
+        <SiteProfilePanel onNotify={notify} onUnauthorized={auth.handleUnauthorized} />
       ) : section === 'posts' || section === 'jobs' ? (
-        <ContentWorkspace
-          key={section}
-          onCreate={() => openCreate(section)}
-          onEdit={(item) => openEdit(item, section)}
-          onNotify={notify}
-          onUnauthorized={auth.handleUnauthorized}
-          onView={(item) => setDetail({ item, type: section })}
-          type={section}
-        />
+        <ContentWorkspace key={section} onCreate={() => openCreate(section)} onEdit={(item) => openEdit(item, section)} onNotify={notify} onUnauthorized={auth.handleUnauthorized} onView={(item) => setDetail({ item, type: section })} type={section} />
       ) : section === 'categories' ? (
         <CategoriesPanel onNotify={notify} onUnauthorized={auth.handleUnauthorized} />
       ) : section === 'communications' ? (
@@ -147,24 +121,12 @@ export default function AdminApp() {
       ) : section === 'languages' ? (
         <LanguagesPanel onNotify={notify} onUnauthorized={auth.handleUnauthorized} />
       ) : section === 'users' ? (
-        <UsersPanel
-          currentUser={auth.user}
-          onNotify={notify}
-          onUnauthorized={auth.handleUnauthorized}
-        />
+        <UsersPanel currentUser={auth.user} onNotify={notify} onUnauthorized={auth.handleUnauthorized} />
       ) : (
         <ApplicationsPanel onNotify={notify} onUnauthorized={auth.handleUnauthorized} />
       )}
 
-      {detail && (
-        <ContentDetailModal
-          item={detail.item}
-          onClose={() => setDetail(null)}
-          onEdit={(item) => openEdit(item, detail.type)}
-          type={detail.type}
-        />
-      )}
-
+      {detail && <ContentDetailModal item={detail.item} onClose={() => setDetail(null)} onEdit={(item) => openEdit(item, detail.type)} type={detail.type} />}
       <AdminToast message={toast.message} onClose={closeToast} variant={toast.variant} />
     </AdminLayout>
   );

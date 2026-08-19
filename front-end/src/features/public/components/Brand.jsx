@@ -7,21 +7,19 @@ export default function Brand({ inverse = false, onNavigate }) {
     <Link
       className={`public-brand${inverse ? ' public-brand--inverse' : ''}`}
       to="/"
-      aria-label="SPG Logistics - Trang chủ"
+      aria-label="Chí Hùng SPG - Trang chủ"
       onClick={onNavigate}
     >
       {LOGO_URL ? (
         <span className="public-brand__logo-frame">
-          <img src={LOGO_URL} alt="SPG Logistics" />
+          <img src={LOGO_URL} alt="Chí Hùng SPG" />
         </span>
       ) : (
-        <span className="public-brand__wordmark" aria-hidden="true">
-          SPG<span>.</span>
-        </span>
+        <span className="public-brand__wordmark" aria-hidden="true">SPG<span>.</span></span>
       )}
       <span className="public-brand__descriptor">
-        <strong>Logistics</strong>
-        <small>Move with certainty</small>
+        <strong>Footwear</strong>
+        <small>Manufacturing · Vietnam</small>
       </span>
     </Link>
   );

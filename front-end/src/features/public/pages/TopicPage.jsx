@@ -10,27 +10,27 @@ import '../../../styles/topic-page.css';
 const TOPICS = {
   highlights: {
     category: 'achievement',
-    vi: ['Con số & dấu ấn', 'Không gian tổng hợp các cột mốc, thành tựu và nội dung nổi bật được SPG công bố.'],
-    en: ['Highlights & milestones', 'A dedicated space for milestones, achievements and notable updates published by SPG.'],
-    'zh-tw': ['數據與里程碑', '集中呈現 SPG 公開的里程碑、成果與重要內容。'],
+    vi: ['Con số & dấu ấn', 'Không gian tổng hợp những cột mốc, thành tựu, cải tiến và câu chuyện nổi bật được Chí Hùng SPG công bố.'],
+    en: ['Facts & highlights', 'Milestones, achievements, improvements and notable stories published by Chi Hung SPG.'],
+    'zh-tw': ['數據與成果', '集中呈現志雄 SPG 的里程碑、成果、改善與重要故事。'],
   },
   partners: {
     category: 'partners',
-    vi: ['Đối tác & hợp tác', 'Nơi tập hợp các bài viết về hoạt động hợp tác và kết nối doanh nghiệp.'],
-    en: ['Partners & cooperation', 'Stories and updates about cooperation and business connections.'],
-    'zh-tw': ['合作夥伴', '彙整合作、交流與企業連結相關內容。'],
+    vi: ['Đối tác & hợp tác', 'Các bài viết về hoạt động hợp tác, phát triển sản phẩm và kết nối trong lĩnh vực sản xuất giày.'],
+    en: ['Partners & cooperation', 'Stories about cooperation, product development and connections in footwear manufacturing.'],
+    'zh-tw': ['合作夥伴', '鞋類製造、產品開發與合作交流相關內容。'],
   },
   location: {
     category: 'location',
-    vi: ['Vị trí công ty', 'Thông tin và bài viết liên quan đến địa điểm, không gian và hoạt động tại các cơ sở của SPG.'],
-    en: ['Company locations', 'Information and posts related to SPG locations, workplaces and on-site activities.'],
-    'zh-tw': ['公司位置', 'SPG 據點、工作環境與現場活動相關資訊。'],
+    vi: ['Vị trí công ty', 'Thông tin về địa điểm, không gian làm việc, nhà máy và các hoạt động tại Chí Hùng SPG.'],
+    en: ['Company location', 'Information about Chi Hung SPG locations, workplace, factory environment and on-site activities.'],
+    'zh-tw': ['公司位置', '志雄 SPG 的據點、工作環境、工廠與現場活動資訊。'],
   },
   'supply-chain-consulting': {
-    category: 'supply-chain-consulting',
-    vi: ['Tư vấn chuỗi cung ứng', 'Các góc nhìn, quy trình và nội dung chuyên môn về tư vấn chuỗi cung ứng.'],
-    en: ['Supply chain consulting', 'Insights, processes and professional content about supply chain consulting.'],
-    'zh-tw': ['供應鏈顧問', '供應鏈顧問相關觀點、流程與專業內容。'],
+    category: 'manufacturing',
+    vi: ['Năng lực sản xuất', 'Nội dung chuyên sâu về phát triển mẫu, kỹ thuật, cắt, may, lắp ráp, hoàn thiện và kiểm soát chất lượng trong sản xuất giày.'],
+    en: ['Manufacturing capabilities', 'Detailed content about sample development, engineering, cutting, stitching, assembly, finishing and footwear quality control.'],
+    'zh-tw': ['製造能力', '樣品開發、工程、裁切、車縫、組裝、完成與鞋類品質管理相關內容。'],
   },
 };
 
@@ -42,7 +42,7 @@ export default function TopicPage() {
   const posts = usePublicCollection(getPosts);
 
   usePageTop();
-  useDocumentTitle(`${copy[0]} | SPG Logistics`);
+  useDocumentTitle(`${copy[0]} | Chí Hùng SPG`);
 
   const visible = posts.data
     .filter((item) => item?.published !== false)
@@ -51,45 +51,13 @@ export default function TopicPage() {
 
   return (
     <PublicLayout>
-      <section className="public-topic-hero">
-        <div className="public-container">
-          <Link className="public-topic-back" to="/">← SPG</Link>
-          <p className="public-eyebrow">SPG · {String(topic).replaceAll('-', ' ')}</p>
-          <h1>{copy[0]}</h1>
-          <p>{copy[1]}</p>
-        </div>
-      </section>
-
-      <section className="public-topic-content">
-        <div className="public-container">
-          {posts.status === 'loading' && <p className="public-topic-state">Đang tải nội dung…</p>}
-          {posts.status === 'error' && <p className="public-topic-state">Chưa thể tải nội dung.</p>}
-          {posts.status === 'ready' && !visible.length && (
-            <div className="public-topic-empty">
-              <strong>{copy[0]}</strong>
-              <p>Admin có thể tạo bài Post và chọn category “{config.category}” để bài tự xuất hiện tại trang này.</p>
-            </div>
-          )}
-          {visible.length > 0 && (
-            <div className="public-topic-grid">
-              {visible.map((item) => {
-                const id = getContentId(item);
-                return (
-                  <Link className="public-topic-card" key={id || item.title} to={`/news/${id}`}>
-                    <SafeImage src={item.imageUrl} alt={item.title || copy[0]} />
-                    <div>
-                      <small>{item.category || config.category}</small>
-                      <h2>{item.title}</h2>
-                      <p>{getExcerpt(item, copy[1])}</p>
-                      <span>→</span>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </section>
+      <section className="public-topic-hero"><div className="public-container"><Link className="public-topic-back" to="/">← Chí Hùng SPG</Link><p className="public-eyebrow">FOOTWEAR · {String(topic).replaceAll('-', ' ')}</p><h1>{copy[0]}</h1><p>{copy[1]}</p></div></section>
+      <section className="public-topic-content"><div className="public-container">
+        {posts.status === 'loading' && <p className="public-topic-state">Đang tải nội dung…</p>}
+        {posts.status === 'error' && <p className="public-topic-state">Chưa thể tải nội dung.</p>}
+        {posts.status === 'ready' && !visible.length && <div className="public-topic-empty"><strong>{copy[0]}</strong><p>Admin có thể tạo Post, chọn category “{config.category}” hoặc gán bài vào trang này để nội dung xuất hiện tại đây.</p></div>}
+        {visible.length > 0 && <div className="public-topic-grid">{visible.map((item) => { const id = getContentId(item); return <Link className="public-topic-card" key={id || item.title} to={`/news/${id}`}><SafeImage src={item.imageUrl} alt={item.title || copy[0]} /><div><small>{item.category || config.category}</small><h2>{item.title}</h2><p>{getExcerpt(item, copy[1])}</p><span>→</span></div></Link>; })}</div>}
+      </div></section>
     </PublicLayout>
   );
 }

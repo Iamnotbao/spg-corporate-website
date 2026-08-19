@@ -14,6 +14,7 @@ import * as categoryController from "../controllers/category.controller.js";
 import * as communicationsController from "../controllers/communications.controller.js";
 import * as languageController from "../controllers/language.controller.js";
 import * as chatController from "../controllers/chat.controller.js";
+import * as siteProfileController from "../controllers/siteProfile.controller.js";
 import { importContent } from "../controllers/contentImport.controller.js";
 
 const router = Router();
@@ -67,6 +68,9 @@ router.get("/communications/notifications", requirePermission("communications.re
 router.post("/communications/notifications", requirePermission("communications.update"), asyncHandler(communicationsController.createNotification));
 router.put("/communications/notifications/:id", requirePermission("communications.update"), asyncHandler(communicationsController.updateNotification));
 router.delete("/communications/notifications/:id", requirePermission("communications.update"), asyncHandler(communicationsController.deleteNotification));
+
+router.get("/site-profile", requirePermission("settings.read"), asyncHandler(siteProfileController.getAdminSiteProfile));
+router.put("/site-profile", requirePermission("settings.update"), asyncHandler(siteProfileController.updateAdminSiteProfile));
 
 router.post(
   "/uploads/images",

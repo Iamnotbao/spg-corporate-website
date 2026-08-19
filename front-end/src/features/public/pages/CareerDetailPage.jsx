@@ -30,7 +30,7 @@ export default function CareerDetailPage({ loadJob, loadJobs, submitApplication 
   const localized = localizeContent(job, language);
 
   usePageTop();
-  useDocumentTitle(localized?.title ? `${localized.title} | SPG Careers` : `${t('careers')} | SPG Logistics`);
+  useDocumentTitle(localized?.title ? `${localized.title} | Chí Hùng SPG Careers` : `${t('careers')} | Chí Hùng SPG`);
 
   return (
     <PublicLayout>
