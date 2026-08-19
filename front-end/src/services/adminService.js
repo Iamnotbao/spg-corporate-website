@@ -94,6 +94,22 @@ export async function bulkDeleteAdminContent(type, ids) {
   });
 }
 
+export async function importAdminContent(type, files, commit = false) {
+  assertContentType(type);
+  const formData = new FormData();
+  for (const file of files) formData.append('files', file);
+  formData.append('commit', String(Boolean(commit)));
+
+  const payload = await apiRequest(`/admin/${type}/import`, {
+    method: 'POST',
+    auth: true,
+    body: formData,
+  });
+
+  if (!payload?.data) throw new Error('Máy chủ không trả về kết quả import.');
+  return payload.data;
+}
+
 export async function listAdminApplications(options = {}) {
   const params = new URLSearchParams({
     page: String(options.page || 1),
