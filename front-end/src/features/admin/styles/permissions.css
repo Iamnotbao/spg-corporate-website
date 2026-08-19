@@ -1,0 +1,11 @@
+.admin-permission-editor { display:grid;gap:12px;margin-top:20px;padding-top:18px;border-top:1px solid rgba(11,37,69,.08); }
+.admin-permission-editor > div:first-child { display:grid;gap:3px; }
+.admin-permission-editor > div:first-child small { color:#6f7f79; }
+.admin-permission-editor fieldset { margin:0;padding:12px;border:1px solid rgba(11,37,69,.09);border-radius:12px; }
+.admin-permission-editor legend { padding:0 7px;color:#0b2545;font-size:.78rem;font-weight:800; }
+.admin-permission-editor fieldset > div { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px; }
+.admin-permission-editor label { display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:8px;background:#f7faf8;font-size:.74rem;cursor:pointer; }
+.admin-permission-editor label:hover { background:#edf6f1; }
+.admin-permission-editor input { accent-color:#2f7d62; }
+.admin-permission-editor fieldset:disabled { opacity:.62; }
+@media(max-width:560px){.admin-permission-editor fieldset > div{grid-template-columns:1fr}}
