@@ -2,6 +2,7 @@ export const ADMIN_SECTIONS = [
   { key: 'overview', label: 'Tổng quan', icon: 'overview', roles: ['admin', 'employee'] },
   { key: 'posts', label: 'Bài viết', icon: 'posts', roles: ['admin', 'employee'] },
   { key: 'jobs', label: 'Tuyển dụng', icon: 'jobs', roles: ['admin', 'employee'] },
+  { key: 'communications', label: 'Thông báo & sự kiện', icon: 'communications', roles: ['admin'] },
   { key: 'applications', label: 'Hồ sơ ứng tuyển', icon: 'applications', roles: ['admin'] },
   { key: 'users', label: 'Người dùng', icon: 'users', roles: ['admin'] },
 ];
