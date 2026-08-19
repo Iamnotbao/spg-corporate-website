@@ -4,6 +4,7 @@ import AdminIcon from './AdminIcon.jsx';
 import '../../../styles/block-editor.css';
 
 const MAX_GALLERY = 4;
+const MIN_GALLERY = 2;
 const imageTypes = 'image/jpeg,image/png,image/webp,image/gif';
 
 function blockId() {
@@ -71,8 +72,8 @@ export default function BlockContentEditor({ blocks, fallbackText = '', onChange
 
   async function addImageFiles(files, gallery = false) {
     if (!files.length) return;
-    if (gallery && files.length > MAX_GALLERY) {
-      onError('Một nhóm ảnh hỗ trợ tối đa 4 ảnh.');
+    if (gallery && (files.length < MIN_GALLERY || files.length > MAX_GALLERY)) {
+      onError('Một nhóm ảnh cần từ 2 đến 4 ảnh.');
       return;
     }
     setUploading(true);
@@ -133,7 +134,7 @@ export default function BlockContentEditor({ blocks, fallbackText = '', onChange
           <button type="button" disabled={!future.length} onClick={redo} title="Làm lại">↷ Redo</button>
         </div>
         <input ref={singleInput} hidden accept={imageTypes} type="file" onChange={(event) => { addImageFiles([...(event.target.files || [])].slice(0, 1)); event.target.value = ''; }} />
-        <input ref={galleryInput} hidden accept={imageTypes} multiple type="file" onChange={(event) => { addImageFiles([...(event.target.files || [])].slice(0, MAX_GALLERY), true); event.target.value = ''; }} />
+        <input ref={galleryInput} hidden accept={imageTypes} multiple type="file" onChange={(event) => { addImageFiles([...(event.target.files || [])], true); event.target.value = ''; }} />
       </div>
 
       {!value.length && (
