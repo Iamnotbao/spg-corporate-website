@@ -92,4 +92,26 @@ export const destroyAsset = async (publicId, resourceType = "image") => {
   return cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
 };
 
+export async function listImageAssets({ prefix = "spg/", maxItems = 500 } = {}) {
+  if (!configured) throw new Error("Cloudinary is not configured");
+  const resources = [];
+  let nextCursor;
+
+  do {
+    const remaining = Math.max(1, Math.min(100, maxItems - resources.length));
+    const result = await cloudinary.api.resources({
+      resource_type: "image",
+      type: "upload",
+      prefix,
+      max_results: remaining,
+      next_cursor: nextCursor,
+      direction: "desc",
+    });
+    resources.push(...(result.resources || []));
+    nextCursor = result.next_cursor;
+  } while (nextCursor && resources.length < maxItems);
+
+  return resources.slice(0, maxItems);
+}
+
 export const isCloudinaryConfigured = () => configured;
