@@ -5,6 +5,7 @@ export const env = {
   mongoUri: process.env.MONGODB_URI,
   mongoDb: process.env.MONGODB_DB || "spg",
   frontendUrl: process.env.FRONTEND_URL || "http://localhost:5173",
+  adminUsername: String(process.env.ADMIN_USERNAME || "admin").trim().toLowerCase(),
   adminPassword: String(process.env.ADMIN_PASSWORD || "").trim(),
   // ADMIN_TOKEN is a backwards-compatible migration path only. New
   // environments should always configure JWT_SECRET.
@@ -29,7 +30,7 @@ export function validateEnv() {
     throw new Error("ADMIN_PASSWORD is not configured");
   }
 
-  if (env.adminPassword === "admin123") {
+  if (["admin123", "admin000"].includes(env.adminPassword.toLowerCase())) {
     if (isProduction) {
       throw new Error("ADMIN_PASSWORD must be changed before production");
     }
