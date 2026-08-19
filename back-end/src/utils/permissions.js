@@ -21,6 +21,10 @@ export const PERMISSIONS = [
   "categories.delete",
   "communications.read",
   "communications.update",
+  "languages.read",
+  "languages.create",
+  "languages.update",
+  "languages.delete",
   "settings.read",
   "settings.update",
 ];

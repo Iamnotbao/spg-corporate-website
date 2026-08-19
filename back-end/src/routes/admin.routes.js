@@ -12,6 +12,7 @@ import * as controller from "../controllers/admin.controller.js";
 import * as accountController from "../controllers/account.controller.js";
 import * as categoryController from "../controllers/category.controller.js";
 import * as communicationsController from "../controllers/communications.controller.js";
+import * as languageController from "../controllers/language.controller.js";
 import { importContent } from "../controllers/contentImport.controller.js";
 
 const router = Router();
@@ -46,6 +47,11 @@ router.get("/categories", requirePermission("categories.read"), asyncHandler(cat
 router.post("/categories", requirePermission("categories.create"), asyncHandler(categoryController.createCategory));
 router.put("/categories/:id", requirePermission("categories.update"), asyncHandler(categoryController.updateCategory));
 router.delete("/categories/:id", requirePermission("categories.delete"), asyncHandler(categoryController.deleteCategory));
+
+router.get("/languages", requirePermission("languages.read"), asyncHandler(languageController.listLanguages));
+router.post("/languages", requirePermission("languages.create"), asyncHandler(languageController.createLanguage));
+router.put("/languages/:id", requirePermission("languages.update"), asyncHandler(languageController.updateLanguage));
+router.delete("/languages/:id", requirePermission("languages.delete"), asyncHandler(languageController.deleteLanguage));
 
 router.get("/communications/banner", requirePermission("communications.read"), asyncHandler(communicationsController.getBanner));
 router.put("/communications/banner", requirePermission("communications.update"), asyncHandler(communicationsController.updateBanner));
