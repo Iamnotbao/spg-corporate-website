@@ -5,7 +5,7 @@ import {
   setAdminToken,
   verifyAdminSession,
 } from '../../../services/adminService.js';
-import { getErrorMessage, isUnauthorized } from '../utils.js';
+import { getErrorMessage } from '../utils.js';
 
 export function useAdminAuth() {
   const [status, setStatus] = useState(() =>
@@ -29,10 +29,10 @@ export function useAdminAuth() {
       })
       .catch((sessionError) => {
         if (sessionError?.name === 'AbortError') return;
-        if (isUnauthorized(sessionError)) setAdminToken('');
+        if (sessionError?.status === 401) setAdminToken('');
         setUser(null);
         setError(
-          isUnauthorized(sessionError)
+          sessionError?.status === 401
             ? 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'
             : getErrorMessage(
                 sessionError,
@@ -74,14 +74,10 @@ export function useAdminAuth() {
   }, []);
 
   const handleUnauthorized = useCallback((requestError) => {
-    if (!isUnauthorized(requestError)) return false;
+    if (requestError?.status !== 401) return false;
     setAdminToken('');
     setUser(null);
-    setError(
-      requestError?.status === 403
-        ? 'Tài khoản không có quyền thực hiện thao tác này.'
-        : 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.',
-    );
+    setError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
     setStatus('signedOut');
     return true;
   }, []);
