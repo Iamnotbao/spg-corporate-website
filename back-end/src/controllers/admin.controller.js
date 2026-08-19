@@ -19,22 +19,9 @@ import { toObjectId } from "../utils/objectId.js";
 const escapeRegex = (value) =>
   String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const privateCvFields = [
-  "cv",
-  "cvDeliveryType",
-  "cvFilename",
-  "cvFormat",
-  "cvMimeType",
-  "cvName",
-  "cvOriginalName",
-  "cvPublicId",
-  "cvResourceType",
-  "cvSize",
-  "cvType",
-  "cvUrl",
-  "mimetype",
-  "originalFilename",
-  "resume",
-  "resumeUrl",
+  "cv", "cvDeliveryType", "cvFilename", "cvFormat", "cvMimeType", "cvName",
+  "cvOriginalName", "cvPublicId", "cvResourceType", "cvSize", "cvType", "cvUrl",
+  "mimetype", "originalFilename", "resume", "resumeUrl",
 ];
 
 async function cleanupImage(publicId) {
@@ -50,6 +37,7 @@ async function cleanupImages(publicIds = []) {
   await Promise.all([...new Set(publicIds.filter(Boolean))].map(cleanupImage));
 }
 
+// Kept only for legacy direct imports. The active /admin/verify route uses account login.
 export function verify(req, res) {
   const password = String(req.body?.password ?? req.body?.adminPassword ?? "").trim();
   if (!password || password !== env.adminPassword) {
@@ -73,6 +61,7 @@ function queryFor(type, query) {
   }
   if (query.published === "true") filter.published = { $ne: false };
   if (query.published === "false") filter.published = false;
+  if (type === "posts" && query.category) filter.category = String(query.category);
   if (type === "jobs") {
     if (query.type) filter.type = query.type;
     if (query.location) {
@@ -90,12 +79,7 @@ export async function list(type, req, res) {
   const total = await collection.countDocuments(filter);
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const page = Math.min(requestedPage, totalPages);
-  const items = await collection
-    .find(filter)
-    .sort({ createdAt: -1 })
-    .skip((page - 1) * pageSize)
-    .limit(pageSize)
-    .toArray();
+  const items = await collection.find(filter).sort({ createdAt: -1 }).skip((page - 1) * pageSize).limit(pageSize).toArray();
   res.json({ data: items, pagination: { page, pageSize, total, totalPages } });
 }
 
@@ -124,7 +108,7 @@ export async function update(type, req, res) {
     await cleanupImage(existing.imagePublicId);
   }
 
-  if (type === "posts" && Object.hasOwn(req.body, "imagePublicIds")) {
+  if (Object.hasOwn(req.body, "imagePublicIds")) {
     const nextIds = new Set(Array.isArray(req.body.imagePublicIds) ? req.body.imagePublicIds : []);
     const removedIds = (Array.isArray(existing?.imagePublicIds) ? existing.imagePublicIds : []).filter(
       (publicId) => publicId && !nextIds.has(publicId),
@@ -138,11 +122,9 @@ export async function update(type, req, res) {
 export async function remove(type, req, res) {
   const id = toObjectId(req.params.id);
   if (!id) return res.status(400).json({ error: "Invalid id" });
-
   const collection = await getCollection(type);
   const existing = await collection.findOne({ _id: id });
   const result = await collection.deleteOne({ _id: id });
-
   if (result.deletedCount) {
     await cleanupImages([
       existing?.imagePublicId,
@@ -155,18 +137,10 @@ export async function remove(type, req, res) {
 export async function bulkRemove(type, req, res) {
   const ids = (req.body.ids || []).map(toObjectId).filter(Boolean);
   if (!ids.length) return res.status(400).json({ error: "No ids provided" });
-
   const collection = await getCollection(type);
-  const items = await collection
-    .find({ _id: { $in: ids } }, { projection: { imagePublicId: 1, imagePublicIds: 1 } })
-    .toArray();
+  const items = await collection.find({ _id: { $in: ids } }, { projection: { imagePublicId: 1, imagePublicIds: 1 } }).toArray();
   const result = await collection.deleteMany({ _id: { $in: ids } });
-  await cleanupImages(
-    items.flatMap((item) => [
-      item.imagePublicId,
-      ...(Array.isArray(item.imagePublicIds) ? item.imagePublicIds : []),
-    ]),
-  );
+  await cleanupImages(items.flatMap((item) => [item.imagePublicId, ...(Array.isArray(item.imagePublicIds) ? item.imagePublicIds : [])]));
   return res.json({ ok: true, deleted: result.deletedCount });
 }
 
@@ -184,22 +158,13 @@ export async function listApplications(req, res) {
   const pageSize = Math.min(50, Math.max(1, Number(req.query.pageSize) || 10));
   const search = String(req.query.search || "").trim();
   const filter = search
-    ? {
-        $or: ["name", "email", "phone", "position"].map((field) => ({
-          [field]: { $regex: escapeRegex(search), $options: "i" },
-        })),
-      }
+    ? { $or: ["name", "email", "phone", "position"].map((field) => ({ [field]: { $regex: escapeRegex(search), $options: "i" } })) }
     : {};
   const collection = await getCollection("applications");
   const total = await collection.countDocuments(filter);
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const page = Math.min(requestedPage, totalPages);
-  const applications = await collection
-    .find(filter)
-    .sort({ createdAt: -1 })
-    .skip((page - 1) * pageSize)
-    .limit(pageSize)
-    .toArray();
+  const applications = await collection.find(filter).sort({ createdAt: -1 }).skip((page - 1) * pageSize).limit(pageSize).toArray();
   const safeApplications = applications.map((application) => {
     const safeApplication = { ...application };
     privateCvFields.forEach((field) => delete safeApplication[field]);
@@ -211,17 +176,10 @@ export async function listApplications(req, res) {
 export async function uploadImage(req, res) {
   if (!req.file) return res.status(400).json({ error: "Image file is required" });
   const requestedFolder = String(req.body.folder || "spg/content");
-  const folder = /^spg\/(posts|jobs)$/.test(requestedFolder)
-    ? requestedFolder
-    : "spg/content";
+  const folder = /^spg\/(posts|jobs)$/.test(requestedFolder) ? requestedFolder : "spg/content";
   const uploaded = await uploadFile(req.file, { folder });
   return res.status(201).json({
-    data: {
-      url: uploaded.secure_url,
-      publicId: uploaded.public_id,
-      width: uploaded.width,
-      height: uploaded.height,
-    },
+    data: { url: uploaded.secure_url, publicId: uploaded.public_id, width: uploaded.width, height: uploaded.height },
   });
 }
 
@@ -247,9 +205,7 @@ export async function downloadApplicationCv(req, res) {
   } else if (legacyAsset && isCloudinaryConfigured()) {
     cvUrl = createPrivateDownloadUrl({
       ...legacyAsset,
-      format:
-        legacyAsset.format ||
-        createCvDownloadMetadata(item, { sourceUrl: legacyCvUrl }).extension,
+      format: legacyAsset.format || createCvDownloadMetadata(item, { sourceUrl: legacyCvUrl }).extension,
     });
   } else {
     cvUrl = legacyCvUrl;
