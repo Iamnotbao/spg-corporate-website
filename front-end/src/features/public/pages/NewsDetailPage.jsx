@@ -3,6 +3,7 @@ import ContentAttachment from '../components/ContentAttachment.jsx';
 import { ContentError, DetailLoading } from '../components/ContentState.jsx';
 import DetailCarousel from '../components/DetailCarousel.jsx';
 import PublicLayout from '../components/PublicLayout.jsx';
+import RelatedContent from '../components/RelatedContent.jsx';
 import TextContent from '../components/TextContent.jsx';
 import {
   useDocumentTitle,
@@ -11,7 +12,7 @@ import {
 } from '../hooks/usePublicContent.js';
 import { formatPublishedDate, getContentImages } from '../utils/content.js';
 
-export default function NewsDetailPage({ loadPost }) {
+export default function NewsDetailPage({ loadPost, loadPosts }) {
   const { id } = useParams();
   const { data: post, status, retry } = usePublicDetail(loadPost, id);
   const publishedDate = formatPublishedDate(
@@ -50,7 +51,7 @@ export default function NewsDetailPage({ loadPost }) {
                   <span aria-hidden="true">/</span>
                   <Link to="/#news">Tin tức</Link>
                 </nav>
-                <p className="public-eyebrow">SPG News</p>
+                <p className="public-eyebrow">{post.category || 'SPG News'}</p>
                 <h1>{post.title || 'Tin tức SPG'}</h1>
                 <div className="public-detail__byline">
                   <span>SPG Logistics</span>
@@ -70,6 +71,7 @@ export default function NewsDetailPage({ loadPost }) {
                 {post.excerpt && <p className="public-article-lead">{post.excerpt}</p>}
                 <TextContent text={post.content || post.description} />
                 <ContentAttachment item={post} label="Tài liệu bài viết" />
+                {loadPosts && <RelatedContent current={post} loadItems={loadPosts} type="posts" />}
 
                 <div className="public-detail__back">
                   <Link className="public-link-arrow" to="/#news">

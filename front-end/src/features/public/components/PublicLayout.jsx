@@ -1,3 +1,4 @@
+import BackToTop from './BackToTop.jsx';
 import SiteFooter from './SiteFooter.jsx';
 import SiteHeader from './SiteHeader.jsx';
 
@@ -10,6 +11,7 @@ export default function PublicLayout({ children }) {
       <SiteHeader />
       <main id="public-main-content">{children}</main>
       <SiteFooter />
+      <BackToTop />
     </div>
   );
 }
