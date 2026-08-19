@@ -74,6 +74,62 @@ export async function deleteAdminUser(id) {
   });
 }
 
+export async function getAdminBanner(options = {}) {
+  return apiRequest('/admin/communications/banner', {
+    method: 'GET',
+    auth: true,
+    signal: options.signal,
+  });
+}
+
+export async function updateAdminBanner(payload) {
+  return apiRequest('/admin/communications/banner', {
+    method: 'PUT',
+    auth: true,
+    body: payload,
+  });
+}
+
+export async function listAdminNotifications(options = {}) {
+  const params = new URLSearchParams({
+    page: String(options.page || 1),
+    pageSize: String(options.pageSize || 10),
+  });
+  if (options.search) params.set('search', options.search);
+  if (options.published !== '' && options.published != null) {
+    params.set('published', String(options.published));
+  }
+
+  return apiRequest(`/admin/communications/notifications?${params.toString()}`, {
+    method: 'GET',
+    auth: true,
+    signal: options.signal,
+  });
+}
+
+export async function createAdminNotification(payload) {
+  return apiRequest('/admin/communications/notifications', {
+    method: 'POST',
+    auth: true,
+    body: payload,
+  });
+}
+
+export async function updateAdminNotification(id, payload) {
+  return apiRequest(`/admin/communications/notifications/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    auth: true,
+    body: payload,
+  });
+}
+
+export async function deleteAdminNotification(id) {
+  return apiRequest(`/admin/communications/notifications/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    auth: true,
+  });
+}
+
 export async function listAdminContent(type, options = {}) {
   assertContentType(type);
   const params = new URLSearchParams({
