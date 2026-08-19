@@ -2,6 +2,7 @@ import BackToTop from './BackToTop.jsx';
 import PublicCommunications from './PublicCommunications.jsx';
 import SiteFooter from './SiteFooter.jsx';
 import SiteHeader from './SiteHeader.jsx';
+import SocialChatDock from './SocialChatDock.jsx';
 import '../../../styles/public-communications.css';
 
 export default function PublicLayout({ children }) {
@@ -15,6 +16,7 @@ export default function PublicLayout({ children }) {
       <main id="public-main-content">{children}</main>
       <SiteFooter />
       <BackToTop />
+      <SocialChatDock />
     </div>
   );
 }
