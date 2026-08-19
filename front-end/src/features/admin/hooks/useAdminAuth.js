@@ -5,12 +5,13 @@ import {
   setAdminToken,
   verifyAdminSession,
 } from '../../../services/adminService.js';
-import { getErrorMessage, isUnauthorized } from '../utils.js';
+import { getErrorMessage } from '../utils.js';
 
 export function useAdminAuth() {
   const [status, setStatus] = useState(() =>
     getAdminToken() ? 'checking' : 'signedOut',
   );
+  const [user, setUser] = useState(null);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -21,15 +22,17 @@ export function useAdminAuth() {
     setStatus('checking');
 
     verifyAdminSession({ signal: controller.signal })
-      .then(() => {
+      .then((payload) => {
+        setUser(payload?.user || null);
         setError('');
         setStatus('signedIn');
       })
       .catch((sessionError) => {
         if (sessionError?.name === 'AbortError') return;
-        if (isUnauthorized(sessionError)) setAdminToken('');
+        if (sessionError?.status === 401) setAdminToken('');
+        setUser(null);
         setError(
-          isUnauthorized(sessionError)
+          sessionError?.status === 401
             ? 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'
             : getErrorMessage(
                 sessionError,
@@ -42,17 +45,19 @@ export function useAdminAuth() {
     return () => controller.abort();
   }, []);
 
-  const login = useCallback(async (password) => {
+  const login = useCallback(async (username, password) => {
     setSubmitting(true);
     setError('');
     try {
-      await loginAdmin(password);
+      const payload = await loginAdmin(username, password);
+      setUser(payload?.user || null);
       setStatus('signedIn');
       return true;
     } catch (loginError) {
+      setUser(null);
       setError(
         loginError?.status === 401
-          ? 'Mật khẩu quản trị không đúng.'
+          ? 'Tên đăng nhập hoặc mật khẩu không đúng.'
           : getErrorMessage(loginError, 'Không thể đăng nhập lúc này.'),
       );
       return false;
@@ -63,13 +68,15 @@ export function useAdminAuth() {
 
   const logout = useCallback(() => {
     setAdminToken('');
+    setUser(null);
     setError('');
     setStatus('signedOut');
   }, []);
 
   const handleUnauthorized = useCallback((requestError) => {
-    if (!isUnauthorized(requestError)) return false;
+    if (requestError?.status !== 401) return false;
     setAdminToken('');
+    setUser(null);
     setError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
     setStatus('signedOut');
     return true;
@@ -77,6 +84,7 @@ export function useAdminAuth() {
 
   return {
     status,
+    user,
     error,
     submitting,
     login,
