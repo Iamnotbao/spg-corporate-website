@@ -1,6 +1,12 @@
 import { ADMIN_SECTIONS } from '../constants.js';
 import AdminIcon from './AdminIcon.jsx';
 
+function can(currentUser, permission) {
+  if (!permission || currentUser?.role === 'admin') return true;
+  const permissions = Array.isArray(currentUser?.permissions) ? currentUser.permissions : [];
+  return permissions.includes('*') || permissions.includes(permission);
+}
+
 export default function AdminLayout({
   activeSection,
   children,
@@ -10,7 +16,7 @@ export default function AdminLayout({
   onNavigate,
 }) {
   const role = currentUser?.role || 'employee';
-  const sections = ADMIN_SECTIONS.filter((item) => !item.roles || item.roles.includes(role));
+  const sections = ADMIN_SECTIONS.filter((item) => can(currentUser, item.permission));
 
   return (
     <div className="admin-shell">
