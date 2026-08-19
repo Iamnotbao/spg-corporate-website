@@ -13,14 +13,22 @@ export default function SiteHeader() {
       label: t('about'),
       href: '/#about',
       children: [
-        [t('coreValues'), '/#about'], [t('vision'), '/#about'], [t('highlights'), '/#about'],
-        [t('journey'), '/#journey'], [t('partners'), '/#services'], [t('location'), '/#contact'],
-        [t('achievements'), '/#journey'], [t('workplace'), '/#careers'],
+        [t('coreValues'), '/#about'],
+        [t('vision'), '/#about'],
+        [t('highlights'), '/company/highlights'],
+        [t('journey'), '/#journey'],
+        [t('partners'), '/company/partners'],
+        [t('location'), '/company/location'],
+        [t('achievements'), '/company/highlights'],
+        [t('workplace'), '/#careers'],
       ],
     },
     {
       label: t('services'), href: '/#services', children: [
-        [t('transport'), '/#services'], [t('warehouse'), '/#services'], [t('consulting'), '/#services'], [t('process'), '/#process'],
+        [t('transport'), '/#services'],
+        [t('warehouse'), '/#services'],
+        [t('consulting'), '/company/supply-chain-consulting'],
+        [t('process'), '/#process'],
       ],
     },
     {

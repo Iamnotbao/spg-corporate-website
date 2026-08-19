@@ -35,12 +35,8 @@ export default function LanguageSwitcher() {
   }, []);
 
   useEffect(() => {
-    function onPointerDown(event) {
-      if (!rootRef.current?.contains(event.target)) setOpen(false);
-    }
-    function onKeyDown(event) {
-      if (event.key === 'Escape') setOpen(false);
-    }
+    function onPointerDown(event) { if (!rootRef.current?.contains(event.target)) setOpen(false); }
+    function onKeyDown(event) { if (event.key === 'Escape') setOpen(false); }
     document.addEventListener('pointerdown', onPointerDown);
     document.addEventListener('keydown', onKeyDown);
     return () => {
@@ -58,10 +54,7 @@ export default function LanguageSwitcher() {
     window.dispatchEvent(new CustomEvent('spg-language-change', { detail: { code: next } }));
   }
 
-  function choose(next) {
-    applyLanguage(next);
-    setOpen(false);
-  }
+  function choose(next) { applyLanguage(next); setOpen(false); }
 
   return (
     <div className={`public-language-control${open ? ' is-open' : ''}`} ref={rootRef}>
@@ -95,7 +88,6 @@ export default function LanguageSwitcher() {
               >
                 <span>{getLabel(item)}</span>
                 <small>{String(item.code || '').toUpperCase()}</small>
-                {active && <i aria-hidden="true">✓</i>}
               </button>
             );
           })}

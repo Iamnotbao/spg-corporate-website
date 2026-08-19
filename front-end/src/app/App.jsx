@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import PublicApp, { CareerDetail, NewsDetail } from '../features/public/PublicApp.jsx';
+import TopicPage from '../features/public/pages/TopicPage.jsx';
 
 const AdminApp = lazy(() => import('../features/admin/AdminApp.jsx'));
 
@@ -18,6 +19,7 @@ export default function App() {
       <Route path="/admin/*" element={<AdminRoute />} />
       <Route path="/news/:id" element={<NewsDetail />} />
       <Route path="/careers/:id" element={<CareerDetail />} />
+      <Route path="/company/:topic" element={<TopicPage />} />
       <Route path="*" element={<PublicApp />} />
     </Routes>
   );
