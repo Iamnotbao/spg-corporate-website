@@ -8,6 +8,7 @@ import {
 import '../../styles/public.css';
 import '../../styles/content-attachment.css';
 import '../../styles/professional-navigation.css';
+import '../../styles/public-dark-fixes.css';
 import CareerDetailPage from './pages/CareerDetailPage.jsx';
 import HomePage from './pages/HomePage.jsx';
 import NewsDetailPage from './pages/NewsDetailPage.jsx';
