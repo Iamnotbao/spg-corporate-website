@@ -4,6 +4,7 @@ import ContentAttachment from '../components/ContentAttachment.jsx';
 import { ContentError, DetailLoading } from '../components/ContentState.jsx';
 import DetailCarousel from '../components/DetailCarousel.jsx';
 import PublicLayout from '../components/PublicLayout.jsx';
+import RelatedContent from '../components/RelatedContent.jsx';
 import TextContent from '../components/TextContent.jsx';
 import {
   useDocumentTitle,
@@ -23,7 +24,7 @@ function JobFact({ label, value }) {
   );
 }
 
-export default function CareerDetailPage({ loadJob, submitApplication }) {
+export default function CareerDetailPage({ loadJob, loadJobs, submitApplication }) {
   const { id } = useParams();
   const { data: job, status, retry } = usePublicDetail(loadJob, id);
 
@@ -100,6 +101,7 @@ export default function CareerDetailPage({ loadJob, submitApplication }) {
                 )}
 
                 <ContentAttachment item={job} label="Tài liệu tuyển dụng" />
+                {loadJobs && <RelatedContent current={job} loadItems={loadJobs} type="jobs" />}
 
                 <Link className="public-link-arrow" to="/#careers">
                   <span aria-hidden="true">←</span>
