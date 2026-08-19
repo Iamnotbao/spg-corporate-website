@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
+import { rateLimit } from "express-rate-limit";
 import adminRoutes from "./routes/admin.routes.js";
 import publicRoutes from "./routes/public.routes.js";
 import { env } from "./config/env.js";
@@ -22,6 +23,15 @@ const configuredOrigins = String(env.frontendUrl)
   .map(normalizeOrigin)
   .filter(Boolean);
 
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 600,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  skip: (req) => req.path === "/events",
+  message: { error: "Quá nhiều yêu cầu. Vui lòng thử lại sau." },
+});
+
 app.use(
   cors({
     origin(origin, callback) {
@@ -38,7 +48,8 @@ app.use(
 );
 
 app.use(helmet());
-app.use(express.json());
+app.use(express.json({ limit: "1mb" }));
+app.use("/api", apiLimiter);
 app.use("/api/admin", adminRoutes);
 app.use("/api", publicRoutes);
 app.get("/health", (_, res) => res.json({ ok: true }));
