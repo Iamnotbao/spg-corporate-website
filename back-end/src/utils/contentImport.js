@@ -2,6 +2,7 @@ import { inflateRawSync } from "node:zlib";
 
 const MAX_XLSX_XML_BYTES = 10 * 1024 * 1024;
 const MAX_IMPORT_ROWS = 500;
+const XML_PREFIX = "(?:[\\w.-]+:)?";
 
 const FIELD_ALIASES = {
   title: ["title", "tieu de", "ten", "ten bai viet", "vi tri", "ten vi tri", "position"],
@@ -191,11 +192,14 @@ function resolveFirstWorksheet(buffer, entries) {
   const rels = readZipEntry(buffer, entries, "xl/_rels/workbook.xml.rels");
   if (!workbook || !rels) return "xl/worksheets/sheet1.xml";
 
-  const sheetTag = workbook.match(/<sheet\b[^>]*\br:id=["'][^"']+["'][^>]*>/i)?.[0];
+  const sheetTag = workbook.match(
+    new RegExp(`<${XML_PREFIX}sheet\\b[^>]*\\br:id=["'][^"']+["'][^>]*>`, "i"),
+  )?.[0];
   const relationId = sheetTag ? xmlAttribute(sheetTag, "r:id") : "";
   if (!relationId) return "xl/worksheets/sheet1.xml";
 
-  const relationships = rels.match(/<Relationship\b[^>]*>/gi) || [];
+  const relationships =
+    rels.match(new RegExp(`<${XML_PREFIX}Relationship\\b[^>]*>`, "gi")) || [];
   const relation = relationships.find((tag) => xmlAttribute(tag, "Id") === relationId);
   const target = relation ? xmlAttribute(relation, "Target") : "";
   if (!target) return "xl/worksheets/sheet1.xml";
@@ -205,8 +209,17 @@ function resolveFirstWorksheet(buffer, entries) {
 
 function parseSharedStrings(xml) {
   if (!xml) return [];
-  return [...xml.matchAll(/<si\b[^>]*>([\s\S]*?)<\/si>/gi)].map((match) => {
-    const texts = [...match[1].matchAll(/<t\b[^>]*>([\s\S]*?)<\/t>/gi)];
+  const itemPattern = new RegExp(
+    `<${XML_PREFIX}si\\b[^>]*>([\\s\\S]*?)<\\/${XML_PREFIX}si>`,
+    "gi",
+  );
+  const textPattern = new RegExp(
+    `<${XML_PREFIX}t\\b[^>]*>([\\s\\S]*?)<\\/${XML_PREFIX}t>`,
+    "gi",
+  );
+
+  return [...xml.matchAll(itemPattern)].map((match) => {
+    const texts = [...match[1].matchAll(textPattern)];
     return decodeXml(texts.map((item) => item[1]).join(""));
   });
 }
@@ -221,11 +234,19 @@ function columnIndexFromReference(reference) {
 function cellValue(cellTag, body, sharedStrings) {
   const type = xmlAttribute(cellTag, "t");
   if (type === "inlineStr") {
-    const texts = [...body.matchAll(/<t\b[^>]*>([\s\S]*?)<\/t>/gi)];
+    const textPattern = new RegExp(
+      `<${XML_PREFIX}t\\b[^>]*>([\\s\\S]*?)<\\/${XML_PREFIX}t>`,
+      "gi",
+    );
+    const texts = [...body.matchAll(textPattern)];
     return decodeXml(texts.map((item) => item[1]).join(""));
   }
 
-  const raw = body.match(/<v\b[^>]*>([\s\S]*?)<\/v>/i)?.[1] ?? "";
+  const valuePattern = new RegExp(
+    `<${XML_PREFIX}v\\b[^>]*>([\\s\\S]*?)<\\/${XML_PREFIX}v>`,
+    "i",
+  );
+  const raw = body.match(valuePattern)?.[1] ?? "";
   const value = decodeXml(raw);
   if (type === "s") return sharedStrings[Number(value)] ?? "";
   if (type === "b") return value === "1";
@@ -234,9 +255,18 @@ function cellValue(cellTag, body, sharedStrings) {
 
 function parseWorksheetRows(xml, sharedStrings) {
   const rows = [];
-  for (const rowMatch of xml.matchAll(/<row\b[^>]*>([\s\S]*?)<\/row>/gi)) {
+  const rowPattern = new RegExp(
+    `<${XML_PREFIX}row\\b[^>]*>([\\s\\S]*?)<\\/${XML_PREFIX}row>`,
+    "gi",
+  );
+  const cellPattern = new RegExp(
+    `(<${XML_PREFIX}c\\b[^>]*>)([\\s\\S]*?)<\\/${XML_PREFIX}c>`,
+    "gi",
+  );
+
+  for (const rowMatch of xml.matchAll(rowPattern)) {
     const values = [];
-    for (const cellMatch of rowMatch[1].matchAll(/(<c\b[^>]*>)([\s\S]*?)<\/c>/gi)) {
+    for (const cellMatch of rowMatch[1].matchAll(cellPattern)) {
       const reference = xmlAttribute(cellMatch[1], "r");
       values[columnIndexFromReference(reference)] = cellValue(
         cellMatch[1],
