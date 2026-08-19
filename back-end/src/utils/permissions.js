@@ -25,6 +25,9 @@ export const PERMISSIONS = [
   "languages.create",
   "languages.update",
   "languages.delete",
+  "chat.read",
+  "chat.reply",
+  "chat.settings",
   "settings.read",
   "settings.update",
 ];
