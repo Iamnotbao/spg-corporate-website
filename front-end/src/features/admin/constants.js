@@ -75,6 +75,8 @@ export const EMPTY_CONTENT = {
     workingHours: '',
     imageUrl: '',
     imagePublicId: '',
+    images: [],
+    imagePublicIds: [],
     published: true,
   },
 };
