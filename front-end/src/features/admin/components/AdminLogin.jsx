@@ -2,11 +2,12 @@ import { useState } from 'react';
 import AdminIcon from './AdminIcon.jsx';
 
 export default function AdminLogin({ error, onSubmit, submitting, checking = false }) {
+  const [username, setUsername] = useState('admin');
   const [password, setPassword] = useState('');
 
   async function handleSubmit(event) {
     event.preventDefault();
-    const success = await onSubmit(password);
+    const success = await onSubmit(username, password);
     if (!success) setPassword('');
   }
 
@@ -19,7 +20,7 @@ export default function AdminLogin({ error, onSubmit, submitting, checking = fal
         <p className="admin-eyebrow">Cổng quản trị nội dung</p>
         <h1 id="admin-login-title">Chào mừng trở lại</h1>
         <p className="admin-login__subtitle">
-          Đăng nhập để quản lý website SPG Corporate.
+          Đăng nhập bằng tài khoản được cấp để quản lý website SPG Corporate.
         </p>
 
         {checking ? (
@@ -29,11 +30,22 @@ export default function AdminLogin({ error, onSubmit, submitting, checking = fal
           </div>
         ) : (
           <form className="admin-login__form" onSubmit={handleSubmit}>
-            <label htmlFor="admin-password">Mật khẩu quản trị</label>
+            <label htmlFor="admin-username">Tên đăng nhập</label>
+            <input
+              id="admin-username"
+              autoComplete="username"
+              autoFocus
+              disabled={submitting}
+              onChange={(event) => setUsername(event.target.value)}
+              placeholder="Ví dụ: admin"
+              required
+              type="text"
+              value={username}
+            />
+            <label htmlFor="admin-password">Mật khẩu</label>
             <input
               id="admin-password"
               autoComplete="current-password"
-              autoFocus
               disabled={submitting}
               onChange={(event) => setPassword(event.target.value)}
               placeholder="Nhập mật khẩu"
