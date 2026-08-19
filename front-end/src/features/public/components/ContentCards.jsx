@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getPublicCategories } from '../../../services/categoryService.js';
 import '../../../styles/news-categories.css';
+import { localizeContent, usePublicMessages } from '../i18n.js';
 import { formatPublishedDate, getContentId, getExcerpt } from '../utils/content.js';
 import { EmptyState } from './ContentState.jsx';
 import Pagination from './Pagination.jsx';
@@ -16,7 +17,12 @@ const FALLBACK_CATEGORIES = [
   { slug: 'achievement', name: 'Thành tựu' },
 ];
 
-function NewsCard({ categoryLabels, item }) {
+const CATEGORY_KEYS = {
+  activity: 'activities', talent: 'talent', union: 'union', company: 'companyNews', achievement: 'achievements',
+};
+
+function NewsCard({ categoryLabels, item, language, t }) {
+  const localized = localizeContent(item, language);
   const id = getContentId(item);
   const dateValue = item.publishedAt || item.createdAt || item.updatedAt;
   const date = formatPublishedDate(dateValue);
@@ -25,40 +31,41 @@ function NewsCard({ categoryLabels, item }) {
   return (
     <article className="public-content-card public-content-card--news">
       <Link className="public-content-card__media-link" to={id ? `/news/${id}` : '/#news'}>
-        <SafeImage src={item.imageUrl} alt={item.title} />
+        <SafeImage src={item.imageUrl} alt={localized.title} />
       </Link>
       <div className="public-content-card__body">
         <div className="public-content-card__meta">
-          <span>{categoryLabels[category] || 'SPG News'}</span>
+          <span>{CATEGORY_KEYS[category] ? t(CATEGORY_KEYS[category]) : categoryLabels[category] || 'SPG News'}</span>
           {date && <time dateTime={dateValue}>{date}</time>}
         </div>
-        <h3><Link to={id ? `/news/${id}` : '/#news'}>{item.title || 'Tin tức SPG'}</Link></h3>
-        <p>{getExcerpt(item, 'Cập nhật mới nhất từ SPG Logistics.')}</p>
+        <h3><Link to={id ? `/news/${id}` : '/#news'}>{localized.title || t('newsFallback')}</Link></h3>
+        <p>{getExcerpt(localized, language === 'vi' ? 'Cập nhật mới nhất từ SPG Logistics.' : '')}</p>
         <Link className="public-text-link" to={id ? `/news/${id}` : '/#news'}>
-          Đọc bài viết <span aria-hidden="true">↗</span>
+          {t('readArticle')} <span aria-hidden="true">↗</span>
         </Link>
       </div>
     </article>
   );
 }
 
-function JobCard({ item }) {
+function JobCard({ item, language, t }) {
+  const localized = localizeContent(item, language);
   const id = getContentId(item);
   return (
     <article className="public-content-card public-content-card--job">
       <div className="public-content-card__media-link">
-        <SafeImage src={item.imageUrl} alt={item.title} />
-        <span className="public-content-card__opening">Đang tuyển</span>
+        <SafeImage src={item.imageUrl} alt={localized.title} />
+        <span className="public-content-card__opening">{t('hiring')}</span>
       </div>
       <div className="public-content-card__body">
         <div className="public-content-card__tags">
-          <span>{item.location || 'Việt Nam'}</span>
-          <span>{item.type || 'Full-time'}</span>
+          <span>{localized.location || (language === 'vi' ? 'Việt Nam' : 'Vietnam')}</span>
+          <span>{localized.type || 'Full-time'}</span>
         </div>
-        <h3>{item.title || 'Cơ hội nghề nghiệp tại SPG'}</h3>
-        <p>{getExcerpt(item, 'Khám phá cơ hội phát triển cùng đội ngũ SPG Logistics.')}</p>
+        <h3>{localized.title || t('jobFallback')}</h3>
+        <p>{getExcerpt(localized, '')}</p>
         <Link className="public-button public-button--compact" to={id ? `/careers/${id}` : '/#careers'}>
-          Xem vị trí <span aria-hidden="true">↗</span>
+          {t('viewPosition')} <span aria-hidden="true">↗</span>
         </Link>
       </div>
     </article>
@@ -67,6 +74,7 @@ function JobCard({ item }) {
 
 export default function ContentCards({ emptyMessage, items, label, type }) {
   const isNews = type === 'news';
+  const { language, t } = usePublicMessages();
   const [page, setPage] = useState(1);
   const [category, setCategory] = useState('all');
   const [categories, setCategories] = useState(FALLBACK_CATEGORIES);
@@ -75,23 +83,13 @@ export default function ContentCards({ emptyMessage, items, label, type }) {
     if (!isNews) return undefined;
     const controller = new AbortController();
     getPublicCategories({ type: 'posts', signal: controller.signal })
-      .then((data) => {
-        if (data.length) setCategories(data);
-      })
+      .then((data) => { if (data.length) setCategories(data); })
       .catch(() => undefined);
     return () => controller.abort();
   }, [isNews]);
 
-  const categoryLabels = useMemo(
-    () => Object.fromEntries(categories.map((item) => [item.slug, item.name])),
-    [categories],
-  );
-
-  const tabs = useMemo(
-    () => [{ slug: 'all', name: 'Tất cả' }, ...categories.filter((item) => item.active !== false)],
-    [categories],
-  );
-
+  const categoryLabels = useMemo(() => Object.fromEntries(categories.map((item) => [item.slug, item.name])), [categories]);
+  const tabs = useMemo(() => [{ slug: 'all', name: t('all') }, ...categories.filter((item) => item.active !== false)], [categories, t]);
   const filteredItems = useMemo(() => {
     if (!isNews || category === 'all') return items;
     return items.filter((item) => (item.category || 'activity') === category);
@@ -100,19 +98,13 @@ export default function ContentCards({ emptyMessage, items, label, type }) {
   const categoryCounts = useMemo(() => {
     if (!isNews) return {};
     return items.reduce((counts, item) => {
-      const key = item.category || 'activity';
-      counts.all += 1;
-      counts[key] = (counts[key] || 0) + 1;
-      return counts;
+      const key = item.category || 'activity'; counts.all += 1; counts[key] = (counts[key] || 0) + 1; return counts;
     }, { all: 0 });
   }, [isNews, items]);
 
   const totalPages = Math.max(1, Math.ceil(filteredItems.length / PAGE_SIZE));
-
   useEffect(() => { setPage(1); }, [category, items.length]);
-  useEffect(() => {
-    if (category !== 'all' && !tabs.some((item) => item.slug === category)) setCategory('all');
-  }, [category, tabs]);
+  useEffect(() => { if (category !== 'all' && !tabs.some((item) => item.slug === category)) setCategory('all'); }, [category, tabs]);
 
   const visibleItems = useMemo(() => {
     const start = (page - 1) * PAGE_SIZE;
@@ -124,17 +116,10 @@ export default function ContentCards({ emptyMessage, items, label, type }) {
   return (
     <div>
       {isNews && (
-        <div className="public-news-tabs" aria-label="Nhóm tin tức" role="tablist">
+        <div className="public-news-tabs" aria-label={t('news')} role="tablist">
           {tabs.map((tab) => (
-            <button
-              aria-selected={category === tab.slug}
-              className={category === tab.slug ? 'is-active' : ''}
-              key={tab.slug}
-              onClick={() => setCategory(tab.slug)}
-              role="tab"
-              type="button"
-            >
-              <span>{tab.name}</span>
+            <button aria-selected={category === tab.slug} className={category === tab.slug ? 'is-active' : ''} key={tab.slug} onClick={() => setCategory(tab.slug)} role="tab" type="button">
+              <span>{tab.slug === 'all' ? t('all') : CATEGORY_KEYS[tab.slug] ? t(CATEGORY_KEYS[tab.slug]) : tab.name}</span>
               <small>{categoryCounts[tab.slug] || 0}</small>
             </button>
           ))}
@@ -144,19 +129,13 @@ export default function ContentCards({ emptyMessage, items, label, type }) {
       {filteredItems.length ? (
         <>
           <div className="public-card-grid">
-            {visibleItems.map((item) =>
-              isNews ? (
-                <NewsCard categoryLabels={categoryLabels} key={getContentId(item) || item.title} item={item} />
-              ) : (
-                <JobCard key={getContentId(item) || item.title} item={item} />
-              ),
-            )}
+            {visibleItems.map((item) => isNews
+              ? <NewsCard categoryLabels={categoryLabels} key={getContentId(item) || item.title} item={item} language={language} t={t} />
+              : <JobCard key={getContentId(item) || item.title} item={item} language={language} t={t} />)}
           </div>
           <Pagination label={label} page={page} totalPages={totalPages} onChange={setPage} />
         </>
-      ) : (
-        <EmptyState>Chưa có bài viết trong nhóm này.</EmptyState>
-      )}
+      ) : <EmptyState>{t('emptyCategory')}</EmptyState>}
     </div>
   );
 }
