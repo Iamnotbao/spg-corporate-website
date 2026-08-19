@@ -10,10 +10,11 @@ const ALLOWED_IMAGE_TYPES = new Set([
   'image/gif',
 ]);
 
-export default function PostGalleryField({ form, onChange, onError, onUnauthorized }) {
+export default function PostGalleryField({ form, onChange, onError, onUnauthorized, type = 'posts' }) {
   const [uploading, setUploading] = useState(false);
   const images = Array.isArray(form.images) ? form.images : [];
   const publicIds = Array.isArray(form.imagePublicIds) ? form.imagePublicIds : [];
+  const label = type === 'jobs' ? 'tin tuyển dụng' : 'bài viết';
 
   async function handleFiles(event) {
     const files = [...(event.target.files || [])];
@@ -29,7 +30,7 @@ export default function PostGalleryField({ form, onChange, onError, onUnauthoriz
     }
 
     if (images.length + files.length > 12) {
-      onError('Mỗi bài viết hỗ trợ tối đa 12 ảnh trong thư viện.');
+      onError(`Mỗi ${label} hỗ trợ tối đa 12 ảnh trong thư viện.`);
       return;
     }
 
@@ -38,9 +39,9 @@ export default function PostGalleryField({ form, onChange, onError, onUnauthoriz
     try {
       const uploaded = [];
       for (const file of files) {
-        // Upload tuần tự để tránh làm nghẽn Render/Cloudinary khi chọn nhiều ảnh lớn.
+        // Upload tuần tự để tránh tạo burst lớn lên Render/Cloudinary.
         // eslint-disable-next-line no-await-in-loop
-        uploaded.push(await uploadAdminImage(file, 'spg/posts'));
+        uploaded.push(await uploadAdminImage(file, `spg/${type}`));
       }
       onChange({
         images: [...images, ...uploaded.map((item) => item.url)],
@@ -66,7 +67,7 @@ export default function PostGalleryField({ form, onChange, onError, onUnauthoriz
       <div className="admin-post-gallery__heading">
         <div>
           <strong>Thư viện ảnh</strong>
-          <span>Tối đa 12 ảnh · hiển thị thành carousel ở bài viết.</span>
+          <span>Tối đa 12 ảnh · phía client có thể hiển thị bằng carousel.</span>
         </div>
         <label className="admin-button admin-button--secondary">
           {uploading ? <span className="admin-spinner" /> : <AdminIcon name="image" size={17} />}
@@ -85,14 +86,8 @@ export default function PostGalleryField({ form, onChange, onError, onUnauthoriz
         <div className="admin-post-gallery__grid">
           {images.map((url, index) => (
             <figure key={`${url}-${index}`}>
-              <img alt={`Ảnh bài viết ${index + 1}`} src={url} />
-              <button
-                aria-label={`Xóa ảnh ${index + 1}`}
-                onClick={() => removeImage(index)}
-                type="button"
-              >
-                ×
-              </button>
+              <img alt={`Ảnh ${label} ${index + 1}`} src={url} />
+              <button aria-label={`Xóa ảnh ${index + 1}`} onClick={() => removeImage(index)} type="button">×</button>
               <figcaption>{String(index + 1).padStart(2, '0')}</figcaption>
             </figure>
           ))}
