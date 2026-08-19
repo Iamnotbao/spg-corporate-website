@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { createAdminContent, updateAdminContent } from '../../services/adminService.js';
 import '../../styles/admin.css';
 import '../../styles/content-import.css';
+import './styles/users.css';
 import ApplicationsPanel from './components/ApplicationsPanel.jsx';
 import AdminLayout from './components/AdminLayout.jsx';
 import AdminLogin from './components/AdminLogin.jsx';
@@ -9,6 +10,7 @@ import ContentDetailModal from './components/ContentDetailModal.jsx';
 import ContentEditor from './components/ContentEditor.jsx';
 import ContentWorkspace from './components/ContentWorkspace.jsx';
 import OverviewPanel from './components/OverviewPanel.jsx';
+import UsersPanel from './components/UsersPanel.jsx';
 import { AdminToast } from './components/AdminFeedback.jsx';
 import { ADMIN_SECTIONS, CONTENT_LABELS } from './constants.js';
 import { useAdminAuth } from './hooks/useAdminAuth.js';
@@ -28,11 +30,23 @@ export default function AdminApp() {
     setToast((current) => ({ ...current, message: '' }));
   }, []);
 
+  const canAccess = useCallback(
+    (nextSection) => {
+      const item = ADMIN_SECTIONS.find((entry) => entry.key === nextSection);
+      return !item?.roles || item.roles.includes(auth.user?.role || 'employee');
+    },
+    [auth.user?.role],
+  );
+
   const navigate = useCallback((nextSection) => {
+    if (!canAccess(nextSection)) {
+      notify('Tài khoản không có quyền truy cập mục này.', 'error');
+      return;
+    }
     setDetail(null);
     setEditor(null);
     setSection(nextSection);
-  }, []);
+  }, [canAccess, notify]);
 
   const openCreate = useCallback((type) => {
     setEditor({ type, item: null });
@@ -86,6 +100,7 @@ export default function AdminApp() {
   return (
     <AdminLayout
       activeSection={editor?.type || section}
+      currentUser={auth.user}
       headerTitle={headerTitle}
       onLogout={auth.logout}
       onNavigate={navigate}
@@ -110,6 +125,12 @@ export default function AdminApp() {
           onUnauthorized={auth.handleUnauthorized}
           onView={(item) => setDetail({ item, type: section })}
           type={section}
+        />
+      ) : section === 'users' ? (
+        <UsersPanel
+          currentUser={auth.user}
+          onNotify={notify}
+          onUnauthorized={auth.handleUnauthorized}
         />
       ) : (
         <ApplicationsPanel onNotify={notify} onUnauthorized={auth.handleUnauthorized} />
