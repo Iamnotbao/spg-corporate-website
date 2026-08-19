@@ -18,7 +18,6 @@ export default function BackToTop() {
       type="button"
     >
       <span aria-hidden="true">↑</span>
-      <small>TOP</small>
     </button>
   );
 }
