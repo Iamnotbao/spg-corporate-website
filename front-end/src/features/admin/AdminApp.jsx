@@ -3,9 +3,11 @@ import { createAdminContent, updateAdminContent } from '../../services/adminServ
 import '../../styles/admin.css';
 import '../../styles/content-import.css';
 import './styles/users.css';
+import './styles/communications.css';
 import ApplicationsPanel from './components/ApplicationsPanel.jsx';
 import AdminLayout from './components/AdminLayout.jsx';
 import AdminLogin from './components/AdminLogin.jsx';
+import CommunicationsPanel from './components/CommunicationsPanel.jsx';
 import ContentDetailModal from './components/ContentDetailModal.jsx';
 import ContentEditor from './components/ContentEditor.jsx';
 import ContentWorkspace from './components/ContentWorkspace.jsx';
@@ -125,6 +127,11 @@ export default function AdminApp() {
           onUnauthorized={auth.handleUnauthorized}
           onView={(item) => setDetail({ item, type: section })}
           type={section}
+        />
+      ) : section === 'communications' ? (
+        <CommunicationsPanel
+          onNotify={notify}
+          onUnauthorized={auth.handleUnauthorized}
         />
       ) : section === 'users' ? (
         <UsersPanel
