@@ -20,6 +20,22 @@ function safeUrl(value) {
   }
 }
 
+function safeGoogleMapsEmbed(value) {
+  const source = safeText(value, 5000);
+  if (!source) return "";
+  const iframeSrc = source.match(/<iframe\b[^>]*\bsrc=["']([^"']+)["']/i)?.[1];
+  const candidate = String(iframeSrc || source).replaceAll("&amp;", "&").trim();
+  try {
+    const url = new URL(candidate);
+    const hostname = url.hostname.toLowerCase();
+    const googleHost = hostname === "google.com" || hostname === "www.google.com" || hostname.endsWith(".google.com");
+    if (!googleHost || !url.pathname.startsWith("/maps/embed")) return "";
+    return url.href;
+  } catch {
+    return "";
+  }
+}
+
 function normalizeMetrics(metrics) {
   if (!Array.isArray(metrics)) return [];
   return metrics.slice(0, MAX_METRICS).map((item, index) => ({
@@ -49,6 +65,7 @@ function normalizeLocation(location = {}) {
     name: safeText(location?.name, 160),
     address: safeText(location?.address, 500),
     mapsUrl: safeUrl(location?.mapsUrl),
+    embedUrl: safeGoogleMapsEmbed(location?.embedUrl || location?.embedCode),
   };
 }
 
