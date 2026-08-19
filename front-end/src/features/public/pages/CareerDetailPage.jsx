@@ -1,5 +1,6 @@
 import { Link, useParams } from 'react-router-dom';
 import ApplicationForm from '../components/ApplicationForm.jsx';
+import ContentAttachment from '../components/ContentAttachment.jsx';
 import { ContentError, DetailLoading } from '../components/ContentState.jsx';
 import DetailCarousel from '../components/DetailCarousel.jsx';
 import PublicLayout from '../components/PublicLayout.jsx';
@@ -97,6 +98,8 @@ export default function CareerDetailPage({ loadJob, submitApplication }) {
                     <TextContent text={job.benefits} />
                   </section>
                 )}
+
+                <ContentAttachment item={job} label="Tài liệu tuyển dụng" />
 
                 <Link className="public-link-arrow" to="/#careers">
                   <span aria-hidden="true">←</span>
