@@ -1,24 +1,47 @@
 import { getCollection } from "../config/db.js";
 import { toObjectId } from "../utils/objectId.js";
 
-export async function listJobs(_, res) {
-  const collection = await getCollection("jobs");
-  const jobs = await collection
-    .find({ published: { $ne: false } })
+const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+async function listPublicContent(type, req, res) {
+  const requestedPage = Math.max(1, Number(req.query.page) || 1);
+  const pageSize = Math.min(50, Math.max(1, Number(req.query.pageSize || req.query.limit) || 50));
+  const search = String(req.query.search || "").trim();
+  const filter = { published: { $ne: false } };
+
+  if (search) {
+    const safe = escapeRegex(search);
+    filter.$or = ["title", "summary", "description", "content", "location"].map((field) => ({
+      [field]: { $regex: safe, $options: "i" },
+    }));
+  }
+  if (type === "posts" && req.query.category) filter.category = String(req.query.category);
+  if (type === "jobs" && req.query.type) filter.type = String(req.query.type);
+
+  const collection = await getCollection(type);
+  const total = await collection.countDocuments(filter);
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const page = Math.min(requestedPage, totalPages);
+  const data = await collection
+    .find(filter)
     .sort({ createdAt: -1 })
+    .skip((page - 1) * pageSize)
+    .limit(pageSize)
     .toArray();
 
-  res.json({ data: jobs, source: "mongodb" });
+  return res.json({
+    data,
+    source: "mongodb",
+    pagination: { page, pageSize, total, totalPages },
+  });
 }
 
-export async function listPosts(_, res) {
-  const collection = await getCollection("posts");
-  const posts = await collection
-    .find({ published: { $ne: false } })
-    .sort({ createdAt: -1 })
-    .toArray();
+export async function listJobs(req, res) {
+  return listPublicContent("jobs", req, res);
+}
 
-  res.json({ data: posts, source: "mongodb" });
+export async function listPosts(req, res) {
+  return listPublicContent("posts", req, res);
 }
 
 export async function getPublicItem(collectionName, req, res) {
@@ -63,9 +86,7 @@ export async function createApplication(req, res) {
   const resolvedPosition = position || jobTitle;
 
   if (!name?.trim() || !email?.trim() || !resolvedPosition?.trim()) {
-    return res.status(400).json({
-      error: "name, email and position are required",
-    });
+    return res.status(400).json({ error: "name, email and position are required" });
   }
 
   const collection = await getCollection("applications");
