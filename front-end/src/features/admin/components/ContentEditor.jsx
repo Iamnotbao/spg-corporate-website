@@ -1,14 +1,10 @@
 import { useMemo, useRef, useState } from 'react';
 import { uploadAdminImage } from '../../../services/adminService.js';
-import {
-  CONTENT_LABELS,
-  EMPTY_CONTENT,
-  JOB_TYPES,
-  NEWS_CATEGORIES,
-} from '../constants.js';
+import { CONTENT_LABELS, EMPTY_CONTENT, JOB_TYPES } from '../constants.js';
 import { getErrorMessage, normalizeContentPayload } from '../utils.js';
 import AdminIcon from './AdminIcon.jsx';
 import { AdminAlert } from './AdminFeedback.jsx';
+import DynamicCategoryField from './DynamicCategoryField.jsx';
 import PostGalleryField from './PostGalleryField.jsx';
 
 const ALLOWED_IMAGE_TYPES = new Set([
@@ -56,9 +52,7 @@ export default function ContentEditor({ item, onBack, onSave, onUnauthorized, ty
   }
 
   function handleBack() {
-    if (dirty && !window.confirm('Các thay đổi chưa lưu sẽ bị mất. Tiếp tục?')) {
-      return;
-    }
+    if (dirty && !window.confirm('Các thay đổi chưa lưu sẽ bị mất. Tiếp tục?')) return;
     onBack();
   }
 
@@ -117,22 +111,15 @@ export default function ContentEditor({ item, onBack, onSave, onUnauthorized, ty
     <section className="admin-panel admin-editor">
       <div className="admin-editor__topbar">
         <button className="admin-back-button" onClick={handleBack} type="button">
-          <AdminIcon name="arrowLeft" size={18} />
-          Quay lại danh sách
+          <AdminIcon name="arrowLeft" size={18} /> Quay lại danh sách
         </button>
-        <span className="admin-editor__mode">
-          {editing ? 'Đang chỉnh sửa' : 'Nội dung mới'}
-        </span>
+        <span className="admin-editor__mode">{editing ? 'Đang chỉnh sửa' : 'Nội dung mới'}</span>
       </div>
 
       <div className="admin-panel__heading admin-editor__heading">
         <div>
-          <h2>
-            {editing ? 'Chỉnh sửa' : 'Tạo'} {CONTENT_LABELS[type].singular}
-          </h2>
-          <p>
-            Những trường có dấu <span aria-hidden="true">*</span> là bắt buộc.
-          </p>
+          <h2>{editing ? 'Chỉnh sửa' : 'Tạo'} {CONTENT_LABELS[type].singular}</h2>
+          <p>Những trường có dấu <span aria-hidden="true">*</span> là bắt buộc.</p>
         </div>
       </div>
 
@@ -143,25 +130,16 @@ export default function ContentEditor({ item, onBack, onSave, onUnauthorized, ty
           <div className="admin-form-section">
             <div className="admin-form-section__heading">
               <span>01</span>
-              <div>
-                <h3>Thông tin chính</h3>
-                <p>Nội dung người xem nhìn thấy đầu tiên.</p>
-              </div>
+              <div><h3>Thông tin chính</h3><p>Nội dung người xem nhìn thấy đầu tiên.</p></div>
             </div>
 
             <label className="admin-form-field admin-form-field--full">
-              <span>
-                Tiêu đề <b aria-label="bắt buộc">*</b>
-              </span>
+              <span>Tiêu đề <b aria-label="bắt buộc">*</b></span>
               <input
                 autoFocus
                 maxLength={180}
                 onChange={(event) => updateField('title', event.target.value)}
-                placeholder={
-                  type === 'posts'
-                    ? 'Nhập tiêu đề bài viết'
-                    : 'Nhập tên vị trí tuyển dụng'
-                }
+                placeholder={type === 'posts' ? 'Nhập tiêu đề bài viết' : 'Nhập tên vị trí tuyển dụng'}
                 required
                 type="text"
                 value={form.title}
@@ -170,44 +148,22 @@ export default function ContentEditor({ item, onBack, onSave, onUnauthorized, ty
             </label>
 
             {type === 'posts' && (
-              <label className="admin-form-field admin-form-field--full">
-                <span>Nhóm tin tức</span>
-                <select
-                  onChange={(event) => updateField('category', event.target.value)}
-                  value={form.category || 'activity'}
-                >
-                  {NEWS_CATEGORIES.map((category) => (
-                    <option key={category.value} value={category.value}>
-                      {category.label}
-                    </option>
-                  ))}
-                </select>
-                <small>Nhóm này dùng cho tab tin tức và bài viết liên quan.</small>
-              </label>
+              <DynamicCategoryField
+                value={form.category || 'activity'}
+                onChange={(value) => updateField('category', value)}
+              />
             )}
 
             {type === 'jobs' && (
               <div className="admin-form-grid">
                 <label className="admin-form-field">
                   <span>Địa điểm</span>
-                  <input
-                    onChange={(event) => updateField('location', event.target.value)}
-                    placeholder="Ví dụ: Bình Dương"
-                    type="text"
-                    value={form.location}
-                  />
+                  <input onChange={(event) => updateField('location', event.target.value)} placeholder="Ví dụ: Bình Dương" type="text" value={form.location} />
                 </label>
                 <label className="admin-form-field">
                   <span>Loại công việc</span>
-                  <select
-                    onChange={(event) => updateField('type', event.target.value)}
-                    value={form.type}
-                  >
-                    {JOB_TYPES.map((jobType) => (
-                      <option key={jobType} value={jobType}>
-                        {jobType}
-                      </option>
-                    ))}
+                  <select onChange={(event) => updateField('type', event.target.value)} value={form.type}>
+                    {JOB_TYPES.map((jobType) => <option key={jobType} value={jobType}>{jobType}</option>)}
                   </select>
                 </label>
               </div>
@@ -215,152 +171,84 @@ export default function ContentEditor({ item, onBack, onSave, onUnauthorized, ty
 
             <label className="admin-form-field admin-form-field--full">
               <span>Tóm tắt</span>
-              <textarea
-                maxLength={500}
-                onChange={(event) => updateField('summary', event.target.value)}
-                placeholder="Mô tả ngắn gọn nội dung…"
-                rows={4}
-                value={form.summary}
-              />
+              <textarea maxLength={500} onChange={(event) => updateField('summary', event.target.value)} placeholder="Mô tả ngắn gọn nội dung…" rows={4} value={form.summary} />
               <small>{String(form.summary || '').length}/500 ký tự</small>
             </label>
 
             {type === 'posts' ? (
-              <>
-                <label className="admin-form-field admin-form-field--full">
-                  <span>Nội dung bài viết</span>
-                  <textarea
-                    className="admin-editor__long-copy"
-                    onChange={(event) => updateField('content', event.target.value)}
-                    placeholder="Nhập nội dung chi tiết…"
-                    rows={12}
-                    value={form.content}
-                  />
-                </label>
-                <PostGalleryField
-                  form={form}
-                  onChange={updateFields}
-                  onError={setError}
-                  onUnauthorized={onUnauthorized}
-                />
-              </>
+              <label className="admin-form-field admin-form-field--full">
+                <span>Nội dung bài viết</span>
+                <textarea className="admin-editor__long-copy" onChange={(event) => updateField('content', event.target.value)} placeholder="Nhập nội dung chi tiết…" rows={12} value={form.content} />
+              </label>
             ) : (
               <>
                 <label className="admin-form-field admin-form-field--full">
                   <span>Mô tả công việc</span>
-                  <textarea
-                    className="admin-editor__long-copy"
-                    onChange={(event) => updateField('description', event.target.value)}
-                    placeholder="Mô tả trách nhiệm và yêu cầu công việc…"
-                    rows={8}
-                    value={form.description}
-                  />
+                  <textarea className="admin-editor__long-copy" onChange={(event) => updateField('description', event.target.value)} placeholder="Mô tả trách nhiệm và yêu cầu công việc…" rows={8} value={form.description} />
                 </label>
                 <div className="admin-form-grid">
                   <label className="admin-form-field">
                     <span>Mức lương</span>
-                    <input
-                      onChange={(event) => updateField('salary', event.target.value)}
-                      placeholder="Ví dụ: Thỏa thuận"
-                      type="text"
-                      value={form.salary}
-                    />
+                    <input onChange={(event) => updateField('salary', event.target.value)} placeholder="Ví dụ: Thỏa thuận" type="text" value={form.salary} />
                   </label>
                   <label className="admin-form-field">
                     <span>Thời gian làm việc</span>
-                    <input
-                      onChange={(event) => updateField('workingHours', event.target.value)}
-                      placeholder="Ví dụ: Thứ 2 – Thứ 6"
-                      type="text"
-                      value={form.workingHours}
-                    />
+                    <input onChange={(event) => updateField('workingHours', event.target.value)} placeholder="Ví dụ: Thứ 2 – Thứ 6" type="text" value={form.workingHours} />
                   </label>
                 </div>
                 <label className="admin-form-field admin-form-field--full">
                   <span>Quyền lợi</span>
-                  <textarea
-                    onChange={(event) => updateField('benefits', event.target.value)}
-                    placeholder="Mô tả chế độ và quyền lợi…"
-                    rows={6}
-                    value={form.benefits}
-                  />
+                  <textarea onChange={(event) => updateField('benefits', event.target.value)} placeholder="Mô tả chế độ và quyền lợi…" rows={6} value={form.benefits} />
                 </label>
               </>
             )}
+
+            <PostGalleryField
+              form={form}
+              onChange={updateFields}
+              onError={setError}
+              onUnauthorized={onUnauthorized}
+              type={type}
+            />
           </div>
 
           <aside className="admin-editor__aside">
             <div className="admin-form-section">
               <div className="admin-form-section__heading">
                 <span>02</span>
-                <div>
-                  <h3>Ảnh đại diện</h3>
-                  <p>Ảnh ngang, dung lượng tối đa 5 MB.</p>
-                </div>
+                <div><h3>Ảnh đại diện</h3><p>Ảnh ngang, dung lượng tối đa 5 MB.</p></div>
               </div>
 
               <div className="admin-image-uploader">
                 {form.imageUrl && !imageError ? (
-                  <img
-                    alt="Xem trước ảnh đại diện"
-                    onError={() => setImageError(true)}
-                    src={form.imageUrl}
-                  />
+                  <img alt="Xem trước ảnh đại diện" onError={() => setImageError(true)} src={form.imageUrl} />
                 ) : (
-                  <div className="admin-image-uploader__placeholder">
-                    <AdminIcon name="image" size={28} />
-                    <span>Chưa có ảnh đại diện</span>
-                  </div>
+                  <div className="admin-image-uploader__placeholder"><AdminIcon name="image" size={28} /><span>Chưa có ảnh đại diện</span></div>
                 )}
                 <label className="admin-button admin-button--secondary">
-                  {uploading ? (
-                    <span className="admin-spinner" />
-                  ) : (
-                    <AdminIcon name="image" size={17} />
-                  )}
+                  {uploading ? <span className="admin-spinner" /> : <AdminIcon name="image" size={17} />}
                   {uploading ? 'Đang tải ảnh…' : 'Chọn ảnh'}
-                  <input
-                    accept="image/jpeg,image/png,image/webp,image/gif"
-                    disabled={uploading}
-                    onChange={handleUpload}
-                    type="file"
-                  />
+                  <input accept="image/jpeg,image/png,image/webp,image/gif" disabled={uploading} onChange={handleUpload} type="file" />
                 </label>
               </div>
 
               <label className="admin-form-field admin-form-field--full">
                 <span>Hoặc nhập URL ảnh</span>
-                <input
-                  onChange={(event) => updateField('imageUrl', event.target.value)}
-                  placeholder="https://…"
-                  type="url"
-                  value={form.imageUrl}
-                />
+                <input onChange={(event) => updateField('imageUrl', event.target.value)} placeholder="https://…" type="url" value={form.imageUrl} />
               </label>
             </div>
 
             <div className="admin-form-section">
               <div className="admin-form-section__heading">
                 <span>03</span>
-                <div>
-                  <h3>Xuất bản</h3>
-                  <p>Kiểm soát nội dung trên website.</p>
-                </div>
+                <div><h3>Xuất bản</h3><p>Kiểm soát nội dung trên website.</p></div>
               </div>
               <label className="admin-switch-field">
-                <input
-                  checked={form.published !== false}
-                  onChange={(event) => updateField('published', event.target.checked)}
-                  type="checkbox"
-                />
+                <input checked={form.published !== false} onChange={(event) => updateField('published', event.target.checked)} type="checkbox" />
                 <span className="admin-switch-field__control" />
                 <span>
                   <strong>Hiển thị công khai</strong>
-                  <small>
-                    {form.published !== false
-                      ? 'Nội dung đang sẵn sàng hiển thị.'
-                      : 'Nội dung sẽ được lưu ở trạng thái ẩn.'}
-                  </small>
+                  <small>{form.published !== false ? 'Nội dung đang sẵn sàng hiển thị.' : 'Nội dung sẽ được lưu ở trạng thái ẩn.'}</small>
                 </span>
               </label>
             </div>
@@ -368,19 +256,8 @@ export default function ContentEditor({ item, onBack, onSave, onUnauthorized, ty
         </div>
 
         <div className="admin-editor__actions">
-          <button
-            className="admin-button admin-button--secondary"
-            disabled={saving}
-            onClick={handleBack}
-            type="button"
-          >
-            Hủy
-          </button>
-          <button
-            className="admin-button admin-button--primary"
-            disabled={saving || uploading || !dirty}
-            type="submit"
-          >
+          <button className="admin-button admin-button--secondary" disabled={saving} onClick={handleBack} type="button">Hủy</button>
+          <button className="admin-button admin-button--primary" disabled={saving || uploading || !dirty} type="submit">
             {saving && <span className="admin-spinner" />}
             {saving ? 'Đang lưu…' : editing ? 'Lưu thay đổi' : 'Tạo nội dung'}
           </button>
