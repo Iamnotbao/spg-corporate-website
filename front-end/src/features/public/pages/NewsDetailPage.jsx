@@ -4,7 +4,7 @@ import { ContentError, DetailLoading } from '../components/ContentState.jsx';
 import DetailCarousel from '../components/DetailCarousel.jsx';
 import PublicLayout from '../components/PublicLayout.jsx';
 import RelatedContent from '../components/RelatedContent.jsx';
-import TextContent from '../components/TextContent.jsx';
+import StructuredContent from '../components/StructuredContent.jsx';
 import {
   useDocumentTitle,
   usePageTop,
@@ -69,7 +69,7 @@ export default function NewsDetailPage({ loadPost, loadPosts }) {
 
               <div className="public-article-layout__body">
                 {post.excerpt && <p className="public-article-lead">{post.excerpt}</p>}
-                <TextContent text={post.content || post.description} />
+                <StructuredContent blocks={post.contentBlocks} fallbackText={post.content || post.description} />
                 <ContentAttachment item={post} label="Tài liệu bài viết" />
                 {loadPosts && <RelatedContent current={post} loadItems={loadPosts} type="posts" />}
 

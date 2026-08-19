@@ -52,6 +52,49 @@ function galleryPayload(form) {
   return { images, imagePublicIds };
 }
 
+function blockPayload(form) {
+  const blocks = Array.isArray(form.contentBlocks)
+    ? form.contentBlocks
+        .filter((block) => block && typeof block === 'object' && block.type)
+        .map((block) => {
+          if (block.type === 'paragraph' || block.type === 'heading') {
+            return {
+              id: String(block.id || ''),
+              type: block.type,
+              text: String(block.text || '').trim(),
+            };
+          }
+          if (block.type === 'image') {
+            return {
+              id: String(block.id || ''),
+              type: 'image',
+              url: String(block.url || '').trim(),
+              publicId: String(block.publicId || '').trim(),
+              caption: String(block.caption || '').trim(),
+            };
+          }
+          if (block.type === 'gallery') {
+            return {
+              id: String(block.id || ''),
+              type: 'gallery',
+              layout: String(block.layout || '').trim(),
+              images: Array.isArray(block.images)
+                ? block.images.slice(0, 4).map((image) => ({
+                    url: String(image?.url || '').trim(),
+                    publicId: String(image?.publicId || '').trim(),
+                    caption: String(image?.caption || '').trim(),
+                  })).filter((image) => image.url)
+                : [],
+            };
+          }
+          return null;
+        })
+        .filter(Boolean)
+    : [];
+
+  return { contentBlocks: blocks };
+}
+
 export function normalizeContentPayload(type, form) {
   const common = {
     title: String(form.title || '').trim(),
@@ -60,6 +103,7 @@ export function normalizeContentPayload(type, form) {
     imagePublicId: String(form.imagePublicId || '').trim(),
     published: form.published !== false,
     ...galleryPayload(form),
+    ...blockPayload(form),
   };
 
   if (type === 'posts') {
