@@ -4,6 +4,7 @@ export const ADMIN_SECTIONS = [
   { key: 'categories', label: 'Category', icon: 'posts', permission: 'categories.read' },
   { key: 'jobs', label: 'Tuyển dụng', icon: 'jobs', permission: 'jobs.read' },
   { key: 'communications', label: 'Thông báo & sự kiện', icon: 'communications', permission: 'communications.read' },
+  { key: 'chat', label: 'Chat & liên hệ', icon: 'chat', permission: 'chat.read' },
   { key: 'languages', label: 'Ngôn ngữ', icon: 'languages', permission: 'languages.read' },
   { key: 'applications', label: 'Hồ sơ ứng tuyển', icon: 'applications', permission: 'applications.read' },
   { key: 'users', label: 'Người dùng', icon: 'users', permission: 'users.read' },
@@ -48,6 +49,7 @@ export const PERMISSION_GROUPS = [
   ['Người dùng', ['users.read', 'users.create', 'users.update', 'users.delete']],
   ['Category', ['categories.read', 'categories.create', 'categories.update', 'categories.delete']],
   ['Thông báo & sự kiện', ['communications.read', 'communications.update']],
+  ['Chat & liên hệ', ['chat.read', 'chat.reply', 'chat.settings']],
   ['Ngôn ngữ', ['languages.read', 'languages.create', 'languages.update', 'languages.delete']],
   ['Cài đặt', ['settings.read', 'settings.update']],
 ];
