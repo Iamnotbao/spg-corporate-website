@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { getPublicSiteProfile, publicRealtimeUrl } from '../../../services/siteProfileService.js';
 import GoogleMapEmbed from '../../shared/GoogleMapEmbed.jsx';
 import '../../../styles/map-embed.css';
+import '../../../styles/footer-map.css';
 import Brand from './Brand.jsx';
 import { usePublicLanguage } from '../i18n.js';
 
@@ -15,32 +16,8 @@ export default function SiteFooter() {
   const language = usePublicLanguage();
   const c = COPY[language] || COPY.vi;
   const [location, setLocation] = useState(null);
-
-  const loadLocation = useCallback(() => {
-    getPublicSiteProfile().then((payload) => setLocation(payload?.data?.location || null)).catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    loadLocation();
-    const source = new EventSource(publicRealtimeUrl());
-    source.addEventListener('site-profile', loadLocation);
-    return () => source.close();
-  }, [loadLocation]);
-
+  const loadLocation = useCallback(() => { getPublicSiteProfile().then((payload) => setLocation(payload?.data?.location || null)).catch(() => {}); }, []);
+  useEffect(() => { loadLocation(); const source = new EventSource(publicRealtimeUrl()); source.addEventListener('site-profile', loadLocation); return () => source.close(); }, [loadLocation]);
   const hasMap = Boolean(location?.embedUrl || location?.address || location?.name);
-
-  return (
-    <footer className="public-footer" id="contact">
-      <div className="public-container">
-        <div className="public-footer__cta"><div><p className="public-eyebrow public-eyebrow--light">{c[0]}</p><h2>{c[1]}</h2></div><a className="public-footer__cta-link" href="mailto:contact@spg.vn">{c[2]} <span aria-hidden="true">↗</span></a></div>
-        <div className="public-footer__main">
-          <div className="public-footer__intro"><Brand inverse /><p>{c[3]}</p><a href="mailto:contact@spg.vn">contact@spg.vn</a></div>
-          <div className="public-footer__column"><p>{c[4]}</p><a href="/#about">{c[5]}</a><a href="/#manufacturing">{c[6]}</a><a href="/#process">{c[7]}</a><a href="/#news">{c[8]}</a></div>
-          <div className="public-footer__column"><p>{c[9]}</p><a href="/#careers">{c[10]}</a><a href="mailto:contact@spg.vn">{c[11]}</a>{location?.address && <span>{location.address}</span>}{location?.mapsUrl && <a href={location.mapsUrl} target="_blank" rel="noreferrer">{c[13]} ↗</a>}{!location?.address && !location?.mapsUrl && <a href="/company/location">{c[12]}</a>}</div>
-        </div>
-        {hasMap && <div className="public-footer__map"><div className="public-footer__map-heading"><span>{c[16]}</span>{location?.name && <strong>{location.name}</strong>}</div><GoogleMapEmbed location={location} title={c[16]} /></div>}
-        <div className="public-footer__bottom"><span>© {new Date().getFullYear()} Chí Hùng SPG. {c[14]}</span><span>{c[15]}</span></div>
-      </div>
-    </footer>
-  );
+  return <footer className="public-footer" id="contact"><div className="public-container"><div className="public-footer__cta"><div><p className="public-eyebrow public-eyebrow--light">{c[0]}</p><h2>{c[1]}</h2></div><a className="public-footer__cta-link" href="mailto:contact@spg.vn">{c[2]} <span aria-hidden="true">↗</span></a></div><div className="public-footer__main"><div className="public-footer__intro"><Brand inverse /><p>{c[3]}</p><a href="mailto:contact@spg.vn">contact@spg.vn</a></div><div className="public-footer__column"><p>{c[4]}</p><a href="/#about">{c[5]}</a><a href="/#manufacturing">{c[6]}</a><a href="/#process">{c[7]}</a><a href="/#news">{c[8]}</a></div><div className="public-footer__column"><p>{c[9]}</p><a href="/#careers">{c[10]}</a><a href="mailto:contact@spg.vn">{c[11]}</a>{location?.address && <span>{location.address}</span>}{location?.mapsUrl && <a href={location.mapsUrl} target="_blank" rel="noreferrer">{c[13]} ↗</a>}{!location?.address && !location?.mapsUrl && <a href="/company/location">{c[12]}</a>}</div></div>{hasMap && <div className="public-footer__map"><div className="public-footer__map-heading"><span>{c[16]}</span>{location?.name && <strong>{location.name}</strong>}</div><GoogleMapEmbed location={location} title={c[16]} /></div>}<div className="public-footer__bottom"><span>© {new Date().getFullYear()} Chí Hùng SPG. {c[14]}</span><span>{c[15]}</span></div></div></footer>;
 }
