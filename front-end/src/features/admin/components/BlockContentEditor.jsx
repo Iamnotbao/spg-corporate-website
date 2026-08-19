@@ -50,6 +50,10 @@ export default function BlockContentEditor({ blocks, fallbackText = '', onChange
     commit([...value, { id: blockId(), type: kind, text: '' }]);
   }
 
+  function addVideo() {
+    commit([...value, { id: blockId(), type: 'video', url: '', caption: '' }]);
+  }
+
   function updateBlock(index, patch) {
     commit(value.map((item, itemIndex) => itemIndex === index ? { ...item, ...patch } : item));
   }
@@ -128,6 +132,7 @@ export default function BlockContentEditor({ blocks, fallbackText = '', onChange
           <button type="button" onClick={() => addText('heading')}>+ Tiêu đề</button>
           <button type="button" disabled={uploading} onClick={() => singleInput.current?.click()}>+ Ảnh</button>
           <button type="button" disabled={uploading} onClick={() => galleryInput.current?.click()}>+ Nhóm 2–4 ảnh</button>
+          <button type="button" onClick={addVideo}>+ Video</button>
         </div>
         <div>
           <button type="button" disabled={!past.length} onClick={undo} title="Hoàn tác">↶ Undo</button>
@@ -141,7 +146,7 @@ export default function BlockContentEditor({ blocks, fallbackText = '', onChange
         <div className="admin-block-editor__empty">
           <AdminIcon name="edit" size={24} />
           <strong>Editor nội dung dạng block</strong>
-          <p>Thêm đoạn văn, ảnh hoặc nhóm ảnh rồi kéo block để đổi vị trí. Bạn cũng có thể copy ảnh và paste trực tiếp vào đây.</p>
+          <p>Thêm đoạn văn, ảnh, nhóm ảnh hoặc video YouTube/Vimeo rồi kéo block để đổi vị trí. Bạn cũng có thể copy ảnh và paste trực tiếp vào đây.</p>
           {fallbackText && <button type="button" onClick={migrateFallback}>Chuyển nội dung cũ vào editor</button>}
         </div>
       )}
@@ -158,28 +163,11 @@ export default function BlockContentEditor({ blocks, fallbackText = '', onChange
           >
             <div className="admin-content-block__handle" title="Kéo để đổi vị trí">⋮⋮</div>
             <div className="admin-content-block__body">
-              {block.type === 'heading' && (
-                <input className="admin-content-block__heading" placeholder="Tiêu đề phần…" value={block.text || ''} onChange={(event) => updateBlock(index, { text: event.target.value })} />
-              )}
-              {block.type === 'paragraph' && (
-                <textarea placeholder="Nhập nội dung…" rows={5} value={block.text || ''} onChange={(event) => updateBlock(index, { text: event.target.value })} />
-              )}
-              {block.type === 'image' && (
-                <div className="admin-content-block__image">
-                  <img alt={block.caption || 'Ảnh nội dung'} src={block.url} />
-                  <input placeholder="Chú thích ảnh (tùy chọn)" value={block.caption || ''} onChange={(event) => updateBlock(index, { caption: event.target.value })} />
-                </div>
-              )}
-              {block.type === 'gallery' && (
-                <div>
-                  <div className={`admin-content-block__gallery is-${block.layout || `grid-${block.images?.length || 2}`}`}>
-                    {(block.images || []).map((image, imageIndex) => (
-                      <figure key={`${image.url}-${imageIndex}`}><img alt={image.caption || `Ảnh ${imageIndex + 1}`} src={image.url} /><figcaption>{String(imageIndex + 1).padStart(2, '0')}</figcaption></figure>
-                    ))}
-                  </div>
-                  <small>Nhóm {block.images?.length || 0} ảnh được giữ như một block khi kéo.</small>
-                </div>
-              )}
+              {block.type === 'heading' && <input className="admin-content-block__heading" placeholder="Tiêu đề phần…" value={block.text || ''} onChange={(event) => updateBlock(index, { text: event.target.value })} />}
+              {block.type === 'paragraph' && <textarea placeholder="Nhập nội dung…" rows={5} value={block.text || ''} onChange={(event) => updateBlock(index, { text: event.target.value })} />}
+              {block.type === 'image' && <div className="admin-content-block__image"><img alt={block.caption || 'Ảnh nội dung'} src={block.url} /><input placeholder="Chú thích ảnh (tùy chọn)" value={block.caption || ''} onChange={(event) => updateBlock(index, { caption: event.target.value })} /></div>}
+              {block.type === 'gallery' && <div><div className={`admin-content-block__gallery is-${block.layout || `grid-${block.images?.length || 2}`}`}>{(block.images || []).map((image, imageIndex) => <figure key={`${image.url}-${imageIndex}`}><img alt={image.caption || `Ảnh ${imageIndex + 1}`} src={image.url} /><figcaption>{String(imageIndex + 1).padStart(2, '0')}</figcaption></figure>)}</div><small>Nhóm {block.images?.length || 0} ảnh được giữ như một block khi kéo.</small></div>}
+              {block.type === 'video' && <div className="admin-content-block__video"><label>Video YouTube / Vimeo</label><input type="url" placeholder="https://www.youtube.com/watch?v=..." value={block.url || ''} onChange={(event) => updateBlock(index, { url: event.target.value })} /><input placeholder="Chú thích video (tùy chọn)" value={block.caption || ''} onChange={(event) => updateBlock(index, { caption: event.target.value })} /><small>Public chỉ nhúng URL YouTube/Vimeo hợp lệ; URL khác sẽ không render iframe.</small></div>}
             </div>
             <button className="admin-content-block__delete" type="button" onClick={() => removeBlock(index)} aria-label="Xóa block">×</button>
           </article>
