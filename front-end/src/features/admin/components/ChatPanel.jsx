@@ -14,6 +14,9 @@ import { AdminAlert } from './AdminFeedback.jsx';
 const DEFAULT_SETTINGS = {
   enabled: true,
   autoReplyEnabled: true,
+  aiEnabled: false,
+  aiConfigured: false,
+  aiModel: '',
   welcomeMessage: '',
   fallbackMessage: '',
   facebookUrl: '',
@@ -148,7 +151,7 @@ export default function ChatPanel({ onNotify, onUnauthorized }) {
     try {
       const payload = await updateAdminChatSettings(settings);
       setSettings({ ...DEFAULT_SETTINGS, ...(payload?.data || {}) });
-      onNotify('Đã cập nhật Chat và liên kết mạng xã hội.');
+      onNotify('Đã cập nhật Chat, bot và liên kết mạng xã hội.');
     } catch (requestError) {
       if (onUnauthorized(requestError)) return;
       setError(requestError?.message || 'Không thể lưu cài đặt chat.');
@@ -205,7 +208,7 @@ export default function ChatPanel({ onNotify, onUnauthorized }) {
               <div className="admin-chat__messages">
                 {messages.map((item, index) => (
                   <article className={`is-${item.sender || 'bot'}`} key={String(item?._id?.$oid || item?._id || index)}>
-                    <small>{item.sender === 'visitor' ? 'Khách' : item.sender === 'admin' ? item.userName || 'Admin' : 'Trợ lý tự động'} · {formatTime(item.createdAt)}</small>
+                    <small>{item.sender === 'visitor' ? 'Khách' : item.sender === 'admin' ? item.userName || 'Admin' : item.provider === 'openai' ? 'Trợ lý AI' : 'Trợ lý tự động'} · {formatTime(item.createdAt)}</small>
                     <p>{item.text}</p>
                   </article>
                 ))}
@@ -227,10 +230,11 @@ export default function ChatPanel({ onNotify, onUnauthorized }) {
           <label className="admin-form-field"><span>Zalo URL</span><input type="url" placeholder="https://zalo.me/..." value={settings.zaloUrl || ''} onChange={(event) => setSettings((current) => ({ ...current, zaloUrl: event.target.value }))} /></label>
         </div>
         <label className="admin-form-field admin-form-field--full"><span>Lời chào</span><textarea rows="2" value={settings.welcomeMessage || ''} onChange={(event) => setSettings((current) => ({ ...current, welcomeMessage: event.target.value }))} /></label>
-        <label className="admin-form-field admin-form-field--full"><span>Phản hồi mặc định của bot</span><textarea rows="2" value={settings.fallbackMessage || ''} onChange={(event) => setSettings((current) => ({ ...current, fallbackMessage: event.target.value }))} /></label>
+        <label className="admin-form-field admin-form-field--full"><span>Phản hồi mặc định khi FAQ/AI không trả lời</span><textarea rows="2" value={settings.fallbackMessage || ''} onChange={(event) => setSettings((current) => ({ ...current, fallbackMessage: event.target.value }))} /></label>
         <div className="admin-chat__setting-switches">
           <label className="admin-switch-field"><input type="checkbox" checked={settings.enabled !== false} onChange={(event) => setSettings((current) => ({ ...current, enabled: event.target.checked }))} /><span className="admin-switch-field__control" /><span><strong>Bật Chat</strong></span></label>
-          <label className="admin-switch-field"><input type="checkbox" checked={settings.autoReplyEnabled !== false} onChange={(event) => setSettings((current) => ({ ...current, autoReplyEnabled: event.target.checked }))} /><span className="admin-switch-field__control" /><span><strong>Bot tự động trả lời FAQ</strong></span></label>
+          <label className="admin-switch-field"><input type="checkbox" checked={settings.autoReplyEnabled !== false} onChange={(event) => setSettings((current) => ({ ...current, autoReplyEnabled: event.target.checked }))} /><span className="admin-switch-field__control" /><span><strong>Bật trả lời tự động</strong></span></label>
+          <label className="admin-switch-field"><input type="checkbox" disabled={!settings.aiConfigured} checked={settings.aiEnabled === true} onChange={(event) => setSettings((current) => ({ ...current, aiEnabled: event.target.checked }))} /><span className="admin-switch-field__control" /><span><strong>Dùng AI</strong><small>{settings.aiConfigured ? `Model: ${settings.aiModel || 'đã cấu hình'} · lỗi sẽ fallback FAQ` : 'Chưa có OPENAI_API_KEY trên backend · đang dùng FAQ'}</small></span></label>
         </div>
         <button className="admin-button admin-button--primary" type="submit" disabled={savingSettings}>{savingSettings ? 'Đang lưu…' : 'Lưu cấu hình'}</button>
       </form>
