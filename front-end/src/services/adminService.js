@@ -17,10 +17,10 @@ function assertContentType(type) {
 
 export { ADMIN_TOKEN_KEY, getAdminToken, setAdminToken };
 
-export async function loginAdmin(password) {
-  const payload = await apiRequest('/admin/verify', {
+export async function loginAdmin(username, password) {
+  const payload = await apiRequest('/admin/login', {
     method: 'POST',
-    body: { password },
+    body: { username, password },
   });
 
   if (!payload?.token) throw new Error('Máy chủ không trả về phiên đăng nhập.');
@@ -33,6 +33,37 @@ export async function verifyAdminSession(options = {}) {
     method: 'GET',
     auth: true,
     signal: options.signal,
+  });
+}
+
+export async function listAdminUsers(options = {}) {
+  return apiRequest('/admin/users', {
+    method: 'GET',
+    auth: true,
+    signal: options.signal,
+  });
+}
+
+export async function createAdminUser(payload) {
+  return apiRequest('/admin/users', {
+    method: 'POST',
+    auth: true,
+    body: payload,
+  });
+}
+
+export async function updateAdminUser(id, payload) {
+  return apiRequest(`/admin/users/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    auth: true,
+    body: payload,
+  });
+}
+
+export async function deleteAdminUser(id) {
+  return apiRequest(`/admin/users/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    auth: true,
   });
 }
 
