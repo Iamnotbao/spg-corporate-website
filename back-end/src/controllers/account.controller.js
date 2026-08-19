@@ -3,6 +3,7 @@ import { getCollection } from "../config/db.js";
 import { env } from "../config/env.js";
 import { toObjectId } from "../utils/objectId.js";
 import { hashPassword, verifyPassword } from "../utils/password.js";
+import { normalizePermissions, PERMISSIONS } from "../utils/permissions.js";
 
 const ROLES = new Set(["admin", "employee"]);
 
@@ -12,11 +13,13 @@ function normalizeUsername(value) {
 
 function publicUser(user) {
   if (!user) return null;
+  const role = ROLES.has(user.role) ? user.role : "employee";
   return {
     id: String(user._id),
     username: user.username,
     displayName: user.displayName || user.username,
-    role: user.role,
+    role,
+    permissions: normalizePermissions(user.permissions, role),
     active: user.active !== false,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
@@ -40,6 +43,7 @@ async function bootstrapAdmin(username, password) {
     displayName: "Administrator",
     passwordHash: hashPassword(password),
     role: "admin",
+    permissions: ["*"],
     active: true,
     createdAt: new Date(),
   };
@@ -67,8 +71,6 @@ export async function login(req, res) {
     {
       sub: String(user._id),
       username: user.username,
-      role: user.role,
-      displayName: user.displayName || user.username,
     },
     env.jwtSecret,
     { expiresIn: "8h" },
@@ -78,19 +80,15 @@ export async function login(req, res) {
 }
 
 export function session(req, res) {
-  return res.json({
-    ok: true,
-    user: {
-      id: req.user.sub || "",
-      username: req.user.username || "",
-      displayName: req.user.displayName || req.user.username || "",
-      role: req.user.role,
-    },
-  });
+  return res.json({ ok: true, user: publicUser(req.user) });
+}
+
+export function listPermissions(_req, res) {
+  return res.json({ data: PERMISSIONS });
 }
 
 export async function listUsers(req, res) {
-  const page = Math.max(1, Number(req.query.page) || 1);
+  const requestedPage = Math.max(1, Number(req.query.page) || 1);
   const pageSize = Math.min(50, Math.max(1, Number(req.query.pageSize) || 10));
   const search = String(req.query.search || "").trim();
   const role = String(req.query.role || "").trim();
@@ -105,6 +103,8 @@ export async function listUsers(req, res) {
 
   const collection = await getCollection("users");
   const total = await collection.countDocuments(filter);
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const page = Math.min(requestedPage, totalPages);
   const users = await collection
     .find(filter)
     .sort({ createdAt: -1 })
@@ -114,12 +114,7 @@ export async function listUsers(req, res) {
 
   return res.json({
     data: users.map(publicUser),
-    pagination: {
-      page,
-      pageSize,
-      total,
-      totalPages: Math.max(1, Math.ceil(total / pageSize)),
-    },
+    pagination: { page, pageSize, total, totalPages },
   });
 }
 
@@ -149,6 +144,7 @@ export async function createUser(req, res) {
       displayName: displayName || username,
       passwordHash,
       role,
+      permissions: normalizePermissions(req.body?.permissions, role),
       active: req.body?.active !== false,
       createdAt: new Date(),
     };
@@ -171,20 +167,28 @@ export async function updateUser(req, res) {
   if (!existing) return res.status(404).json({ error: "User not found" });
 
   const update = { updatedAt: new Date() };
+  let nextRole = existing.role || "employee";
+
   if (req.body?.displayName != null) {
     update.displayName = String(req.body.displayName || existing.username).trim();
   }
   if (req.body?.role != null) {
-    const role = String(req.body.role).trim().toLowerCase();
-    if (!ROLES.has(role)) return res.status(400).json({ error: "Invalid role" });
-    if (String(existing._id) === String(req.user.sub) && role !== "admin") {
+    nextRole = String(req.body.role).trim().toLowerCase();
+    if (!ROLES.has(nextRole)) return res.status(400).json({ error: "Invalid role" });
+    if (String(existing._id) === String(req.user._id) && nextRole !== "admin") {
       return res.status(400).json({ error: "You cannot remove your own admin role" });
     }
-    update.role = role;
+    update.role = nextRole;
+  }
+  if (req.body?.permissions != null || req.body?.role != null) {
+    update.permissions = normalizePermissions(
+      req.body?.permissions != null ? req.body.permissions : existing.permissions,
+      nextRole,
+    );
   }
   if (req.body?.active != null) {
     const active = Boolean(req.body.active);
-    if (String(existing._id) === String(req.user.sub) && !active) {
+    if (String(existing._id) === String(req.user._id) && !active) {
       return res.status(400).json({ error: "You cannot disable your own account" });
     }
     update.active = active;
@@ -204,7 +208,7 @@ export async function updateUser(req, res) {
 export async function deleteUser(req, res) {
   const id = toObjectId(req.params.id);
   if (!id) return res.status(400).json({ error: "Invalid user id" });
-  if (String(id) === String(req.user.sub)) {
+  if (String(id) === String(req.user._id)) {
     return res.status(400).json({ error: "You cannot delete your own account" });
   }
 

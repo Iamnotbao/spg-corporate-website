@@ -4,9 +4,11 @@ import '../../styles/admin.css';
 import '../../styles/content-import.css';
 import './styles/users.css';
 import './styles/communications.css';
+import './styles/categories.css';
 import ApplicationsPanel from './components/ApplicationsPanel.jsx';
 import AdminLayout from './components/AdminLayout.jsx';
 import AdminLogin from './components/AdminLogin.jsx';
+import CategoriesPanel from './components/CategoriesPanel.jsx';
 import CommunicationsPanel from './components/CommunicationsPanel.jsx';
 import ContentDetailModal from './components/ContentDetailModal.jsx';
 import ContentEditor from './components/ContentEditor.jsx';
@@ -16,6 +18,12 @@ import UsersPanel from './components/UsersPanel.jsx';
 import { AdminToast } from './components/AdminFeedback.jsx';
 import { ADMIN_SECTIONS, CONTENT_LABELS } from './constants.js';
 import { useAdminAuth } from './hooks/useAdminAuth.js';
+
+function hasPermission(user, permission) {
+  if (!permission || user?.role === 'admin') return true;
+  const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
+  return permissions.includes('*') || permissions.includes(permission);
+}
 
 export default function AdminApp() {
   const auth = useAdminAuth();
@@ -35,9 +43,9 @@ export default function AdminApp() {
   const canAccess = useCallback(
     (nextSection) => {
       const item = ADMIN_SECTIONS.find((entry) => entry.key === nextSection);
-      return !item?.roles || item.roles.includes(auth.user?.role || 'employee');
+      return !item || hasPermission(auth.user, item.permission);
     },
-    [auth.user?.role],
+    [auth.user],
   );
 
   const navigate = useCallback((nextSection) => {
@@ -81,9 +89,7 @@ export default function AdminApp() {
 
   const headerTitle = useMemo(() => {
     if (editor) {
-      return `${editor.item ? 'Chỉnh sửa' : 'Tạo'} ${
-        CONTENT_LABELS[editor.type].singular
-      }`;
+      return `${editor.item ? 'Chỉnh sửa' : 'Tạo'} ${CONTENT_LABELS[editor.type].singular}`;
     }
     return ADMIN_SECTIONS.find((item) => item.key === section)?.label || 'Quản trị';
   }, [editor, section]);
@@ -128,11 +134,10 @@ export default function AdminApp() {
           onView={(item) => setDetail({ item, type: section })}
           type={section}
         />
+      ) : section === 'categories' ? (
+        <CategoriesPanel onNotify={notify} onUnauthorized={auth.handleUnauthorized} />
       ) : section === 'communications' ? (
-        <CommunicationsPanel
-          onNotify={notify}
-          onUnauthorized={auth.handleUnauthorized}
-        />
+        <CommunicationsPanel onNotify={notify} onUnauthorized={auth.handleUnauthorized} />
       ) : section === 'users' ? (
         <UsersPanel
           currentUser={auth.user}

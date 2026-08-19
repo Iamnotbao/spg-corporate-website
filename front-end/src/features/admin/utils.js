@@ -32,20 +32,24 @@ export function getPaginationItems(currentPage, totalPages) {
   const current = Math.max(1, Number(currentPage) || 1);
   const total = Math.max(1, Number(totalPages) || 1);
 
-  if (total <= 7) {
-    return Array.from({ length: total }, (_, index) => index + 1);
-  }
+  if (total <= 7) return Array.from({ length: total }, (_, index) => index + 1);
 
   const items = [1];
   const rangeStart = Math.max(2, current - 1);
   const rangeEnd = Math.min(total - 1, current + 1);
-
   if (rangeStart > 2) items.push('start-ellipsis');
   for (let page = rangeStart; page <= rangeEnd; page += 1) items.push(page);
   if (rangeEnd < total - 1) items.push('end-ellipsis');
   items.push(total);
-
   return items;
+}
+
+function galleryPayload(form) {
+  const images = Array.isArray(form.images) ? form.images.filter(Boolean) : [];
+  const imagePublicIds = Array.isArray(form.imagePublicIds)
+    ? form.imagePublicIds.slice(0, images.length)
+    : [];
+  return { images, imagePublicIds };
 }
 
 export function normalizeContentPayload(type, form) {
@@ -55,21 +59,15 @@ export function normalizeContentPayload(type, form) {
     imageUrl: String(form.imageUrl || '').trim(),
     imagePublicId: String(form.imagePublicId || '').trim(),
     published: form.published !== false,
+    ...galleryPayload(form),
   };
 
   if (type === 'posts') {
-    const images = Array.isArray(form.images) ? form.images.filter(Boolean) : [];
-    const imagePublicIds = Array.isArray(form.imagePublicIds)
-      ? form.imagePublicIds.slice(0, images.length)
-      : [];
-
     return {
       ...common,
       category: String(form.category || 'activity').trim(),
       excerpt: common.summary,
       content: String(form.content || '').trim(),
-      images,
-      imagePublicIds,
     };
   }
 
