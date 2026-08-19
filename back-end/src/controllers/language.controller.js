@@ -1,6 +1,36 @@
 import { getCollection } from "../config/db.js";
 import { toObjectId } from "../utils/objectId.js";
 
+const DEFAULT_LANGUAGES = [
+  {
+    code: "vi",
+    titleNameE: "Vietnamese",
+    titleNameL: "Tiếng Việt",
+    titleNameT: "Tiếng Việt",
+    enabled: true,
+    isDefault: true,
+    sortOrder: 0,
+  },
+  {
+    code: "en",
+    titleNameE: "English",
+    titleNameL: "English",
+    titleNameT: "English",
+    enabled: true,
+    isDefault: false,
+    sortOrder: 10,
+  },
+  {
+    code: "zh-tw",
+    titleNameE: "Traditional Chinese",
+    titleNameL: "繁體中文",
+    titleNameT: "繁體中文",
+    enabled: true,
+    isDefault: false,
+    sortOrder: 20,
+  },
+];
+
 function escapeRegex(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -23,6 +53,17 @@ async function ensureIndexes(collection) {
   await collection.createIndex({ enabled: 1, sortOrder: 1 });
 }
 
+async function ensureDefaultLanguages(collection) {
+  const count = await collection.countDocuments({});
+  if (count > 0) return;
+
+  const now = new Date();
+  await collection.insertMany(
+    DEFAULT_LANGUAGES.map((item) => ({ ...item, createdAt: now, updatedAt: now })),
+    { ordered: false },
+  );
+}
+
 async function clearOtherDefaults(collection, exceptId = null) {
   const filter = { isDefault: true };
   if (exceptId) filter._id = { $ne: exceptId };
@@ -32,6 +73,7 @@ async function clearOtherDefaults(collection, exceptId = null) {
 export async function listPublicLanguages(_req, res) {
   const collection = await getCollection("languages");
   await ensureIndexes(collection);
+  await ensureDefaultLanguages(collection);
   const items = await collection
     .find({ enabled: { $ne: false } })
     .sort({ isDefault: -1, sortOrder: 1, code: 1 })
@@ -53,6 +95,7 @@ export async function listLanguages(req, res) {
 
   const collection = await getCollection("languages");
   await ensureIndexes(collection);
+  await ensureDefaultLanguages(collection);
   const total = await collection.countDocuments(filter);
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const resolvedPage = Math.min(page, totalPages);
