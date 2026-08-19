@@ -10,6 +10,7 @@ import {
 import { asyncHandler } from "../utils/asyncHandler.js";
 import * as controller from "../controllers/admin.controller.js";
 import * as accountController from "../controllers/account.controller.js";
+import * as communicationsController from "../controllers/communications.controller.js";
 import { importContent } from "../controllers/contentImport.controller.js";
 
 const router = Router();
@@ -22,7 +23,6 @@ const loginLimiter = rateLimit({
 });
 
 router.post("/login", loginLimiter, asyncHandler(accountController.login));
-// Backward-compatible endpoint for older frontend deployments.
 router.post("/verify", loginLimiter, asyncHandler(accountController.login));
 
 router.use(auth);
@@ -32,6 +32,13 @@ router.get("/users", requireAdmin, asyncHandler(accountController.listUsers));
 router.post("/users", requireAdmin, asyncHandler(accountController.createUser));
 router.put("/users/:id", requireAdmin, asyncHandler(accountController.updateUser));
 router.delete("/users/:id", requireAdmin, asyncHandler(accountController.deleteUser));
+
+router.get("/communications/banner", requireAdmin, asyncHandler(communicationsController.getBanner));
+router.put("/communications/banner", requireAdmin, asyncHandler(communicationsController.updateBanner));
+router.get("/communications/notifications", requireAdmin, asyncHandler(communicationsController.listNotifications));
+router.post("/communications/notifications", requireAdmin, asyncHandler(communicationsController.createNotification));
+router.put("/communications/notifications/:id", requireAdmin, asyncHandler(communicationsController.updateNotification));
+router.delete("/communications/notifications/:id", requireAdmin, asyncHandler(communicationsController.deleteNotification));
 
 router.post(
   "/uploads/images",
