@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { listPublicLanguages } from '../../../services/languageService.js';
 
-const STORAGE_KEY = 'spg-language';
+export const PUBLIC_LANGUAGE_STORAGE_KEY = 'spg-language';
 const FALLBACK_LANGUAGE = {
   code: 'vi',
   titleNameE: 'Vietnamese',
@@ -17,7 +17,7 @@ function getLabel(item) {
 
 export default function LanguageSwitcher() {
   const [items, setItems] = useState([FALLBACK_LANGUAGE]);
-  const [value, setValue] = useState(() => window.localStorage.getItem(STORAGE_KEY) || 'vi');
+  const [value, setValue] = useState(() => window.localStorage.getItem(PUBLIC_LANGUAGE_STORAGE_KEY) || 'vi');
 
   useEffect(() => {
     const controller = new AbortController();
@@ -32,7 +32,7 @@ export default function LanguageSwitcher() {
           : languages.find((item) => item.isDefault)?.code || languages[0]?.code || 'vi';
         setValue(selected);
         document.documentElement.lang = selected;
-        window.localStorage.setItem(STORAGE_KEY, selected);
+        window.localStorage.setItem(PUBLIC_LANGUAGE_STORAGE_KEY, selected);
       })
       .catch(() => {
         setItems([FALLBACK_LANGUAGE]);
@@ -51,7 +51,7 @@ export default function LanguageSwitcher() {
     const next = event.target.value;
     setValue(next);
     document.documentElement.lang = next;
-    window.localStorage.setItem(STORAGE_KEY, next);
+    window.localStorage.setItem(PUBLIC_LANGUAGE_STORAGE_KEY, next);
     window.dispatchEvent(new CustomEvent('spg-language-change', { detail: { code: next } }));
   }
 
@@ -63,6 +63,9 @@ export default function LanguageSwitcher() {
           <path d="M3 12h18M12 3c2.4 2.5 3.7 5.5 3.7 9S14.4 18.5 12 21M12 3C9.6 5.5 8.3 8.5 8.3 12s1.3 6.5 3.7 9" />
         </svg>
       </span>
+      <span className="public-language-control__value" aria-hidden="true">
+        {String(current?.code || 'vi').toUpperCase()}
+      </span>
       <span className="public-visually-hidden">Ngôn ngữ</span>
       <select
         className="public-language-switcher"
@@ -72,7 +75,7 @@ export default function LanguageSwitcher() {
       >
         {items.map((item) => (
           <option value={item.code} key={item.code}>
-            {String(item.code || 'vi').toUpperCase()}
+            {getLabel(item)} ({String(item.code || '').toUpperCase()})
           </option>
         ))}
       </select>
