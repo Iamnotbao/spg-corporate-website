@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { listPublicLanguages } from '../../../services/languageService.js';
+import '../../../styles/language-menu.css';
 
 export const PUBLIC_LANGUAGE_STORAGE_KEY = 'spg-language';
 const FALLBACK_LANGUAGES = [
