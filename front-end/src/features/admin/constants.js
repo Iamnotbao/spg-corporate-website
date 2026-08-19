@@ -11,37 +11,17 @@ export const ADMIN_SECTIONS = [
 ];
 
 export const CONTENT_LABELS = {
-  posts: {
-    singular: 'bài viết',
-    plural: 'Bài viết',
-    description: 'Quản lý tin tức và nội dung đang hiển thị trên website.',
-  },
-  jobs: {
-    singular: 'tin tuyển dụng',
-    plural: 'Tuyển dụng',
-    description: 'Quản lý cơ hội nghề nghiệp và thông tin tuyển dụng.',
-  },
+  posts: { singular: 'bài viết', plural: 'Bài viết', description: 'Quản lý tin tức và nội dung đang hiển thị trên website.' },
+  jobs: { singular: 'tin tuyển dụng', plural: 'Tuyển dụng', description: 'Quản lý cơ hội nghề nghiệp và thông tin tuyển dụng.' },
 };
 
-export const DEFAULT_FILTERS = {
-  search: '',
-  published: '',
-  jobType: '',
-  location: '',
-  pageSize: 10,
-};
-
+export const DEFAULT_FILTERS = { search: '', published: '', jobType: '', location: '', pageSize: 10 };
 export const JOB_TYPES = ['Full-time', 'Part-time', 'Intern', 'Contract', 'Freelance'];
-
-// Fallback only. The client and editor load the live list from MongoDB.
 export const NEWS_CATEGORIES = [
-  { value: 'activity', label: 'Hoạt động' },
-  { value: 'talent', label: 'Phát triển nhân tài' },
-  { value: 'union', label: 'Công đoàn' },
-  { value: 'company', label: 'Tin doanh nghiệp' },
+  { value: 'activity', label: 'Hoạt động' }, { value: 'talent', label: 'Phát triển nhân tài' },
+  { value: 'union', label: 'Công đoàn' }, { value: 'company', label: 'Tin doanh nghiệp' },
   { value: 'achievement', label: 'Thành tựu' },
 ];
-
 export const PERMISSION_GROUPS = [
   ['Bài viết', ['posts.read', 'posts.create', 'posts.update', 'posts.delete', 'posts.import']],
   ['Tuyển dụng', ['jobs.read', 'jobs.create', 'jobs.update', 'jobs.delete', 'jobs.import']],
@@ -53,36 +33,20 @@ export const PERMISSION_GROUPS = [
   ['Ngôn ngữ', ['languages.read', 'languages.create', 'languages.update', 'languages.delete']],
   ['Cài đặt', ['settings.read', 'settings.update']],
 ];
-
 export const PAGE_SIZE_OPTIONS = [5, 10, 20, 50];
+
+const EMPTY_TRANSLATIONS = {
+  en: { title: '', summary: '', content: '', description: '', location: '', salary: '', benefits: '', workingHours: '' },
+  'zh-tw': { title: '', summary: '', content: '', description: '', location: '', salary: '', benefits: '', workingHours: '' },
+};
 
 export const EMPTY_CONTENT = {
   posts: {
-    title: '',
-    category: 'activity',
-    summary: '',
-    content: '',
-    contentBlocks: [],
-    imageUrl: '',
-    imagePublicId: '',
-    images: [],
-    imagePublicIds: [],
-    published: true,
+    title: '', category: 'activity', summary: '', content: '', contentBlocks: [], imageUrl: '', imagePublicId: '', images: [], imagePublicIds: [], published: true,
+    translations: structuredClone(EMPTY_TRANSLATIONS),
   },
   jobs: {
-    title: '',
-    summary: '',
-    description: '',
-    contentBlocks: [],
-    location: '',
-    type: 'Full-time',
-    salary: '',
-    benefits: '',
-    workingHours: '',
-    imageUrl: '',
-    imagePublicId: '',
-    images: [],
-    imagePublicIds: [],
-    published: true,
+    title: '', summary: '', description: '', contentBlocks: [], location: '', type: 'Full-time', salary: '', benefits: '', workingHours: '', imageUrl: '', imagePublicId: '', images: [], imagePublicIds: [], published: true,
+    translations: structuredClone(EMPTY_TRANSLATIONS),
   },
 };
