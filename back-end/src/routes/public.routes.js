@@ -7,6 +7,8 @@ import {
   listJobs,
   listPosts,
 } from "../controllers/public.controller.js";
+import { getPublicCommunications } from "../controllers/communications.controller.js";
+import { addRealtimeClient } from "../utils/realtime.js";
 import { cvUpload, validateCvSignature } from "../middleware/upload.js";
 import { validateApplication } from "../middleware/application.js";
 
@@ -21,6 +23,8 @@ const applicationLimiter = rateLimit({
 
 router.get("/jobs", asyncHandler(listJobs));
 router.get("/posts", asyncHandler(listPosts));
+router.get("/communications", asyncHandler(getPublicCommunications));
+router.get("/events", addRealtimeClient);
 router.get(
   "/jobs/:id",
   asyncHandler((req, res) => getPublicItem("jobs", req, res)),
