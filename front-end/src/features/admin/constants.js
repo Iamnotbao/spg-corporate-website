@@ -22,6 +22,12 @@ export const NEWS_CATEGORIES = [
   { value: 'union', label: 'Công đoàn' }, { value: 'company', label: 'Tin doanh nghiệp' },
   { value: 'achievement', label: 'Thành tựu' },
 ];
+export const POST_PAGE_PLACEMENTS = [
+  { value: 'highlights', label: 'Con số & dấu ấn' },
+  { value: 'partners', label: 'Đối tác & hợp tác' },
+  { value: 'location', label: 'Vị trí công ty' },
+  { value: 'supply-chain-consulting', label: 'Tư vấn chuỗi cung ứng' },
+];
 export const PERMISSION_GROUPS = [
   ['Bài viết', ['posts.read', 'posts.create', 'posts.update', 'posts.delete', 'posts.import']],
   ['Tuyển dụng', ['jobs.read', 'jobs.create', 'jobs.update', 'jobs.delete', 'jobs.import']],
@@ -42,7 +48,7 @@ const EMPTY_TRANSLATIONS = {
 
 export const EMPTY_CONTENT = {
   posts: {
-    title: '', category: 'activity', summary: '', content: '', contentBlocks: [], imageUrl: '', imagePublicId: '', images: [], imagePublicIds: [], published: true,
+    title: '', category: 'activity', pageKeys: [], summary: '', content: '', contentBlocks: [], imageUrl: '', imagePublicId: '', images: [], imagePublicIds: [], published: true,
     translations: structuredClone(EMPTY_TRANSLATIONS),
   },
   jobs: {
