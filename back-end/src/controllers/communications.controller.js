@@ -10,6 +10,7 @@ function normalizeBanner(body = {}) {
     message: String(body.message || "").trim(),
     link: String(body.link || "").trim(),
     backgroundImageUrl: String(body.backgroundImageUrl || "").trim().slice(0, 1000),
+    backgroundImagePublicId: String(body.backgroundImagePublicId || "").trim().slice(0, 300),
     enabled: body.enabled === true,
     style: ["event", "info", "highlight", "celebration"].includes(body.style) ? body.style : "event",
     startsAt: body.startsAt ? new Date(body.startsAt) : null,
@@ -89,22 +90,13 @@ export async function listNotifications(req, res) {
   const total = await collection.countDocuments(filter);
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const page = Math.min(requestedPage, totalPages);
-  const items = await collection
-    .find(filter)
-    .sort({ createdAt: -1 })
-    .skip((page - 1) * pageSize)
-    .limit(pageSize)
-    .toArray();
-
+  const items = await collection.find(filter).sort({ createdAt: -1 }).skip((page - 1) * pageSize).limit(pageSize).toArray();
   return res.json({ data: items, pagination: { page, pageSize, total, totalPages } });
 }
 
 export async function createNotification(req, res) {
   const payload = normalizeNotification(req.body);
-  if (!payload.title || !payload.message) {
-    return res.status(400).json({ error: "Tiêu đề và nội dung thông báo là bắt buộc." });
-  }
-
+  if (!payload.title || !payload.message) return res.status(400).json({ error: "Tiêu đề và nội dung thông báo là bắt buộc." });
   const collection = await getCollection("notifications");
   const item = { ...payload, createdAt: new Date(), updatedAt: new Date() };
   const result = await collection.insertOne(item);
@@ -116,7 +108,6 @@ export async function createNotification(req, res) {
 export async function updateNotification(req, res) {
   const id = toObjectId(req.params.id);
   if (!id) return res.status(400).json({ error: "Invalid id" });
-
   const collection = await getCollection("notifications");
   const payload = { ...normalizeNotification(req.body), updatedAt: new Date() };
   const result = await collection.updateOne({ _id: id }, { $set: payload });
@@ -129,7 +120,6 @@ export async function updateNotification(req, res) {
 export async function deleteNotification(req, res) {
   const id = toObjectId(req.params.id);
   if (!id) return res.status(400).json({ error: "Invalid id" });
-
   const collection = await getCollection("notifications");
   const result = await collection.deleteOne({ _id: id });
   if (!result.deletedCount) return res.status(404).json({ error: "Notification not found" });

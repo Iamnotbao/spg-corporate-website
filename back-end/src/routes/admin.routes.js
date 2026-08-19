@@ -15,6 +15,7 @@ import * as communicationsController from "../controllers/communications.control
 import * as languageController from "../controllers/language.controller.js";
 import * as chatController from "../controllers/chat.controller.js";
 import * as siteProfileController from "../controllers/siteProfile.controller.js";
+import * as mediaController from "../controllers/media.controller.js";
 import { importContent } from "../controllers/contentImport.controller.js";
 
 const router = Router();
@@ -71,6 +72,8 @@ router.delete("/communications/notifications/:id", requirePermission("communicat
 
 router.get("/site-profile", requirePermission("settings.read"), asyncHandler(siteProfileController.getAdminSiteProfile));
 router.put("/site-profile", requirePermission("settings.update"), asyncHandler(siteProfileController.updateAdminSiteProfile));
+router.get("/media", requirePermission("media.read"), asyncHandler(mediaController.listMedia));
+router.delete("/media", requirePermission("media.delete"), asyncHandler(mediaController.deleteMedia));
 
 router.post(
   "/uploads/images",
@@ -81,52 +84,17 @@ router.post(
 );
 
 for (const type of ["posts", "jobs"]) {
-  router.post(
-    `/${type}/import`,
-    requirePermission(`${type}.import`),
-    uploadLimiter,
-    contentImportUpload.array("files", 20),
-    validateContentImportSignature,
-    asyncHandler((req, res) => importContent(type, req, res)),
-  );
-  router.get(
-    `/${type}`,
-    requirePermission(`${type}.read`),
-    asyncHandler((req, res) => controller.list(type, req, res)),
-  );
-  router.get(
-    `/${type}/:id`,
-    requirePermission(`${type}.read`),
-    asyncHandler((req, res) => controller.getOne(type, req, res)),
-  );
-  router.post(
-    `/${type}`,
-    requirePermission(`${type}.create`),
-    asyncHandler((req, res) => controller.create(type, req, res)),
-  );
-  router.put(
-    `/${type}/:id`,
-    requirePermission(`${type}.update`),
-    asyncHandler((req, res) => controller.update(type, req, res)),
-  );
-  router.delete(
-    `/${type}/:id`,
-    requirePermission(`${type}.delete`),
-    asyncHandler((req, res) => controller.remove(type, req, res)),
-  );
-  router.post(
-    `/${type}/bulk-delete`,
-    requirePermission(`${type}.delete`),
-    asyncHandler((req, res) => controller.bulkRemove(type, req, res)),
-  );
+  router.post(`/${type}/import`, requirePermission(`${type}.import`), uploadLimiter, contentImportUpload.array("files", 20), validateContentImportSignature, asyncHandler((req, res) => importContent(type, req, res)));
+  router.get(`/${type}`, requirePermission(`${type}.read`), asyncHandler((req, res) => controller.list(type, req, res)));
+  router.get(`/${type}/:id`, requirePermission(`${type}.read`), asyncHandler((req, res) => controller.getOne(type, req, res)));
+  router.post(`/${type}`, requirePermission(`${type}.create`), asyncHandler((req, res) => controller.create(type, req, res)));
+  router.put(`/${type}/:id`, requirePermission(`${type}.update`), asyncHandler((req, res) => controller.update(type, req, res)));
+  router.delete(`/${type}/:id`, requirePermission(`${type}.delete`), asyncHandler((req, res) => controller.remove(type, req, res)));
+  router.post(`/${type}/bulk-delete`, requirePermission(`${type}.delete`), asyncHandler((req, res) => controller.bulkRemove(type, req, res)));
 }
 
 router.get("/applications", requirePermission("applications.read"), asyncHandler(controller.listApplications));
-router.get(
-  "/applications/:id/cv",
-  requirePermission("applications.download"),
-  asyncHandler(controller.downloadApplicationCv),
-);
+router.get("/applications/:id/cv", requirePermission("applications.download"), asyncHandler(controller.downloadApplicationCv));
 router.get("/settings/logo", requirePermission("settings.read"), asyncHandler(controller.getLogo));
 router.put("/settings/logo", requirePermission("settings.update"), asyncHandler(controller.updateLogo));
 
