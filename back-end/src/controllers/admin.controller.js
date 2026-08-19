@@ -24,6 +24,25 @@ const privateCvFields = [
   "mimetype", "originalFilename", "resume", "resumeUrl",
 ];
 
+function blockPublicIds(blocks = []) {
+  if (!Array.isArray(blocks)) return [];
+  return blocks.flatMap((block) => {
+    if (block?.type === "image") return block.publicId ? [block.publicId] : [];
+    if (block?.type === "gallery" && Array.isArray(block.images)) {
+      return block.images.map((image) => image?.publicId).filter(Boolean);
+    }
+    return [];
+  });
+}
+
+function contentPublicIds(item = {}) {
+  return [
+    item.imagePublicId,
+    ...(Array.isArray(item.imagePublicIds) ? item.imagePublicIds : []),
+    ...blockPublicIds(item.contentBlocks),
+  ].filter(Boolean);
+}
+
 async function cleanupImage(publicId) {
   if (!publicId) return;
   try {
@@ -95,26 +114,18 @@ export async function update(type, req, res) {
 
   const collection = await getCollection(type);
   const existing = await collection.findOne({ _id: id });
+  if (!existing) return res.status(404).json({ error: "Not found" });
+
   const result = await collection.updateOne(
     { _id: id },
     { $set: { ...req.body, updatedAt: new Date() } },
   );
 
-  if (
-    existing?.imagePublicId &&
-    Object.hasOwn(req.body, "imagePublicId") &&
-    existing.imagePublicId !== req.body.imagePublicId
-  ) {
-    await cleanupImage(existing.imagePublicId);
-  }
-
-  if (Object.hasOwn(req.body, "imagePublicIds")) {
-    const nextIds = new Set(Array.isArray(req.body.imagePublicIds) ? req.body.imagePublicIds : []);
-    const removedIds = (Array.isArray(existing?.imagePublicIds) ? existing.imagePublicIds : []).filter(
-      (publicId) => publicId && !nextIds.has(publicId),
-    );
-    await cleanupImages(removedIds);
-  }
+  const previousIds = new Set(contentPublicIds(existing));
+  const nextItem = { ...existing, ...req.body };
+  const nextIds = new Set(contentPublicIds(nextItem));
+  const removedIds = [...previousIds].filter((publicId) => !nextIds.has(publicId));
+  await cleanupImages(removedIds);
 
   return res.json({ ok: true, modified: result.modifiedCount });
 }
@@ -125,12 +136,7 @@ export async function remove(type, req, res) {
   const collection = await getCollection(type);
   const existing = await collection.findOne({ _id: id });
   const result = await collection.deleteOne({ _id: id });
-  if (result.deletedCount) {
-    await cleanupImages([
-      existing?.imagePublicId,
-      ...(Array.isArray(existing?.imagePublicIds) ? existing.imagePublicIds : []),
-    ]);
-  }
+  if (result.deletedCount) await cleanupImages(contentPublicIds(existing));
   return res.json({ ok: true, deleted: result.deletedCount });
 }
 
@@ -138,9 +144,12 @@ export async function bulkRemove(type, req, res) {
   const ids = (req.body.ids || []).map(toObjectId).filter(Boolean);
   if (!ids.length) return res.status(400).json({ error: "No ids provided" });
   const collection = await getCollection(type);
-  const items = await collection.find({ _id: { $in: ids } }, { projection: { imagePublicId: 1, imagePublicIds: 1 } }).toArray();
+  const items = await collection.find(
+    { _id: { $in: ids } },
+    { projection: { imagePublicId: 1, imagePublicIds: 1, contentBlocks: 1 } },
+  ).toArray();
   const result = await collection.deleteMany({ _id: { $in: ids } });
-  await cleanupImages(items.flatMap((item) => [item.imagePublicId, ...(Array.isArray(item.imagePublicIds) ? item.imagePublicIds : [])]));
+  await cleanupImages(items.flatMap(contentPublicIds));
   return res.json({ ok: true, deleted: result.deletedCount });
 }
 
