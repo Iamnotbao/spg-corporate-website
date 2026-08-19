@@ -1,6 +1,8 @@
 import multer from "multer";
 
 const MAX_CV_FILE_SIZE = 5 * 1024 * 1024;
+const MAX_IMPORT_FILE_SIZE = 10 * 1024 * 1024;
+
 const allowedCvTypes = new Set([
   "application/pdf",
   "application/msword",
@@ -11,6 +13,13 @@ const allowedImageTypes = new Set([
   "image/png",
   "image/webp",
   "image/gif",
+]);
+const allowedImportTypes = new Set([
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "text/csv",
+  "application/csv",
+  "application/vnd.ms-excel",
 ]);
 
 const validateCvType = (_, file, callback) => {
@@ -112,5 +121,56 @@ export function validateImageSignature(req, _res, next) {
   const error = new Error("Image content does not match its declared type");
   error.status = 415;
   error.code = "INVALID_IMAGE_SIGNATURE";
+  return next(error);
+}
+
+const validateImportType = (_, file, callback) => {
+  const name = String(file.originalname || "").toLowerCase();
+  const extensionAllowed = /\.(pdf|xlsx|csv)$/i.test(name);
+
+  if (!allowedImportTypes.has(file.mimetype) && !extensionAllowed) {
+    const error = new Error("Chỉ hỗ trợ PDF, XLSX hoặc CSV.");
+    error.status = 415;
+    error.code = "UNSUPPORTED_IMPORT_FILE_TYPE";
+    callback(error);
+    return;
+  }
+
+  callback(null, true);
+};
+
+export const contentImportUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: MAX_IMPORT_FILE_SIZE,
+    files: 20,
+    fields: 4,
+    parts: 24,
+    fieldNameSize: 100,
+    fieldSize: 128 * 1024,
+  },
+  fileFilter: validateImportType,
+});
+
+export function validateContentImportSignature(req, _res, next) {
+  const files = req.files || [];
+  if (!files.length) return next();
+
+  const invalid = files.find((file) => {
+    const name = String(file.originalname || "").toLowerCase();
+    const isPdf =
+      (file.mimetype === "application/pdf" || name.endsWith(".pdf")) &&
+      file.buffer.subarray(0, 1_024).indexOf(Buffer.from("%PDF-")) >= 0;
+    const isXlsx =
+      name.endsWith(".xlsx") && startsWith(file.buffer, [0x50, 0x4b, 0x03, 0x04]);
+    const isCsv = name.endsWith(".csv") || /csv/i.test(file.mimetype);
+    return !(isPdf || isXlsx || isCsv);
+  });
+
+  if (!invalid) return next();
+
+  const error = new Error(`Nội dung file ${invalid.originalname} không đúng định dạng.`);
+  error.status = 415;
+  error.code = "INVALID_IMPORT_FILE_SIGNATURE";
   return next(error);
 }
