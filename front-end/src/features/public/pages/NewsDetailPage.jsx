@@ -1,4 +1,5 @@
 import { Link, useParams } from 'react-router-dom';
+import ContentAttachment from '../components/ContentAttachment.jsx';
 import { ContentError, DetailLoading } from '../components/ContentState.jsx';
 import DetailCarousel from '../components/DetailCarousel.jsx';
 import PublicLayout from '../components/PublicLayout.jsx';
@@ -68,6 +69,7 @@ export default function NewsDetailPage({ loadPost }) {
               <div className="public-article-layout__body">
                 {post.excerpt && <p className="public-article-lead">{post.excerpt}</p>}
                 <TextContent text={post.content || post.description} />
+                <ContentAttachment item={post} label="Tài liệu bài viết" />
 
                 <div className="public-detail__back">
                   <Link className="public-link-arrow" to="/#news">
