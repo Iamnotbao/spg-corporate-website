@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { getPosts } from '../../../services/publicService.js';
 import { getPublicSiteProfile } from '../../../services/siteProfileService.js';
-import GoogleMapEmbed from '../components/GoogleMapEmbed.jsx';
+import GoogleMapEmbed from '../../shared/GoogleMapEmbed.jsx';
 import PublicLayout from '../components/PublicLayout.jsx';
 import SafeImage from '../components/SafeImage.jsx';
 import { usePublicCollection, useDocumentTitle, usePageTop } from '../hooks/usePublicContent.js';
