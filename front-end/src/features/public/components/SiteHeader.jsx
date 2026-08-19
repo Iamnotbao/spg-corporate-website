@@ -8,12 +8,12 @@ const navigation = [
     children: [
       ['Giá trị cốt lõi', '/#about'],
       ['Tầm nhìn & sứ mệnh', '/#about'],
-      ['Con số & dấu ấn', '/#operating-highlights'],
+      ['Con số & dấu ấn', '/#about'],
       ['Hành trình phát triển', '/#journey'],
-      ['Đối tác & hợp tác', '/#partners'],
+      ['Đối tác & hợp tác', '/#services'],
       ['Vị trí công ty', '/#contact'],
-      ['Thành tựu đạt được', '/#achievements'],
-      ['Cảnh quan nội bộ', '/#company-life'],
+      ['Thành tựu đạt được', '/#journey'],
+      ['Cảnh quan nội bộ', '/#careers'],
     ],
   },
   {
@@ -41,7 +41,7 @@ const navigation = [
     href: '/#careers',
     children: [
       ['Vị trí đang tuyển', '/#careers'],
-      ['Môi trường làm việc', '/#company-life'],
+      ['Môi trường làm việc', '/#careers'],
       ['Gửi hồ sơ', '/#careers'],
     ],
   },
