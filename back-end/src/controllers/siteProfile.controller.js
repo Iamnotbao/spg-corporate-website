@@ -10,7 +10,7 @@ function safeText(value, max = 160) {
 }
 
 function safeUrl(value) {
-  const source = safeText(value, 600);
+  const source = safeText(value, 900);
   if (!source) return "";
   try {
     const url = new URL(source);
@@ -38,15 +38,25 @@ function normalizePartners(partners) {
     id: safeText(item?.id, 80) || `partner-${index + 1}`,
     name: safeText(item?.name, 120),
     logoUrl: safeUrl(item?.logoUrl),
+    logoPublicId: safeText(item?.logoPublicId, 300),
     link: safeUrl(item?.link),
     enabled: item?.enabled !== false,
   })).filter((item) => item.name || item.logoUrl);
+}
+
+function normalizeLocation(location = {}) {
+  return {
+    name: safeText(location?.name, 160),
+    address: safeText(location?.address, 500),
+    mapsUrl: safeUrl(location?.mapsUrl),
+  };
 }
 
 function publicProfile(document = {}) {
   return {
     metrics: normalizeMetrics(document.metrics),
     partners: normalizePartners(document.partners),
+    location: normalizeLocation(document.location),
   };
 }
 
@@ -65,6 +75,7 @@ export async function updateAdminSiteProfile(req, res) {
   const payload = {
     metrics: normalizeMetrics(req.body?.metrics),
     partners: normalizePartners(req.body?.partners),
+    location: normalizeLocation(req.body?.location),
     updatedAt: new Date(),
   };
   await settings.updateOne(
