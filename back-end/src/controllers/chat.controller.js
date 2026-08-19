@@ -1,7 +1,12 @@
 import crypto from "node:crypto";
 import { getCollection } from "../config/db.js";
+import { env } from "../config/env.js";
 import { broadcastRealtime } from "../utils/realtime.js";
 import { addChatClient, broadcastChat } from "../utils/chatRealtime.js";
+import {
+  generateOpenAiChatReply,
+  isOpenAiChatConfigured,
+} from "../utils/openaiChat.js";
 
 const SETTINGS_ID = "chat-settings";
 const MAX_MESSAGE_LENGTH = 1200;
@@ -10,6 +15,7 @@ function publicSettings(settings = {}) {
   return {
     enabled: settings.enabled !== false,
     autoReplyEnabled: settings.autoReplyEnabled !== false,
+    aiEnabled: settings.aiEnabled === true,
     welcomeMessage: String(settings.welcomeMessage || "Xin chào! Bạn cần SPG hỗ trợ nội dung gì?").trim(),
     fallbackMessage: String(settings.fallbackMessage || "Mình đã ghi nhận tin nhắn. Admin SPG sẽ phản hồi sớm nhất có thể.").trim(),
     facebookUrl: String(settings.facebookUrl || "").trim(),
@@ -21,6 +27,7 @@ function normalizeSettings(body = {}) {
   return {
     enabled: body.enabled !== false,
     autoReplyEnabled: body.autoReplyEnabled !== false,
+    aiEnabled: body.aiEnabled === true,
     welcomeMessage: String(body.welcomeMessage || "").trim().slice(0, 500),
     fallbackMessage: String(body.fallbackMessage || "").trim().slice(0, 500),
     facebookUrl: String(body.facebookUrl || "").trim().slice(0, 500),
@@ -78,6 +85,25 @@ function automatedReply(text, settings) {
   return settings.fallbackMessage;
 }
 
+async function generateAutomatedReply(sessionId, text, settings) {
+  if (settings.aiEnabled && isOpenAiChatConfigured()) {
+    try {
+      const messages = await getCollection("chat_messages");
+      const history = await messages
+        .find({ sessionId })
+        .sort({ createdAt: -1 })
+        .limit(8)
+        .toArray();
+      history.reverse();
+      const aiText = await generateOpenAiChatReply({ history, message: text });
+      if (aiText) return { text: aiText, provider: "openai" };
+    } catch (error) {
+      console.error("OpenAI chat fallback:", error.message);
+    }
+  }
+  return { text: automatedReply(text, settings), provider: "faq" };
+}
+
 export async function getPublicChatSettings(_req, res) {
   return res.json({ data: await getSettings() });
 }
@@ -103,7 +129,10 @@ export async function createChatSession(req, res) {
   await sessions.insertOne(document);
 
   if (settings.welcomeMessage) {
-    await insertMessage(sessionId, "bot", settings.welcomeMessage, { automated: true });
+    await insertMessage(sessionId, "bot", settings.welcomeMessage, {
+      automated: true,
+      provider: "system",
+    });
   }
 
   broadcastRealtime("chat-updated", { kind: "session-created" });
@@ -154,7 +183,11 @@ export async function createPublicMessage(req, res) {
   const settings = await getSettings();
   let botMessage = null;
   if (settings.autoReplyEnabled) {
-    botMessage = await insertMessage(sessionId, "bot", automatedReply(text, settings), { automated: true });
+    const reply = await generateAutomatedReply(sessionId, text, settings);
+    botMessage = await insertMessage(sessionId, "bot", reply.text, {
+      automated: true,
+      provider: reply.provider,
+    });
     broadcastChat(sessionId, { action: "created", message: botMessage });
   }
 
@@ -171,7 +204,14 @@ export async function openPublicChatStream(req, res) {
 }
 
 export async function getAdminChatSettings(_req, res) {
-  return res.json({ data: await getSettings() });
+  const settings = await getSettings();
+  return res.json({
+    data: {
+      ...settings,
+      aiConfigured: isOpenAiChatConfigured(),
+      aiModel: env.openai.model,
+    },
+  });
 }
 
 export async function updateAdminChatSettings(req, res) {
@@ -183,7 +223,13 @@ export async function updateAdminChatSettings(req, res) {
     { upsert: true },
   );
   broadcastRealtime("chat-updated", { kind: "settings" });
-  return res.json({ data: publicSettings(payload) });
+  return res.json({
+    data: {
+      ...publicSettings(payload),
+      aiConfigured: isOpenAiChatConfigured(),
+      aiModel: env.openai.model,
+    },
+  });
 }
 
 export async function listAdminChatSessions(req, res) {
