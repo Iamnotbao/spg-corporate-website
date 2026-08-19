@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { API_URL } from '../../../services/httpClient.js';
+import '../../../styles/celebration-banner.css';
 
 const STORAGE_KEY = 'spg_public_notifications_v1';
 
@@ -84,10 +85,22 @@ export default function PublicCommunications() {
     }));
   }
 
+  const bannerStyle = banner?.backgroundImageUrl
+    ? { '--event-background': `url("${String(banner.backgroundImageUrl).replace(/["\\]/g, '')}")` }
+    : undefined;
+
   return (
     <>
       {banner?.enabled && (banner.title || banner.message) && (
-        <div className={`public-event-banner public-event-banner--${banner.style || 'event'}`}>
+        <div
+          className={`public-event-banner public-event-banner--${banner.style || 'event'}`}
+          style={bannerStyle}
+        >
+          {banner.style === 'celebration' && (
+            <div className="public-celebration-confetti" aria-hidden="true">
+              {Array.from({ length: 14 }, (_, index) => <i key={index} style={{ '--piece': index }} />)}
+            </div>
+          )}
           <div className="public-container public-event-banner__inner">
             <span className="public-event-banner__pulse" aria-hidden="true" />
             <div className="public-event-banner__marquee">

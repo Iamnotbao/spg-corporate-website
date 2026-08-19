@@ -10,6 +10,7 @@ import {
 import { getPublicCommunications } from "../controllers/communications.controller.js";
 import { listPublicCategories } from "../controllers/category.controller.js";
 import { listPublicLanguages } from "../controllers/language.controller.js";
+import * as chatController from "../controllers/chat.controller.js";
 import { addRealtimeClient } from "../utils/realtime.js";
 import { cvUpload, validateCvSignature } from "../middleware/upload.js";
 import { validateApplication } from "../middleware/application.js";
@@ -22,6 +23,13 @@ const applicationLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: "Đã gửi quá nhiều hồ sơ. Vui lòng thử lại sau." },
 });
+const chatLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  limit: 80,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { error: "Bạn đang gửi tin nhắn quá nhanh. Vui lòng thử lại sau." },
+});
 
 router.get("/jobs", asyncHandler(listJobs));
 router.get("/posts", asyncHandler(listPosts));
@@ -29,6 +37,13 @@ router.get("/categories", asyncHandler(listPublicCategories));
 router.get("/languages", asyncHandler(listPublicLanguages));
 router.get("/communications", asyncHandler(getPublicCommunications));
 router.get("/events", addRealtimeClient);
+
+router.get("/chat/settings", asyncHandler(chatController.getPublicChatSettings));
+router.post("/chat/sessions", chatLimiter, asyncHandler(chatController.createChatSession));
+router.get("/chat/messages", chatLimiter, asyncHandler(chatController.getPublicMessages));
+router.post("/chat/messages", chatLimiter, asyncHandler(chatController.createPublicMessage));
+router.get("/chat/events", chatLimiter, asyncHandler(chatController.openPublicChatStream));
+
 router.get(
   "/jobs/:id",
   asyncHandler((req, res) => getPublicItem("jobs", req, res)),

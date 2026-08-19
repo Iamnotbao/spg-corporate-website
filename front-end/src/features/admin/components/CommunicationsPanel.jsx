@@ -9,7 +9,7 @@ import {
 } from '../../../services/adminService.js';
 
 const EMPTY_BANNER = {
-  title: '', message: '', link: '', enabled: false, style: 'event', startsAt: '', endsAt: '',
+  title: '', message: '', link: '', backgroundImageUrl: '', enabled: false, style: 'event', startsAt: '', endsAt: '',
 };
 
 export default function CommunicationsPanel({ onNotify, onUnauthorized }) {
@@ -111,12 +111,13 @@ export default function CommunicationsPanel({ onNotify, onUnauthorized }) {
       </div>
 
       <form className="admin-form-section admin-communications__banner" onSubmit={saveBanner}>
-        <div className="admin-form-section__heading"><span>01</span><div><h3>Banner sự kiện</h3><p>Hiển thị ở đầu website; có thời gian bắt đầu/kết thúc.</p></div></div>
+        <div className="admin-form-section__heading"><span>01</span><div><h3>Banner sự kiện</h3><p>Hiển thị ở đầu website; có thể dùng chế độ celebration cho sự kiện đặc biệt.</p></div></div>
         <div className="admin-form-grid">
           <label className="admin-form-field"><span>Tiêu đề</span><input value={banner.title || ''} onChange={(e) => setBanner((v) => ({ ...v, title: e.target.value }))} /></label>
-          <label className="admin-form-field"><span>Kiểu</span><select value={banner.style || 'event'} onChange={(e) => setBanner((v) => ({ ...v, style: e.target.value }))}><option value="event">Sự kiện</option><option value="info">Thông tin</option><option value="highlight">Nổi bật</option></select></label>
+          <label className="admin-form-field"><span>Kiểu</span><select value={banner.style || 'event'} onChange={(e) => setBanner((v) => ({ ...v, style: e.target.value }))}><option value="event">Sự kiện</option><option value="info">Thông tin</option><option value="highlight">Nổi bật</option><option value="celebration">Celebration / Trúng thưởng</option></select></label>
         </div>
         <label className="admin-form-field admin-form-field--full"><span>Nội dung</span><textarea rows="3" value={banner.message || ''} onChange={(e) => setBanner((v) => ({ ...v, message: e.target.value }))} /></label>
+        <label className="admin-form-field admin-form-field--full"><span>Ảnh nền sự kiện (tùy chọn)</span><input type="url" placeholder="https://..." value={banner.backgroundImageUrl || ''} onChange={(e) => setBanner((v) => ({ ...v, backgroundImageUrl: e.target.value }))} /><small>Đặc biệt phù hợp với chế độ Celebration; nền luôn có lớp phủ để giữ chữ dễ đọc.</small></label>
         <label className="admin-form-field admin-form-field--full"><span>Link</span><input placeholder="/#careers" value={banner.link || ''} onChange={(e) => setBanner((v) => ({ ...v, link: e.target.value }))} /></label>
         <div className="admin-form-grid">
           <label className="admin-form-field"><span>Bắt đầu</span><input type="datetime-local" value={banner.startsAt ? String(banner.startsAt).slice(0, 16) : ''} onChange={(e) => setBanner((v) => ({ ...v, startsAt: e.target.value }))} /></label>

@@ -13,6 +13,7 @@ import * as accountController from "../controllers/account.controller.js";
 import * as categoryController from "../controllers/category.controller.js";
 import * as communicationsController from "../controllers/communications.controller.js";
 import * as languageController from "../controllers/language.controller.js";
+import * as chatController from "../controllers/chat.controller.js";
 import { importContent } from "../controllers/contentImport.controller.js";
 
 const router = Router();
@@ -52,6 +53,13 @@ router.get("/languages", requirePermission("languages.read"), asyncHandler(langu
 router.post("/languages", requirePermission("languages.create"), asyncHandler(languageController.createLanguage));
 router.put("/languages/:id", requirePermission("languages.update"), asyncHandler(languageController.updateLanguage));
 router.delete("/languages/:id", requirePermission("languages.delete"), asyncHandler(languageController.deleteLanguage));
+
+router.get("/chat/settings", requirePermission("chat.read"), asyncHandler(chatController.getAdminChatSettings));
+router.put("/chat/settings", requirePermission("chat.settings"), asyncHandler(chatController.updateAdminChatSettings));
+router.get("/chat/sessions", requirePermission("chat.read"), asyncHandler(chatController.listAdminChatSessions));
+router.get("/chat/sessions/:sessionId/messages", requirePermission("chat.read"), asyncHandler(chatController.getAdminChatMessages));
+router.post("/chat/sessions/:sessionId/messages", requirePermission("chat.reply"), asyncHandler(chatController.createAdminChatMessage));
+router.put("/chat/sessions/:sessionId", requirePermission("chat.reply"), asyncHandler(chatController.updateAdminChatSession));
 
 router.get("/communications/banner", requirePermission("communications.read"), asyncHandler(communicationsController.getBanner));
 router.put("/communications/banner", requirePermission("communications.update"), asyncHandler(communicationsController.updateBanner));

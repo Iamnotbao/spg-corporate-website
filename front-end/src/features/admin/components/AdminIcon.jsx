@@ -38,6 +38,12 @@ const PATHS = {
       <path d="M10 21h4M18 3l2 2" />
     </>
   ),
+  chat: (
+    <>
+      <path d="M21 15a4 4 0 0 1-4 4H8l-5 3 1.4-4.2A7.5 7.5 0 0 1 3 13V8a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z" />
+      <path d="M8 10h8M8 14h5" />
+    </>
+  ),
   languages: (
     <>
       <circle cx="12" cy="12" r="9" />

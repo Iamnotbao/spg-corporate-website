@@ -6,10 +6,12 @@ import './styles/users.css';
 import './styles/communications.css';
 import './styles/categories.css';
 import './styles/languages.css';
+import './styles/chat.css';
 import ApplicationsPanel from './components/ApplicationsPanel.jsx';
 import AdminLayout from './components/AdminLayout.jsx';
 import AdminLogin from './components/AdminLogin.jsx';
 import CategoriesPanel from './components/CategoriesPanel.jsx';
+import ChatPanel from './components/ChatPanel.jsx';
 import CommunicationsPanel from './components/CommunicationsPanel.jsx';
 import ContentDetailModal from './components/ContentDetailModal.jsx';
 import ContentEditor from './components/ContentEditor.jsx';
@@ -140,6 +142,8 @@ export default function AdminApp() {
         <CategoriesPanel onNotify={notify} onUnauthorized={auth.handleUnauthorized} />
       ) : section === 'communications' ? (
         <CommunicationsPanel onNotify={notify} onUnauthorized={auth.handleUnauthorized} />
+      ) : section === 'chat' ? (
+        <ChatPanel onNotify={notify} onUnauthorized={auth.handleUnauthorized} />
       ) : section === 'languages' ? (
         <LanguagesPanel onNotify={notify} onUnauthorized={auth.handleUnauthorized} />
       ) : section === 'users' ? (
