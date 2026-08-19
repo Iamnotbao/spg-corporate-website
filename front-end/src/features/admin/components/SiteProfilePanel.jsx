@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { uploadAdminImage } from '../../../services/adminService.js';
 import { getAdminSiteProfile, updateAdminSiteProfile } from '../../../services/siteProfileService.js';
+import GoogleMapEmbed from '../../public/components/GoogleMapEmbed.jsx';
+import '../../../styles/map-embed.css';
 import { AdminAlert } from './AdminFeedback.jsx';
 import MediaPicker from './MediaPicker.jsx';
 
@@ -96,12 +98,17 @@ export default function SiteProfilePanel({ onNotify, onUnauthorized }) {
       </div>
 
       <div className="admin-form-section">
-        <div className="admin-form-section__heading"><span>03</span><div><h3>Vị trí công ty & Google Maps</h3><p>Không cần API key nếu chỉ mở vị trí bằng Google Maps URL.</p></div></div>
+        <div className="admin-form-section__heading"><span>03</span><div><h3>Vị trí công ty & Google Maps</h3><p>Link Maps dùng để mở vị trí. Nếu Cloudflare có VITE_GOOGLE_MAPS_EMBED_KEY thì bên dưới hiện luôn bản đồ tương tác.</p></div></div>
         <div className="admin-form-grid">
           <label className="admin-form-field"><span>Tên địa điểm</span><input value={form.location?.name || ''} onChange={(e) => updateLocation('name', e.target.value)} placeholder="Chí Hùng SPG" /></label>
           <label className="admin-form-field"><span>Google Maps URL</span><input type="url" value={form.location?.mapsUrl || ''} onChange={(e) => updateLocation('mapsUrl', e.target.value)} placeholder="https://maps.google.com/..." /></label>
         </div>
         <label className="admin-form-field admin-form-field--full"><span>Địa chỉ</span><textarea rows="3" value={form.location?.address || ''} onChange={(e) => updateLocation('address', e.target.value)} placeholder="Nhập địa chỉ công ty đã được xác nhận" /></label>
+        <div className="admin-map-preview">
+          <strong>Xem trước bản đồ</strong>
+          <GoogleMapEmbed name={form.location?.name} address={form.location?.address} />
+          {form.location?.mapsUrl && <a className="admin-button admin-button--secondary" href={form.location.mapsUrl} target="_blank" rel="noreferrer">Mở Google Maps ↗</a>}
+        </div>
       </div>
 
       <div className="admin-editor__actions"><button className="admin-button admin-button--primary" type="button" disabled={saving} onClick={save}>{saving ? 'Đang lưu…' : 'Lưu thay đổi'}</button></div>
