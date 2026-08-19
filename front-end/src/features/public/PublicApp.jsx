@@ -6,6 +6,7 @@ import {
   submitApplication,
 } from '../../services/publicService.js';
 import '../../styles/public.css';
+import '../../styles/content-attachment.css';
 import CareerDetailPage from './pages/CareerDetailPage.jsx';
 import HomePage from './pages/HomePage.jsx';
 import NewsDetailPage from './pages/NewsDetailPage.jsx';

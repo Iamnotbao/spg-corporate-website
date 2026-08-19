@@ -8,6 +8,7 @@ import { useAdminContent } from '../hooks/useAdminContent.js';
 import { getErrorMessage, getItemId } from '../utils.js';
 import AdminIcon from './AdminIcon.jsx';
 import AdminPagination from './AdminPagination.jsx';
+import ContentImportModal from './ContentImportModal.jsx';
 import ContentList from './ContentList.jsx';
 import ContentToolbar from './ContentToolbar.jsx';
 import { AdminAlert } from './AdminFeedback.jsx';
@@ -24,6 +25,7 @@ export default function ContentWorkspace({
   const [selectedIds, setSelectedIds] = useState([]);
   const [actionId, setActionId] = useState('');
   const [actionError, setActionError] = useState('');
+  const [importOpen, setImportOpen] = useState(false);
   const pageIds = useMemo(
     () => content.items.map(getItemId).filter(Boolean),
     [content.items],
@@ -88,6 +90,15 @@ export default function ContentWorkspace({
     }
   }
 
+  function handleImported(result) {
+    const successCount =
+      (result.summary?.create || 0) +
+      (result.summary?.update || 0) +
+      (result.summary?.link || 0);
+    onNotify(`Import hoàn tất ${successCount} mục.`);
+    content.refresh();
+  }
+
   return (
     <section className="admin-panel">
       <ContentToolbar
@@ -95,6 +106,7 @@ export default function ContentWorkspace({
         onClear={content.clearFilters}
         onCreate={onCreate}
         onFilterChange={content.updateFilter}
+        onImport={() => setImportOpen(true)}
         searchPending={content.searchPending}
         type={type}
       />
@@ -142,6 +154,15 @@ export default function ContentWorkspace({
       />
 
       <AdminPagination onPageChange={content.setPage} pagination={content.pagination} />
+
+      {importOpen && (
+        <ContentImportModal
+          onClose={() => setImportOpen(false)}
+          onImported={handleImported}
+          onUnauthorized={onUnauthorized}
+          type={type}
+        />
+      )}
     </section>
   );
 }

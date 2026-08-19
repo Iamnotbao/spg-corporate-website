@@ -6,6 +6,7 @@ export default function ContentToolbar({
   onClear,
   onCreate,
   onFilterChange,
+  onImport,
   searchPending,
   type,
 }) {
@@ -20,14 +21,24 @@ export default function ContentToolbar({
           <h2>{CONTENT_LABELS[type].plural}</h2>
           <p>{CONTENT_LABELS[type].description}</p>
         </div>
-        <button
-          className="admin-button admin-button--primary"
-          onClick={onCreate}
-          type="button"
-        >
-          <AdminIcon name="plus" size={18} />
-          Tạo mới
-        </button>
+        <div className="admin-panel__heading-actions">
+          <button
+            className="admin-button admin-button--secondary"
+            onClick={onImport}
+            type="button"
+          >
+            <AdminIcon name="download" size={18} />
+            Import PDF / Excel
+          </button>
+          <button
+            className="admin-button admin-button--primary"
+            onClick={onCreate}
+            type="button"
+          >
+            <AdminIcon name="plus" size={18} />
+            Tạo mới
+          </button>
+        </div>
       </div>
 
       <div className="admin-toolbar">

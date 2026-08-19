@@ -1,9 +1,15 @@
 import { Router } from "express";
 import { rateLimit } from "express-rate-limit";
 import { auth } from "../middleware/auth.js";
-import { imageUpload, validateImageSignature } from "../middleware/upload.js";
+import {
+  contentImportUpload,
+  imageUpload,
+  validateContentImportSignature,
+  validateImageSignature,
+} from "../middleware/upload.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import * as controller from "../controllers/admin.controller.js";
+import { importContent } from "../controllers/contentImport.controller.js";
 
 const router = Router();
 const loginLimiter = rateLimit({
@@ -30,6 +36,12 @@ router.post(
 );
 
 for (const type of ["posts", "jobs"]) {
+  router.post(
+    `/${type}/import`,
+    contentImportUpload.array("files", 20),
+    validateContentImportSignature,
+    asyncHandler((req, res) => importContent(type, req, res)),
+  );
   router.get(
     `/${type}`,
     asyncHandler((req, res) => controller.list(type, req, res)),
