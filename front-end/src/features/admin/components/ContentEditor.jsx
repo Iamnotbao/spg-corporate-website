@@ -4,6 +4,7 @@ import { CONTENT_LABELS, EMPTY_CONTENT, JOB_TYPES } from '../constants.js';
 import { getErrorMessage, normalizeContentPayload } from '../utils.js';
 import AdminIcon from './AdminIcon.jsx';
 import { AdminAlert } from './AdminFeedback.jsx';
+import BlockContentEditor from './BlockContentEditor.jsx';
 import DynamicCategoryField from './DynamicCategoryField.jsx';
 import PostGalleryField from './PostGalleryField.jsx';
 
@@ -19,6 +20,7 @@ function createInitialForm(type, item) {
     ...EMPTY_CONTENT[type],
     ...(item || {}),
     summary: item?.summary || item?.excerpt || '',
+    contentBlocks: Array.isArray(item?.contentBlocks) ? item.contentBlocks : [],
     images: Array.isArray(item?.images) ? item.images : EMPTY_CONTENT[type]?.images || [],
     imagePublicIds: Array.isArray(item?.imagePublicIds)
       ? item.imagePublicIds
@@ -107,6 +109,8 @@ export default function ContentEditor({ item, onBack, onSave, onUnauthorized, ty
     }
   }
 
+  const legacyText = type === 'posts' ? form.content : form.description;
+
   return (
     <section className="admin-panel admin-editor">
       <div className="admin-editor__topbar">
@@ -175,17 +179,21 @@ export default function ContentEditor({ item, onBack, onSave, onUnauthorized, ty
               <small>{String(form.summary || '').length}/500 ký tự</small>
             </label>
 
-            {type === 'posts' ? (
-              <label className="admin-form-field admin-form-field--full">
-                <span>Nội dung bài viết</span>
-                <textarea className="admin-editor__long-copy" onChange={(event) => updateField('content', event.target.value)} placeholder="Nhập nội dung chi tiết…" rows={12} value={form.content} />
-              </label>
-            ) : (
+            <div className="admin-form-field admin-form-field--full">
+              <span>{type === 'posts' ? 'Nội dung bài viết' : 'Mô tả công việc'}</span>
+              <small>Dùng block để chèn ảnh đúng vị trí, nhóm 2–4 ảnh và kéo thả sắp xếp.</small>
+              <BlockContentEditor
+                blocks={form.contentBlocks}
+                fallbackText={legacyText || ''}
+                onChange={(contentBlocks) => updateField('contentBlocks', contentBlocks)}
+                onError={setError}
+                onUnauthorized={onUnauthorized}
+                type={type}
+              />
+            </div>
+
+            {type === 'jobs' && (
               <>
-                <label className="admin-form-field admin-form-field--full">
-                  <span>Mô tả công việc</span>
-                  <textarea className="admin-editor__long-copy" onChange={(event) => updateField('description', event.target.value)} placeholder="Mô tả trách nhiệm và yêu cầu công việc…" rows={8} value={form.description} />
-                </label>
                 <div className="admin-form-grid">
                   <label className="admin-form-field">
                     <span>Mức lương</span>
