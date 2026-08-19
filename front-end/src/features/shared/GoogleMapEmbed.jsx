@@ -7,18 +7,13 @@ export function buildGoogleMapsEmbedUrl(location = {}) {
   return `https://www.google.com/maps/embed/v1/place?key=${encodeURIComponent(MAPS_KEY)}&q=${encodeURIComponent(query)}`;
 }
 
-export default function GoogleMapEmbed({ location, title = 'Google Maps' }) {
-  const src = buildGoogleMapsEmbedUrl(location);
+export default function GoogleMapEmbed({ location, name = '', address = '', title = 'Google Maps' }) {
+  const resolved = location || { name, address };
+  const src = buildGoogleMapsEmbedUrl(resolved);
   if (!src) return null;
   return (
     <div className="spg-map-embed">
-      <iframe
-        allowFullScreen
-        loading="lazy"
-        referrerPolicy="strict-origin-when-cross-origin"
-        src={src}
-        title={title}
-      />
+      <iframe allowFullScreen loading="lazy" referrerPolicy="strict-origin-when-cross-origin" src={src} title={title} />
     </div>
   );
 }
