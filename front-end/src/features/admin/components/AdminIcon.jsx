@@ -32,6 +32,12 @@ const PATHS = {
       <path d="M2 21a7 7 0 0 1 14 0M16 4.5a4 4 0 0 1 0 7.5M17 15a6 6 0 0 1 5 6" />
     </>
   ),
+  communications: (
+    <>
+      <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
+      <path d="M10 21h4M18 3l2 2" />
+    </>
+  ),
   search: (
     <>
       <circle cx="11" cy="11" r="7" />
