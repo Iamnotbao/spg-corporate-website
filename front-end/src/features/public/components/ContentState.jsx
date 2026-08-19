@@ -1,3 +1,5 @@
+import '../../../styles/loading-polish.css';
+
 export function CardSkeletons({ count = 3 }) {
   return (
     <div className="public-card-grid" aria-label="Đang tải nội dung" aria-busy="true">
@@ -19,44 +21,17 @@ export function CardSkeletons({ count = 3 }) {
 export function ContentError({ message = 'Không thể tải nội dung.', onRetry }) {
   return (
     <div className="public-state public-state--error" role="alert">
-      <span className="public-state__icon" aria-hidden="true">
-        !
-      </span>
-      <div>
-        <strong>Đã có lỗi xảy ra</strong>
-        <p>{message}</p>
-      </div>
-      {onRetry && (
-        <button type="button" onClick={onRetry}>
-          Thử lại
-        </button>
-      )}
+      <span className="public-state__icon" aria-hidden="true">!</span>
+      <div><strong>Đã có lỗi xảy ra</strong><p>{message}</p></div>
+      {onRetry && <button type="button" onClick={onRetry}>Thử lại</button>}
     </div>
   );
 }
 
 export function EmptyState({ children }) {
-  return (
-    <div className="public-state public-state--empty">
-      <span className="public-state__icon" aria-hidden="true">
-        +
-      </span>
-      <p>{children}</p>
-    </div>
-  );
+  return <div className="public-state public-state--empty"><span className="public-state__icon" aria-hidden="true">+</span><p>{children}</p></div>;
 }
 
 export function DetailLoading({ label }) {
-  return (
-    <div
-      className="public-container public-detail-loading"
-      aria-live="polite"
-      aria-busy="true"
-    >
-      <div className="public-skeleton public-skeleton--short" />
-      <div className="public-skeleton public-skeleton--title" />
-      <div className="public-skeleton public-skeleton--detail-media" />
-      <span className="public-visually-hidden">{label}</span>
-    </div>
-  );
+  return <div className="public-container public-detail-loading" aria-live="polite" aria-busy="true"><div className="public-skeleton public-skeleton--short" /><div className="public-skeleton public-skeleton--title" /><div className="public-skeleton public-skeleton--detail-media" /><span className="public-visually-hidden">{label}</span></div>;
 }
