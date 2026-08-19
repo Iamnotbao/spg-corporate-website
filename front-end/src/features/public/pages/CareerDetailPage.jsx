@@ -5,6 +5,7 @@ import { ContentError, DetailLoading } from '../components/ContentState.jsx';
 import DetailCarousel from '../components/DetailCarousel.jsx';
 import PublicLayout from '../components/PublicLayout.jsx';
 import RelatedContent from '../components/RelatedContent.jsx';
+import StructuredContent from '../components/StructuredContent.jsx';
 import TextContent from '../components/TextContent.jsx';
 import {
   useDocumentTitle,
@@ -86,7 +87,7 @@ export default function CareerDetailPage({ loadJob, loadJobs, submitApplication 
                 >
                   <p className="public-eyebrow">Vị trí</p>
                   <h2 id="job-description-title">Mô tả công việc</h2>
-                  <TextContent text={job.description || job.summary} />
+                  <StructuredContent blocks={job.contentBlocks} fallbackText={job.description || job.summary} />
                 </section>
 
                 {job.benefits && (
