@@ -76,7 +76,13 @@ export function normalizeContentPayload(type, form) {
     title: String(form.title || '').trim(), summary: String(form.summary || '').trim(), imageUrl: String(form.imageUrl || '').trim(), imagePublicId: String(form.imagePublicId || '').trim(), published: form.published !== false,
     ...galleryPayload(form), ...blockPayload(form), ...translationPayload(form, type),
   };
-  if (type === 'posts') return { ...common, category: String(form.category || 'activity').trim(), excerpt: common.summary, content: String(form.content || '').trim() };
+  if (type === 'posts') return {
+    ...common,
+    category: String(form.category || 'activity').trim(),
+    pageKeys: Array.isArray(form.pageKeys) ? [...new Set(form.pageKeys.map((value) => String(value).trim()).filter(Boolean))] : [],
+    excerpt: common.summary,
+    content: String(form.content || '').trim(),
+  };
   return {
     ...common,
     description: String(form.description || '').trim(), location: String(form.location || '').trim(), type: String(form.type || 'Full-time').trim(), salary: String(form.salary || '').trim(), benefits: String(form.benefits || '').trim(), workingHours: String(form.workingHours || '').trim(),
