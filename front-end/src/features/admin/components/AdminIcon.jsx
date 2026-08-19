@@ -26,6 +26,12 @@ const PATHS = {
       <path d="m16 11 2 2 4-4" />
     </>
   ),
+  users: (
+    <>
+      <circle cx="9" cy="8" r="4" />
+      <path d="M2 21a7 7 0 0 1 14 0M16 4.5a4 4 0 0 1 0 7.5M17 15a6 6 0 0 1 5 6" />
+    </>
+  ),
   search: (
     <>
       <circle cx="11" cy="11" r="7" />
