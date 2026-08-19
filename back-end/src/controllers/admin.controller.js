@@ -39,25 +39,22 @@ const privateCvFields = [
 
 async function cleanupImage(publicId) {
   if (!publicId) return;
-
   try {
     await destroyAsset(publicId);
   } catch (error) {
-    console.error(
-      "Unable to remove an unused Cloudinary image:",
-      error.message,
-    );
+    console.error("Unable to remove an unused Cloudinary image:", error.message);
   }
 }
 
+async function cleanupImages(publicIds = []) {
+  await Promise.all([...new Set(publicIds.filter(Boolean))].map(cleanupImage));
+}
+
 export function verify(req, res) {
-  const password = String(
-    req.body?.password ?? req.body?.adminPassword ?? "",
-  ).trim();
+  const password = String(req.body?.password ?? req.body?.adminPassword ?? "").trim();
   if (!password || password !== env.adminPassword) {
     return res.status(401).json({ error: "Invalid admin password" });
   }
-
   const token = jwt.sign({ role: "admin" }, env.jwtSecret, { expiresIn: "8h" });
   return res.json({ ok: true, token });
 }
@@ -65,7 +62,6 @@ export function verify(req, res) {
 function queryFor(type, query) {
   const filter = {};
   const search = String(query.search || "").trim();
-
   if (search) {
     const safeSearch = escapeRegex(search);
     filter.$or = [
@@ -75,35 +71,20 @@ function queryFor(type, query) {
       { location: { $regex: safeSearch, $options: "i" } },
     ];
   }
-
-  if (query.published === "true") {
-    filter.published = { $ne: false };
-  }
-
-  if (query.published === "false") {
-    filter.published = false;
-  }
-
+  if (query.published === "true") filter.published = { $ne: false };
+  if (query.published === "false") filter.published = false;
   if (type === "jobs") {
     if (query.type) filter.type = query.type;
-
     if (query.location) {
-      filter.location = {
-        $regex: escapeRegex(query.location),
-        $options: "i",
-      };
+      filter.location = { $regex: escapeRegex(query.location), $options: "i" };
     }
   }
-
   return filter;
 }
 
 export async function list(type, req, res) {
   const requestedPage = Math.max(1, Math.trunc(Number(req.query.page)) || 1);
-  const pageSize = Math.min(
-    50,
-    Math.max(1, Math.trunc(Number(req.query.pageSize)) || 10),
-  );
+  const pageSize = Math.min(50, Math.max(1, Math.trunc(Number(req.query.pageSize)) || 10));
   const filter = queryFor(type, req.query);
   const collection = await getCollection(type);
   const total = await collection.countDocuments(filter);
@@ -115,29 +96,18 @@ export async function list(type, req, res) {
     .skip((page - 1) * pageSize)
     .limit(pageSize)
     .toArray();
-
-  res.json({
-    data: items,
-    pagination: { page, pageSize, total, totalPages },
-  });
+  res.json({ data: items, pagination: { page, pageSize, total, totalPages } });
 }
 
 export async function create(type, req, res) {
   const collection = await getCollection(type);
-  const result = await collection.insertOne({
-    ...req.body,
-    createdAt: new Date(),
-  });
-
+  const result = await collection.insertOne({ ...req.body, createdAt: new Date() });
   res.status(201).json({ ok: true, id: result.insertedId });
 }
 
 export async function update(type, req, res) {
   const id = toObjectId(req.params.id);
-
-  if (!id) {
-    return res.status(400).json({ error: "Invalid id" });
-  }
+  if (!id) return res.status(400).json({ error: "Invalid id" });
 
   const collection = await getCollection(type);
   const existing = await collection.findOne({ _id: id });
@@ -154,58 +124,58 @@ export async function update(type, req, res) {
     await cleanupImage(existing.imagePublicId);
   }
 
+  if (type === "posts" && Object.hasOwn(req.body, "imagePublicIds")) {
+    const nextIds = new Set(Array.isArray(req.body.imagePublicIds) ? req.body.imagePublicIds : []);
+    const removedIds = (Array.isArray(existing?.imagePublicIds) ? existing.imagePublicIds : []).filter(
+      (publicId) => publicId && !nextIds.has(publicId),
+    );
+    await cleanupImages(removedIds);
+  }
+
   return res.json({ ok: true, modified: result.modifiedCount });
 }
 
 export async function remove(type, req, res) {
   const id = toObjectId(req.params.id);
-
-  if (!id) {
-    return res.status(400).json({ error: "Invalid id" });
-  }
+  if (!id) return res.status(400).json({ error: "Invalid id" });
 
   const collection = await getCollection(type);
   const existing = await collection.findOne({ _id: id });
   const result = await collection.deleteOne({ _id: id });
 
-  if (result.deletedCount && existing?.imagePublicId) {
-    await cleanupImage(existing.imagePublicId);
+  if (result.deletedCount) {
+    await cleanupImages([
+      existing?.imagePublicId,
+      ...(Array.isArray(existing?.imagePublicIds) ? existing.imagePublicIds : []),
+    ]);
   }
-
   return res.json({ ok: true, deleted: result.deletedCount });
 }
 
 export async function bulkRemove(type, req, res) {
   const ids = (req.body.ids || []).map(toObjectId).filter(Boolean);
-
-  if (!ids.length) {
-    return res.status(400).json({ error: "No ids provided" });
-  }
+  if (!ids.length) return res.status(400).json({ error: "No ids provided" });
 
   const collection = await getCollection(type);
   const items = await collection
-    .find({ _id: { $in: ids } }, { projection: { imagePublicId: 1 } })
+    .find({ _id: { $in: ids } }, { projection: { imagePublicId: 1, imagePublicIds: 1 } })
     .toArray();
   const result = await collection.deleteMany({ _id: { $in: ids } });
-  await Promise.all(items.map((item) => cleanupImage(item.imagePublicId)));
-
+  await cleanupImages(
+    items.flatMap((item) => [
+      item.imagePublicId,
+      ...(Array.isArray(item.imagePublicIds) ? item.imagePublicIds : []),
+    ]),
+  );
   return res.json({ ok: true, deleted: result.deletedCount });
 }
 
 export async function getOne(type, req, res) {
   const id = toObjectId(req.params.id);
-
-  if (!id) {
-    return res.status(400).json({ error: "Invalid id" });
-  }
-
+  if (!id) return res.status(400).json({ error: "Invalid id" });
   const collection = await getCollection(type);
   const item = await collection.findOne({ _id: id });
-
-  if (!item) {
-    return res.status(404).json({ error: "Not found" });
-  }
-
+  if (!item) return res.status(404).json({ error: "Not found" });
   return res.json({ data: item });
 }
 
@@ -233,27 +203,18 @@ export async function listApplications(req, res) {
   const safeApplications = applications.map((application) => {
     const safeApplication = { ...application };
     privateCvFields.forEach((field) => delete safeApplication[field]);
-
     return { ...safeApplication, hasCv: hasStoredCv(application) };
   });
-
-  res.json({
-    data: safeApplications,
-    pagination: { page, pageSize, total, totalPages },
-  });
+  res.json({ data: safeApplications, pagination: { page, pageSize, total, totalPages } });
 }
 
 export async function uploadImage(req, res) {
-  if (!req.file) {
-    return res.status(400).json({ error: "Image file is required" });
-  }
-
+  if (!req.file) return res.status(400).json({ error: "Image file is required" });
   const requestedFolder = String(req.body.folder || "spg/content");
   const folder = /^spg\/(posts|jobs)$/.test(requestedFolder)
     ? requestedFolder
     : "spg/content";
   const uploaded = await uploadFile(req.file, { folder });
-
   return res.status(201).json({
     data: {
       url: uploaded.secure_url,
@@ -266,24 +227,14 @@ export async function uploadImage(req, res) {
 
 export async function downloadApplicationCv(req, res) {
   const id = toObjectId(req.params.id);
-
-  if (!id) {
-    return res.status(400).json({ error: "Invalid id" });
-  }
-
+  if (!id) return res.status(400).json({ error: "Invalid id" });
   const collection = await getCollection("applications");
   const item = await collection.findOne({ _id: id });
-
-  if (!item) {
-    return res.status(404).json({ error: "Application not found" });
-  }
+  if (!item) return res.status(404).json({ error: "Application not found" });
 
   const legacySource = item.cvUrl || item.cv || item.resumeUrl || item.resume;
   const legacyCvUrl = normalizeLegacyCvUrl(legacySource);
-  const legacyAsset = parseLegacyCloudinaryAsset(
-    legacySource,
-    env.cloudinary.cloudName,
-  );
+  const legacyAsset = parseLegacyCloudinaryAsset(legacySource, env.cloudinary.cloudName);
   let cvUrl = "";
 
   if (item.cvPublicId) {
@@ -304,10 +255,7 @@ export async function downloadApplicationCv(req, res) {
     cvUrl = legacyCvUrl;
   }
 
-  if (!cvUrl) {
-    return res.status(404).json({ error: "CV not found" });
-  }
-
+  if (!cvUrl) return res.status(404).json({ error: "CV not found" });
   await streamCvDownload({ item, sourceUrl: cvUrl, res });
   return undefined;
 }
@@ -315,18 +263,15 @@ export async function downloadApplicationCv(req, res) {
 export async function getLogo(_, res) {
   const collection = await getCollection("settings");
   const logo = await collection.findOne({ _id: "logo" });
-
   res.json({ data: logo });
 }
 
 export async function updateLogo(req, res) {
   const collection = await getCollection("settings");
-
   await collection.updateOne(
     { _id: "logo" },
     { $set: { url: req.body.url, updatedAt: new Date() } },
     { upsert: true },
   );
-
   res.json({ ok: true });
 }
