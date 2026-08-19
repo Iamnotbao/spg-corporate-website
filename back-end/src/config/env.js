@@ -11,6 +11,10 @@ export const env = {
   // environments should always configure JWT_SECRET.
   jwtSecret: process.env.JWT_SECRET || process.env.ADMIN_TOKEN || "",
   logoUrl: process.env.LOGO_URL || "",
+  openai: {
+    apiKey: String(process.env.OPENAI_API_KEY || "").trim(),
+    model: String(process.env.OPENAI_MODEL || "gpt-5.6").trim(),
+  },
   cloudinary: {
     cloudName: process.env.CLOUDINARY_CLOUD_NAME,
     apiKey: process.env.CLOUDINARY_API_KEY,
