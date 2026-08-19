@@ -5,6 +5,7 @@ import '../../styles/content-import.css';
 import './styles/users.css';
 import './styles/communications.css';
 import './styles/categories.css';
+import './styles/languages.css';
 import ApplicationsPanel from './components/ApplicationsPanel.jsx';
 import AdminLayout from './components/AdminLayout.jsx';
 import AdminLogin from './components/AdminLogin.jsx';
@@ -13,6 +14,7 @@ import CommunicationsPanel from './components/CommunicationsPanel.jsx';
 import ContentDetailModal from './components/ContentDetailModal.jsx';
 import ContentEditor from './components/ContentEditor.jsx';
 import ContentWorkspace from './components/ContentWorkspace.jsx';
+import LanguagesPanel from './components/LanguagesPanel.jsx';
 import OverviewPanel from './components/OverviewPanel.jsx';
 import UsersPanel from './components/UsersPanel.jsx';
 import { AdminToast } from './components/AdminFeedback.jsx';
@@ -138,6 +140,8 @@ export default function AdminApp() {
         <CategoriesPanel onNotify={notify} onUnauthorized={auth.handleUnauthorized} />
       ) : section === 'communications' ? (
         <CommunicationsPanel onNotify={notify} onUnauthorized={auth.handleUnauthorized} />
+      ) : section === 'languages' ? (
+        <LanguagesPanel onNotify={notify} onUnauthorized={auth.handleUnauthorized} />
       ) : section === 'users' ? (
         <UsersPanel
           currentUser={auth.user}
