@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
+import ThemeToggle from '../../shared/ThemeToggle.jsx';
 import Brand from './Brand.jsx';
+import LanguageSwitcher from './LanguageSwitcher.jsx';
 
 const navigation = [
   {
@@ -68,18 +70,22 @@ export default function SiteHeader() {
       <div className="public-container public-header__inner">
         <Brand onNavigate={closeMenu} />
 
-        <button
-          className={`public-menu-toggle public-menu-toggle--desktop${menuOpen ? ' is-open' : ''}`}
-          type="button"
-          aria-controls="public-site-navigation"
-          aria-expanded={menuOpen}
-          aria-label={menuOpen ? 'Đóng trình đơn' : 'Mở trình đơn'}
-          onClick={() => setMenuOpen((open) => !open)}
-        >
-          <span />
-          <span />
-          <span />
-        </button>
+        <div className="public-header__utilities">
+          <LanguageSwitcher />
+          <ThemeToggle compact />
+          <button
+            className={`public-menu-toggle public-menu-toggle--desktop${menuOpen ? ' is-open' : ''}`}
+            type="button"
+            aria-controls="public-site-navigation"
+            aria-expanded={menuOpen}
+            aria-label={menuOpen ? 'Đóng trình đơn' : 'Mở trình đơn'}
+            onClick={() => setMenuOpen((open) => !open)}
+          >
+            <span />
+            <span />
+            <span />
+          </button>
+        </div>
       </div>
 
       <button
