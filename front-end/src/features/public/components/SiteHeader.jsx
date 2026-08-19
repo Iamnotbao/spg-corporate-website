@@ -51,24 +51,20 @@ export default function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
-    document.body.classList.toggle('public-menu-open', menuOpen);
-    if (!menuOpen) return () => document.body.classList.remove('public-menu-open');
+    if (!menuOpen) return undefined;
 
     const closeOnEscape = (event) => {
       if (event.key === 'Escape') setMenuOpen(false);
     };
 
     window.addEventListener('keydown', closeOnEscape);
-    return () => {
-      document.body.classList.remove('public-menu-open');
-      window.removeEventListener('keydown', closeOnEscape);
-    };
+    return () => window.removeEventListener('keydown', closeOnEscape);
   }, [menuOpen]);
 
   const closeMenu = () => setMenuOpen(false);
 
   return (
-    <header className="public-header public-header--hamburger">
+    <header className={`public-header public-header--hamburger${menuOpen ? ' is-open' : ''}`}>
       <div className="public-container public-header__inner">
         <Brand onNavigate={closeMenu} />
 
@@ -83,9 +79,16 @@ export default function SiteHeader() {
           <span />
           <span />
           <span />
-          <small>{menuOpen ? 'Đóng' : 'Menu'}</small>
         </button>
       </div>
+
+      <button
+        aria-label="Đóng trình đơn"
+        className={`public-menu-scrim${menuOpen ? ' is-open' : ''}`}
+        onClick={closeMenu}
+        tabIndex={menuOpen ? 0 : -1}
+        type="button"
+      />
 
       <div
         className={`public-mega-menu${menuOpen ? ' is-open' : ''}`}
@@ -94,11 +97,9 @@ export default function SiteHeader() {
       >
         <div className="public-container public-mega-menu__inner">
           <div className="public-mega-menu__intro">
-            <p className="public-eyebrow public-eyebrow--light">Chí Hùng SPG</p>
-            <h2>Khám phá doanh nghiệp theo cách rõ ràng hơn.</h2>
-            <p>
-              Tìm nhanh thông tin về doanh nghiệp, hoạt động, tin tức và cơ hội nghề nghiệp.
-            </p>
+            <span className="public-mega-menu__kicker">Chí Hùng SPG</span>
+            <strong>Khám phá</strong>
+            <p>Thông tin doanh nghiệp, hoạt động, tin tức và cơ hội nghề nghiệp.</p>
             <a href="/#contact" onClick={closeMenu}>
               Liên hệ với SPG <span aria-hidden="true">↗</span>
             </a>
@@ -106,15 +107,26 @@ export default function SiteHeader() {
 
           <nav className="public-mega-menu__nav" aria-label="Điều hướng chính">
             {navigation.map((group, index) => (
-              <section className="public-mega-menu__group" key={group.label}>
+              <section
+                className="public-mega-menu__group"
+                key={group.label}
+                style={{ '--menu-order': index }}
+              >
                 <a className="public-mega-menu__title" href={group.href} onClick={closeMenu}>
                   <span>{String(index + 1).padStart(2, '0')}</span>
-                  {group.label}
+                  <strong>{group.label}</strong>
+                  <i aria-hidden="true">↗</i>
                 </a>
                 <div className="public-mega-menu__subnav">
-                  {group.children.map(([label, href]) => (
-                    <a href={href} key={`${group.label}-${label}`} onClick={closeMenu}>
-                      {label}
+                  {group.children.map(([label, href], childIndex) => (
+                    <a
+                      href={href}
+                      key={`${group.label}-${label}`}
+                      onClick={closeMenu}
+                      style={{ '--sub-order': childIndex }}
+                    >
+                      <span>{label}</span>
+                      <i aria-hidden="true">→</i>
                     </a>
                   ))}
                 </div>
