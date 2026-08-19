@@ -1,6 +1,7 @@
 export const ADMIN_SECTIONS = [
   { key: 'overview', label: 'Tổng quan', icon: 'overview' },
   { key: 'site-profile', label: 'Trang chủ & đối tác', icon: 'overview', permission: 'settings.read' },
+  { key: 'media', label: 'Thư viện ảnh', icon: 'posts', permission: 'media.read' },
   { key: 'posts', label: 'Bài viết', icon: 'posts', permission: 'posts.read' },
   { key: 'categories', label: 'Category', icon: 'posts', permission: 'categories.read' },
   { key: 'jobs', label: 'Tuyển dụng', icon: 'jobs', permission: 'jobs.read' },
@@ -38,6 +39,7 @@ export const PERMISSION_GROUPS = [
   ['Thông báo & sự kiện', ['communications.read', 'communications.update']],
   ['Chat & liên hệ', ['chat.read', 'chat.reply', 'chat.settings']],
   ['Ngôn ngữ', ['languages.read', 'languages.create', 'languages.update', 'languages.delete']],
+  ['Thư viện ảnh', ['media.read', 'media.delete']],
   ['Cài đặt & trang chủ', ['settings.read', 'settings.update']],
 ];
 export const PAGE_SIZE_OPTIONS = [5, 10, 20, 50];
