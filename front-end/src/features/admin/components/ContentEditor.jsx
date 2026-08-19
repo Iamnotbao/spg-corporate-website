@@ -1,9 +1,15 @@
 import { useMemo, useRef, useState } from 'react';
 import { uploadAdminImage } from '../../../services/adminService.js';
-import { CONTENT_LABELS, EMPTY_CONTENT, JOB_TYPES } from '../constants.js';
+import {
+  CONTENT_LABELS,
+  EMPTY_CONTENT,
+  JOB_TYPES,
+  NEWS_CATEGORIES,
+} from '../constants.js';
 import { getErrorMessage, normalizeContentPayload } from '../utils.js';
 import AdminIcon from './AdminIcon.jsx';
 import { AdminAlert } from './AdminFeedback.jsx';
+import PostGalleryField from './PostGalleryField.jsx';
 
 const ALLOWED_IMAGE_TYPES = new Set([
   'image/jpeg',
@@ -17,6 +23,10 @@ function createInitialForm(type, item) {
     ...EMPTY_CONTENT[type],
     ...(item || {}),
     summary: item?.summary || item?.excerpt || '',
+    images: Array.isArray(item?.images) ? item.images : EMPTY_CONTENT[type]?.images || [],
+    imagePublicIds: Array.isArray(item?.imagePublicIds)
+      ? item.imagePublicIds
+      : EMPTY_CONTENT[type]?.imagePublicIds || [],
     published: item?.published !== false,
   };
 }
@@ -39,6 +49,10 @@ export default function ContentEditor({ item, onBack, onSave, onUnauthorized, ty
       ...(name === 'imageUrl' ? { imagePublicId: '' } : {}),
     }));
     if (name === 'imageUrl') setImageError(false);
+  }
+
+  function updateFields(values) {
+    setForm((current) => ({ ...current, ...values }));
   }
 
   function handleBack() {
@@ -155,6 +169,23 @@ export default function ContentEditor({ item, onBack, onSave, onUnauthorized, ty
               <small>{String(form.title || '').length}/180 ký tự</small>
             </label>
 
+            {type === 'posts' && (
+              <label className="admin-form-field admin-form-field--full">
+                <span>Nhóm tin tức</span>
+                <select
+                  onChange={(event) => updateField('category', event.target.value)}
+                  value={form.category || 'activity'}
+                >
+                  {NEWS_CATEGORIES.map((category) => (
+                    <option key={category.value} value={category.value}>
+                      {category.label}
+                    </option>
+                  ))}
+                </select>
+                <small>Nhóm này dùng cho tab tin tức và bài viết liên quan.</small>
+              </label>
+            )}
+
             {type === 'jobs' && (
               <div className="admin-form-grid">
                 <label className="admin-form-field">
@@ -195,16 +226,24 @@ export default function ContentEditor({ item, onBack, onSave, onUnauthorized, ty
             </label>
 
             {type === 'posts' ? (
-              <label className="admin-form-field admin-form-field--full">
-                <span>Nội dung bài viết</span>
-                <textarea
-                  className="admin-editor__long-copy"
-                  onChange={(event) => updateField('content', event.target.value)}
-                  placeholder="Nhập nội dung chi tiết…"
-                  rows={12}
-                  value={form.content}
+              <>
+                <label className="admin-form-field admin-form-field--full">
+                  <span>Nội dung bài viết</span>
+                  <textarea
+                    className="admin-editor__long-copy"
+                    onChange={(event) => updateField('content', event.target.value)}
+                    placeholder="Nhập nội dung chi tiết…"
+                    rows={12}
+                    value={form.content}
+                  />
+                </label>
+                <PostGalleryField
+                  form={form}
+                  onChange={updateFields}
+                  onError={setError}
+                  onUnauthorized={onUnauthorized}
                 />
-              </label>
+              </>
             ) : (
               <>
                 <label className="admin-form-field admin-form-field--full">
@@ -230,9 +269,7 @@ export default function ContentEditor({ item, onBack, onSave, onUnauthorized, ty
                   <label className="admin-form-field">
                     <span>Thời gian làm việc</span>
                     <input
-                      onChange={(event) =>
-                        updateField('workingHours', event.target.value)
-                      }
+                      onChange={(event) => updateField('workingHours', event.target.value)}
                       placeholder="Ví dụ: Thứ 2 – Thứ 6"
                       type="text"
                       value={form.workingHours}

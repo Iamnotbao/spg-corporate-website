@@ -1,0 +1,107 @@
+.admin-post-gallery {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.admin-post-gallery__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.admin-post-gallery__heading > div {
+  display: grid;
+  gap: 3px;
+}
+
+.admin-post-gallery__heading strong {
+  color: var(--admin-navy-900);
+  font-size: 0.9rem;
+}
+
+.admin-post-gallery__heading span {
+  color: var(--admin-muted);
+  font-size: 0.78rem;
+}
+
+.admin-post-gallery input[type='file'] {
+  display: none;
+}
+
+.admin-post-gallery__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.admin-post-gallery figure {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  margin: 0;
+  border: 1px solid var(--admin-line);
+  border-radius: 12px;
+  background: var(--admin-surface-soft);
+}
+
+.admin-post-gallery img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.admin-post-gallery figure button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  color: #fff;
+  background: rgba(10, 25, 22, 0.75);
+  font-size: 1.1rem;
+  transition: transform 150ms ease, background 150ms ease;
+}
+
+.admin-post-gallery figure button:hover {
+  background: #b63b3b;
+  transform: scale(1.06);
+}
+
+.admin-post-gallery figcaption {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  color: #fff;
+  background: rgba(10, 25, 22, 0.72);
+  font-size: 0.66rem;
+  font-weight: 800;
+}
+
+.admin-post-gallery__empty {
+  padding: 20px;
+  border: 1px dashed var(--admin-line-strong);
+  border-radius: 12px;
+  color: var(--admin-muted);
+  background: var(--admin-surface-soft);
+  font-size: 0.82rem;
+  text-align: center;
+}
+
+@media (max-width: 720px) {
+  .admin-post-gallery__heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-post-gallery__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
