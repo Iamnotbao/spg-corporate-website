@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { uploadAdminImage } from '../../../services/adminService.js';
+import '../../../styles/post-gallery.css';
 import AdminIcon from './AdminIcon.jsx';
-import '../styles/post-gallery.css';
 
 const ALLOWED_IMAGE_TYPES = new Set([
   'image/jpeg',
