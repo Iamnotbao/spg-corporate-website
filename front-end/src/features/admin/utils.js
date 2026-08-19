@@ -45,6 +45,7 @@ function blockPayload(form) {
           id: String(block.id || ''), type: 'gallery', layout: String(block.layout || '').trim(),
           images: Array.isArray(block.images) ? block.images.slice(0, 4).map((image) => ({ url: String(image?.url || '').trim(), publicId: String(image?.publicId || '').trim(), caption: String(image?.caption || '').trim() })).filter((image) => image.url) : [],
         };
+        if (block.type === 'video') return { id: String(block.id || ''), type: 'video', url: String(block.url || '').trim(), caption: String(block.caption || '').trim() };
         return null;
       }).filter(Boolean)
     : [];

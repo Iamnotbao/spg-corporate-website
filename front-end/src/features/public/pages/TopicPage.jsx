@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { getPosts } from '../../../services/publicService.js';
 import { getPublicSiteProfile } from '../../../services/siteProfileService.js';
+import GoogleMapEmbed from '../../shared/GoogleMapEmbed.jsx';
 import PublicLayout from '../components/PublicLayout.jsx';
 import SafeImage from '../components/SafeImage.jsx';
 import { usePublicCollection, useDocumentTitle, usePageTop } from '../hooks/usePublicContent.js';
 import { localizeContent, usePublicLanguage } from '../i18n.js';
 import { getContentId, getExcerpt } from '../utils/content.js';
+import '../../../styles/map-embed.css';
 import '../../../styles/topic-page.css';
 
 const TOPICS = {
@@ -40,7 +42,7 @@ export default function TopicPage() {
     <PublicLayout>
       <section className="public-topic-hero"><div className="public-container"><Link className="public-topic-back" to="/">← Chí Hùng SPG</Link><p className="public-eyebrow">FOOTWEAR · {String(topic).replaceAll('-', ' ')}</p><h1>{copy[0]}</h1><p>{copy[1]}</p></div></section>
       <section className="public-topic-content"><div className="public-container">
-        {topic === 'location' && (location?.address || location?.mapsUrl) && <div className="public-topic-location"><div><small>{location?.name || 'Chí Hùng SPG'}</small>{location?.address && <strong>{location.address}</strong>}</div>{location?.mapsUrl && <a href={location.mapsUrl} target="_blank" rel="noreferrer">Google Maps ↗</a>}</div>}
+        {topic === 'location' && (location?.address || location?.mapsUrl) && <div className="public-topic-location-wrap"><div className="public-topic-location"><div><small>{location?.name || 'Chí Hùng SPG'}</small>{location?.address && <strong>{location.address}</strong>}</div>{location?.mapsUrl && <a href={location.mapsUrl} target="_blank" rel="noreferrer">Google Maps ↗</a>}</div><GoogleMapEmbed name={location?.name} address={location?.address} /></div>}
         {posts.status === 'loading' && <p className="public-topic-state">Đang tải nội dung…</p>}
         {posts.status === 'error' && <p className="public-topic-state">Chưa thể tải nội dung.</p>}
         {posts.status === 'ready' && !visible.length && <div className="public-topic-empty"><strong>{copy[0]}</strong><p>Admin có thể tạo Post, chọn category “{config.category}” hoặc gán bài vào trang này để nội dung xuất hiện tại đây.</p></div>}
