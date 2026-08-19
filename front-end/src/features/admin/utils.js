@@ -58,10 +58,18 @@ export function normalizeContentPayload(type, form) {
   };
 
   if (type === 'posts') {
+    const images = Array.isArray(form.images) ? form.images.filter(Boolean) : [];
+    const imagePublicIds = Array.isArray(form.imagePublicIds)
+      ? form.imagePublicIds.slice(0, images.length)
+      : [];
+
     return {
       ...common,
+      category: String(form.category || 'activity').trim(),
       excerpt: common.summary,
       content: String(form.content || '').trim(),
+      images,
+      imagePublicIds,
     };
   }
 
