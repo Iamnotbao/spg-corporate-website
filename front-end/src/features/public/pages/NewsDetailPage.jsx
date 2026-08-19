@@ -24,7 +24,7 @@ export default function NewsDetailPage({ loadPost, loadPosts }) {
   const publishedDate = formatPublishedDate(post?.publishedAt || post?.createdAt || post?.updatedAt);
 
   usePageTop();
-  useDocumentTitle(localized?.title ? `${localized.title} | SPG Logistics` : `${t('news')} | SPG Logistics`);
+  useDocumentTitle(localized?.title ? `${localized.title} | Chí Hùng SPG` : `${t('news')} | Chí Hùng SPG`);
 
   return (
     <PublicLayout>
@@ -46,7 +46,7 @@ export default function NewsDetailPage({ loadPost, loadPosts }) {
                 </nav>
                 <p className="public-eyebrow">{post.category || 'SPG News'}</p>
                 <h1>{localized.title || t('newsFallback')}</h1>
-                <div className="public-detail__byline"><span>SPG Logistics</span>{publishedDate && <time dateTime={post.publishedAt || post.createdAt}>{publishedDate}</time>}</div>
+                <div className="public-detail__byline"><span>Chí Hùng SPG</span>{publishedDate && <time dateTime={post.publishedAt || post.createdAt}>{publishedDate}</time>}</div>
               </div>
             </header>
 
