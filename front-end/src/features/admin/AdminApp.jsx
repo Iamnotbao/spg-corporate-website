@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { createAdminContent, updateAdminContent } from '../../services/adminService.js';
 import '../../styles/admin.css';
+import '../../styles/content-import.css';
 import ApplicationsPanel from './components/ApplicationsPanel.jsx';
 import AdminLayout from './components/AdminLayout.jsx';
 import AdminLogin from './components/AdminLogin.jsx';
