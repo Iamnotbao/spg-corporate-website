@@ -39,6 +39,14 @@ export async function updateAdminChatSettings(payload) {
   return apiRequest('/admin/chat/settings', { method: 'PUT', auth: true, body: payload });
 }
 
+export async function testAdminAiChat(payload) {
+  return apiRequest('/admin/chat/ai-test', {
+    method: 'POST',
+    auth: true,
+    body: payload,
+  });
+}
+
 export async function listAdminChatSessions(options = {}) {
   const params = new URLSearchParams({
     page: String(options.page || 1),

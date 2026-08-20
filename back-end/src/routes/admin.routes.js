@@ -14,6 +14,7 @@ import * as categoryController from "../controllers/category.controller.js";
 import * as communicationsController from "../controllers/communications.controller.js";
 import * as languageController from "../controllers/language.controller.js";
 import * as chatController from "../controllers/chat.controller.js";
+import * as adminAiController from "../controllers/adminAi.controller.js";
 import * as siteProfileController from "../controllers/siteProfile.controller.js";
 import * as mediaController from "../controllers/media.controller.js";
 import { importContent } from "../controllers/contentImport.controller.js";
@@ -32,6 +33,13 @@ const uploadLimiter = rateLimit({
   standardHeaders: "draft-8",
   legacyHeaders: false,
   message: { error: "Tạm thời đã vượt giới hạn upload. Vui lòng thử lại sau." },
+});
+const aiTestLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 12,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { error: "Bạn đang thử AI quá nhanh. Vui lòng chờ một chút rồi thử lại." },
 });
 
 router.post("/login", loginLimiter, asyncHandler(accountController.login));
@@ -58,6 +66,7 @@ router.delete("/languages/:id", requirePermission("languages.delete"), asyncHand
 
 router.get("/chat/settings", requirePermission("chat.read"), asyncHandler(chatController.getAdminChatSettings));
 router.put("/chat/settings", requirePermission("chat.settings"), asyncHandler(chatController.updateAdminChatSettings));
+router.post("/chat/ai-test", requirePermission("chat.settings"), aiTestLimiter, asyncHandler(adminAiController.testAdminAiChat));
 router.get("/chat/sessions", requirePermission("chat.read"), asyncHandler(chatController.listAdminChatSessions));
 router.get("/chat/sessions/:sessionId/messages", requirePermission("chat.read"), asyncHandler(chatController.getAdminChatMessages));
 router.post("/chat/sessions/:sessionId/messages", requirePermission("chat.reply"), asyncHandler(chatController.createAdminChatMessage));
