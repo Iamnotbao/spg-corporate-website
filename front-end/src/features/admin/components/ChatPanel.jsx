@@ -5,6 +5,7 @@ import {
   getAdminChatSettings,
   listAdminChatSessions,
   sendAdminChatMessage,
+  testAdminAiChat,
   updateAdminChatSession,
   updateAdminChatSettings,
 } from '../../../services/chatService.js';
@@ -48,6 +49,10 @@ export default function ChatPanel({ onNotify, onUnauthorized }) {
   const [sending, setSending] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
   const [error, setError] = useState('');
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiHistory, setAiHistory] = useState([]);
+  const [testingAi, setTestingAi] = useState(false);
+  const [aiError, setAiError] = useState('');
 
   const loadSessions = useCallback(async (page = pagination.page) => {
     try {
@@ -127,6 +132,29 @@ export default function ChatPanel({ onNotify, onUnauthorized }) {
       setError(requestError?.message || 'Không thể gửi phản hồi.');
     } finally {
       setSending(false);
+    }
+  }
+
+  async function submitAiTest(event) {
+    event.preventDefault();
+    const text = aiPrompt.trim();
+    if (!text || testingAi) return;
+    const previous = aiHistory.slice(-10);
+    setAiHistory((current) => [...current, { role: 'user', text }]);
+    setAiPrompt('');
+    setAiError('');
+    setTestingAi(true);
+    try {
+      const payload = await testAdminAiChat({ message: text, history: previous });
+      const answer = payload?.data?.text || '';
+      if (!answer) throw new Error('AI không trả về nội dung.');
+      setAiHistory((current) => [...current, { role: 'assistant', text: answer, model: payload?.data?.model || settings.aiModel }]);
+    } catch (requestError) {
+      if (onUnauthorized(requestError)) return;
+      const detail = requestError?.payload?.detail || requestError?.detail || '';
+      setAiError([requestError?.message || 'Không thể thử AI.', detail].filter(Boolean).join(' · '));
+    } finally {
+      setTestingAi(false);
     }
   }
 
@@ -223,6 +251,23 @@ export default function ChatPanel({ onNotify, onUnauthorized }) {
         </div>
       </div>
 
+      <section className="admin-ai-test">
+        <div className="admin-ai-test__heading">
+          <div><span>AI TEST</span><h3>Trò chuyện thử với AI</h3><p>Sandbox riêng của Admin. Tin nhắn tại đây không gửi cho khách và không lưu vào lịch sử live chat.</p></div>
+          <div className={`admin-ai-test__status${settings.aiConfigured ? ' is-ready' : ''}`}><i />{settings.aiConfigured ? `Sẵn sàng · ${settings.aiModel || 'OpenAI'}` : 'Chưa cấu hình OPENAI_API_KEY'}</div>
+        </div>
+        <div className="admin-ai-test__messages">
+          {!aiHistory.length && <div className="admin-ai-test__welcome"><strong>Thử hỏi AI</strong><p>Ví dụ: “Website Chí Hùng SPG đang giới thiệu những nội dung gì?” hoặc “Hướng dẫn khách xem vị trí tuyển dụng.”</p></div>}
+          {aiHistory.map((item, index) => <article className={`is-${item.role}`} key={`${item.role}-${index}`}><small>{item.role === 'assistant' ? `AI · ${item.model || settings.aiModel || 'OpenAI'}` : 'Bạn'}</small><p>{item.text}</p></article>)}
+          {testingAi && <article className="is-assistant is-thinking"><small>AI</small><p><span /><span /><span /></p></article>}
+        </div>
+        {aiError && <div className="admin-ai-test__error"><strong>AI chưa trả lời được.</strong><span>{aiError}</span></div>}
+        <form className="admin-ai-test__composer" onSubmit={submitAiTest}>
+          <textarea rows="3" maxLength="1800" value={aiPrompt} onChange={(event) => setAiPrompt(event.target.value)} disabled={!settings.aiConfigured || testingAi} placeholder={settings.aiConfigured ? 'Nhập câu hỏi để test AI…' : 'Cần cấu hình OPENAI_API_KEY trên Render trước'} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }} />
+          <div><button className="admin-button admin-button--secondary" type="button" disabled={!aiHistory.length || testingAi} onClick={() => { setAiHistory([]); setAiError(''); }}>Xóa đoạn chat</button><button className="admin-button admin-button--primary" type="submit" disabled={!settings.aiConfigured || testingAi || !aiPrompt.trim()}>{testingAi ? 'AI đang trả lời…' : 'Gửi cho AI'}</button></div>
+        </form>
+      </section>
+
       <form className="admin-chat__settings" onSubmit={saveSettings}>
         <div className="admin-form-section__heading"><span>⚙</span><div><h3>Cấu hình Chat & Social</h3><p>Chỉ các URL được nhập mới xuất hiện ngoài website.</p></div></div>
         <div className="admin-form-grid">
@@ -234,7 +279,7 @@ export default function ChatPanel({ onNotify, onUnauthorized }) {
         <div className="admin-chat__setting-switches">
           <label className="admin-switch-field"><input type="checkbox" checked={settings.enabled !== false} onChange={(event) => setSettings((current) => ({ ...current, enabled: event.target.checked }))} /><span className="admin-switch-field__control" /><span><strong>Bật Chat</strong></span></label>
           <label className="admin-switch-field"><input type="checkbox" checked={settings.autoReplyEnabled !== false} onChange={(event) => setSettings((current) => ({ ...current, autoReplyEnabled: event.target.checked }))} /><span className="admin-switch-field__control" /><span><strong>Bật trả lời tự động</strong></span></label>
-          <label className="admin-switch-field"><input type="checkbox" disabled={!settings.aiConfigured} checked={settings.aiEnabled === true} onChange={(event) => setSettings((current) => ({ ...current, aiEnabled: event.target.checked }))} /><span className="admin-switch-field__control" /><span><strong>Dùng AI</strong><small>{settings.aiConfigured ? `Model: ${settings.aiModel || 'đã cấu hình'} · lỗi sẽ fallback FAQ` : 'Chưa có OPENAI_API_KEY trên backend · đang dùng FAQ'}</small></span></label>
+          <label className="admin-switch-field"><input type="checkbox" disabled={!settings.aiConfigured} checked={settings.aiEnabled === true} onChange={(event) => setSettings((current) => ({ ...current, aiEnabled: event.target.checked }))} /><span className="admin-switch-field__control" /><span><strong>Dùng AI cho khách</strong><small>{settings.aiConfigured ? `Model: ${settings.aiModel || 'đã cấu hình'} · lỗi sẽ fallback FAQ` : 'Chưa có OPENAI_API_KEY trên backend · đang dùng FAQ'}</small></span></label>
         </div>
         <button className="admin-button admin-button--primary" type="submit" disabled={savingSettings}>{savingSettings ? 'Đang lưu…' : 'Lưu cấu hình'}</button>
       </form>
