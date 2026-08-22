@@ -28,7 +28,7 @@ const EMPTY_QUIZ = {
 
 export default function AdminQuizPanel({ onNotify, onUnauthorized }) {
   const [quizzes, setQuizzes] = useState([]);
-  const [lessons, setLessons] = useState([]);
+  const [allLessons, setAllLessons] = useState([]);
   const [selected, setSelected] = useState(null);
   const [quizForm, setQuizForm] = useState(null);
   const [questionForm, setQuestionForm] = useState(null);
@@ -48,7 +48,7 @@ export default function AdminQuizPanel({ onNotify, onUnauthorized }) {
         listAdminLearning('lessons'),
       ]);
       setQuizzes(quizResponse.data || []);
-      setLessons((lessonResponse.data || []).filter((lesson) => lesson.type === 'quiz'));
+      setAllLessons(lessonResponse.data || []);
       setStatus('ready');
     } catch (caught) {
       if (caught.status === 401) onUnauthorized();
@@ -59,14 +59,18 @@ export default function AdminQuizPanel({ onNotify, onUnauthorized }) {
 
   useEffect(() => { load(); }, [load]);
 
+  const lessons = useMemo(() => allLessons.filter((lesson) => lesson.type === 'quiz'), [allLessons]);
+  const lessonNames = useMemo(() => new Map(allLessons.map((lesson) => [lesson.id, lesson.title])), [allLessons]);
   const visible = useMemo(() => {
     const normalized = search.trim().toLocaleLowerCase('vi');
     return quizzes.filter((quiz) => {
-      const matchesSearch = !normalized || quiz.title.toLocaleLowerCase('vi').includes(normalized);
+      const lessonTitle = lessonNames.get(quiz.lessonId) || '';
+      const haystack = `${quiz.title || ''} ${quiz.description || ''} ${lessonTitle} ${quiz.passingScore ?? ''} ${quiz.status || ''}`.toLocaleLowerCase('vi');
+      const matchesSearch = !normalized || haystack.includes(normalized);
       const matchesStatus = !statusFilter || quiz.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
-  }, [quizzes, search, statusFilter]);
+  }, [quizzes, search, statusFilter, lessonNames]);
   const totalPages = Math.max(1, Math.ceil(visible.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
   const pagedQuizzes = visible.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
@@ -158,18 +162,32 @@ export default function AdminQuizPanel({ onNotify, onUnauthorized }) {
     }
   }
 
+  const beginCreate = () => {
+    setSelected(null);
+    setQuestionForm(null);
+    setQuizForm({ ...EMPTY_QUIZ, lessonId: lessons[0]?.id || '' });
+  };
+
   return (
     <div className="admin-learning-page admin-quiz-page">
       <AdminPageHeader
         action={
-          <button className="admin-button admin-button--primary" onClick={() => { setSelected(null); setQuestionForm(null); setQuizForm({ ...EMPTY_QUIZ, lessonId: lessons[0]?.id || '' }); }} type="button">
+          <button className="admin-button admin-button--primary" disabled={!lessons.length} onClick={beginCreate} type="button">
             <AdminIcon name="plus" size={17} /> Tạo Quiz
           </button>
         }
-        description="Tạo Quiz theo bài học, xây câu hỏi và kiểm tra cấu trúc trước khi xuất bản."
+        description="Tạo Quiz theo bài học loại Quiz, xây câu hỏi và kiểm tra cấu trúc trước khi xuất bản."
         eyebrow="Learning content"
         title="Quiz"
       />
+      {status === 'ready' && allLessons.length > 0 && !lessons.length && (
+        <AdminAlert>
+          Bạn đã có bài học nhưng chưa có bài nào mang loại “Quiz”. Vào Bài học, sửa một bài và chọn Loại bài học = Quiz; sau đó quay lại đây để tạo Quiz cho bài đó.
+        </AdminAlert>
+      )}
+      {status === 'ready' && !allLessons.length && (
+        <AdminAlert>Bạn cần tạo Course → Unit → Lesson trước, sau đó đặt Lesson đó thành loại Quiz.</AdminAlert>
+      )}
       {error && <AdminAlert onRetry={status === 'error' ? load : undefined}>{error}</AdminAlert>}
       {quizForm && <AdminQuizForm form={quizForm} lessons={lessons} onCancel={() => { setQuizForm(null); setSelected(null); setQuestionForm(null); }} onChange={(event) => setQuizForm((current) => ({ ...current, [event.target.name]: event.target.value }))} onSubmit={saveQuiz} saving={saving} />}
       {selected && (
@@ -184,12 +202,12 @@ export default function AdminQuizPanel({ onNotify, onUnauthorized }) {
       )}
       <section className="admin-panel admin-learning-list">
         <div className="admin-learning-toolbar">
-          <label><AdminIcon name="search" size={18} /><span className="admin-sr-only">Tìm Quiz</span><input onChange={(event) => updateSearch(event.target.value)} placeholder="Tìm Quiz…" type="search" value={search} /></label>
+          <label><AdminIcon name="search" size={18} /><span className="admin-sr-only">Tìm Quiz</span><input onChange={(event) => updateSearch(event.target.value)} placeholder="Tìm tiêu đề, mô tả, bài học, điểm đạt…" type="search" value={search} /></label>
           <select aria-label="Lọc trạng thái Quiz" onChange={(event) => updateStatusFilter(event.target.value)} value={statusFilter}><option value="">Tất cả trạng thái</option><option value="draft">Bản nháp</option><option value="published">Đã xuất bản</option></select>
         </div>
         {status === 'loading' ? <AdminSkeletonRows count={4} /> : visible.length ? (
           <>
-            <div className="admin-table-wrap"><table className="admin-table admin-learning-table"><thead><tr><th>Quiz</th><th>Câu hỏi</th><th>Điểm đạt</th><th>Trạng thái</th><th><span className="admin-sr-only">Thao tác</span></th></tr></thead><tbody>{pagedQuizzes.map((quiz) => <tr key={quiz.id}><td><strong>{quiz.title}</strong><small>{lessons.find((lesson) => lesson.id === quiz.lessonId)?.title || 'Bài học Quiz'}</small></td><td>{quiz.questionCount}</td><td>{quiz.passingScore}%</td><td><span className={`admin-learning-badge is-${quiz.status}`}>{quiz.status === 'published' ? 'Đã xuất bản' : 'Bản nháp'}</span></td><td className="admin-learning-actions"><button className="admin-icon-button" aria-label={`Sửa ${quiz.title}`} onClick={() => openQuiz(quiz.id)} type="button"><AdminIcon name="edit" size={16} /></button><button className="admin-icon-button admin-icon-button--danger" aria-label={`Xóa ${quiz.title}`} onClick={() => removeQuiz(quiz)} type="button"><AdminIcon name="trash" size={16} /></button></td></tr>)}</tbody></table></div>
+            <div className="admin-table-wrap"><table className="admin-table admin-learning-table"><thead><tr><th>Quiz</th><th>Câu hỏi</th><th>Điểm đạt</th><th>Trạng thái</th><th><span className="admin-sr-only">Thao tác</span></th></tr></thead><tbody>{pagedQuizzes.map((quiz) => <tr key={quiz.id}><td><strong>{quiz.title}</strong><small>{lessonNames.get(quiz.lessonId) || 'Bài học Quiz'}</small></td><td>{quiz.questionCount}</td><td>{quiz.passingScore}%</td><td><span className={`admin-learning-badge is-${quiz.status}`}>{quiz.status === 'published' ? 'Đã xuất bản' : 'Bản nháp'}</span></td><td className="admin-learning-actions"><button className="admin-icon-button" aria-label={`Sửa ${quiz.title}`} onClick={() => openQuiz(quiz.id)} type="button"><AdminIcon name="edit" size={16} /></button><button className="admin-icon-button admin-icon-button--danger" aria-label={`Xóa ${quiz.title}`} onClick={() => removeQuiz(quiz)} type="button"><AdminIcon name="trash" size={16} /></button></td></tr>)}</tbody></table></div>
             <AdminPagination onPageChange={setPage} pagination={{ page: safePage, pageSize: PAGE_SIZE, total: visible.length, totalPages }} />
           </>
         ) : <AdminEmpty title="Chưa có Quiz">Tạo Quiz nháp cho một bài học loại Quiz để bắt đầu.</AdminEmpty>}
