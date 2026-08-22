@@ -21,6 +21,7 @@ import ContentEditor from './components/ContentEditor.jsx';
 import ContentWorkspace from './components/ContentWorkspace.jsx';
 import MediaLibraryPanel from './components/MediaLibraryPanel.jsx';
 import OverviewPanel from './components/OverviewPanel.jsx';
+import StudentsPanel from './components/StudentsPanel.jsx';
 import UsersPanel from './components/UsersPanel.jsx';
 import { AdminToast } from './components/AdminFeedback.jsx';
 import { CONTENT_LABELS } from './constants.js';
@@ -151,15 +152,7 @@ export default function AdminApp() {
   } else if (section === 'progress') {
     page = <AdminProgressPanel onUnauthorized={auth.handleUnauthorized} />;
   } else if (section === 'students') {
-    page = (
-      <UsersPanel
-        currentUser={auth.user}
-        defaultRole="student"
-        onNotify={notify}
-        onUnauthorized={auth.handleUnauthorized}
-        studentOnly
-      />
-    );
+    page = <StudentsPanel onUnauthorized={auth.handleUnauthorized} />;
   } else if (section === 'blog') {
     page = (
       <ContentWorkspace
