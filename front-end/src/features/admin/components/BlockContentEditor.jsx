@@ -69,7 +69,7 @@ export default function BlockContentEditor({ blocks, fallbackText = '', onChange
         throw new Error('Ảnh phải nhỏ hơn 5 MB và đúng định dạng hình ảnh.');
       }
       // eslint-disable-next-line no-await-in-loop
-      uploaded.push(await uploadAdminImage(file, `spg/${type}`));
+      uploaded.push(await uploadAdminImage(file, type === 'posts' ? 'mandora/blog' : `spg/${type}`));
     }
     return uploaded;
   }

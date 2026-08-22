@@ -7,8 +7,10 @@ import '../../styles/content-import.css';
 import './styles/users.css';
 import './styles/categories.css';
 import './styles/admin-phase-three.css';
+import './styles/learning.css';
 import AdminFoundationPage from './components/AdminFoundationPage.jsx';
 import AdminLogin from './components/AdminLogin.jsx';
+import AdminLearningPanel from './components/AdminLearningPanel.jsx';
 import AdminRouteState from './components/AdminRouteState.jsx';
 import CategoriesPanel from './components/CategoriesPanel.jsx';
 import ContentDetailModal from './components/ContentDetailModal.jsx';
@@ -27,9 +29,6 @@ import {
 import { useAdminAuth } from './hooks/useAdminAuth.js';
 
 const FOUNDATION_SECTIONS = new Set([
-  'courses',
-  'units',
-  'lessons',
   'vocabulary',
   'grammar',
   'characters',
@@ -140,6 +139,14 @@ export default function AdminApp() {
         onCreatePost={openCreatePost}
         onNavigate={navigate}
         onUnauthorized={auth.handleUnauthorized}
+      />
+    );
+  } else if (['courses', 'units', 'lessons'].includes(section)) {
+    page = (
+      <AdminLearningPanel
+        onNotify={notify}
+        onUnauthorized={auth.handleUnauthorized}
+        section={section}
       />
     );
   } else if (FOUNDATION_SECTIONS.has(section)) {

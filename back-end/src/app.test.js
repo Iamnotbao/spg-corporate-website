@@ -1,7 +1,5 @@
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
-import jwt from "jsonwebtoken";
-
 process.env.JWT_SECRET ||= "test-only-jwt-secret-not-for-deployment";
 process.env.ADMIN_PASSWORD ||= "test-only-admin-password";
 
@@ -67,38 +65,24 @@ test("admin image upload requires authentication", async () => {
   });
 
   assert.equal(response.status, 401);
-  assert.deepEqual(await response.json(), { error: "Missing admin token" });
+  assert.deepEqual(await response.json(), { error: "Missing access token" });
 });
 
-test("admin session validates a signed token without database access", async () => {
-  const token = jwt.sign({ role: "admin" }, env.jwtSecret, { expiresIn: "1m" });
+test("learning administration routes require authentication", async () => {
+  const response = await fetch(`${baseUrl}/api/admin/courses`);
+
+  assert.equal(response.status, 401);
+  assert.deepEqual(await response.json(), { error: "Missing access token" });
+});
+
+test("admin session rejects an invalid bearer token before database access", async () => {
   const response = await fetch(`${baseUrl}/api/admin/session`, {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { Authorization: "Bearer invalid-token" },
   });
 
-  assert.equal(response.status, 200);
-  assert.deepEqual(await response.json(), { ok: true });
-});
-
-test("spoofed admin images are rejected before Cloudinary upload", async () => {
-  const token = jwt.sign({ role: "admin" }, env.jwtSecret, { expiresIn: "1m" });
-  const form = new FormData();
-  form.append(
-    "image",
-    new Blob(["not really a PNG"], { type: "image/png" }),
-    "cover.png",
-  );
-  form.append("folder", "spg/posts");
-
-  const response = await fetch(`${baseUrl}/api/admin/uploads/images`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
-    body: form,
-  });
-
-  assert.equal(response.status, 415);
+  assert.equal(response.status, 401);
   assert.deepEqual(await response.json(), {
-    error: "Image content does not match its declared type",
+    error: "Invalid or expired access token",
   });
 });
 

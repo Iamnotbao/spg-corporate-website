@@ -35,7 +35,7 @@ export const uploadBuffer = (buffer, options = {}) =>
 
     const stream = cloudinary.uploader.upload_stream(
       {
-        folder: options.folder || "spg",
+        folder: options.folder || "mandora",
         resource_type: options.resourceType || "auto",
         type: options.type,
         access_mode: options.accessMode,
@@ -92,7 +92,10 @@ export const destroyAsset = async (publicId, resourceType = "image") => {
   return cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
 };
 
-export async function listImageAssets({ prefix = "spg/", maxItems = 500 } = {}) {
+export async function listImageAssets({
+  prefix = "mandora/",
+  maxItems = 500,
+} = {}) {
   if (!configured) throw new Error("Cloudinary is not configured");
   const resources = [];
   let nextCursor;

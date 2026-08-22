@@ -1,0 +1,92 @@
+.admin-learning-page {
+  display: grid;
+}
+
+.admin-learning-form {
+  margin-bottom: 22px;
+}
+
+.admin-learning-field--full {
+  grid-column: 1 / -1;
+}
+
+.admin-learning-form__actions,
+.admin-learning-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.admin-learning-list {
+  display: grid;
+  gap: 18px;
+}
+
+.admin-learning-toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.admin-learning-toolbar label {
+  position: relative;
+  display: flex;
+  width: min(100%, 420px);
+  align-items: center;
+}
+
+.admin-learning-toolbar svg {
+  position: absolute;
+  left: 13px;
+  color: var(--admin-subtle);
+}
+
+.admin-learning-toolbar input {
+  width: 100%;
+  min-height: 43px;
+  padding: 0 14px 0 42px;
+  border: 1px solid var(--admin-line);
+  border-radius: 10px;
+  color: var(--admin-text);
+  background: var(--admin-surface-soft);
+}
+
+.admin-learning-table td:first-child {
+  min-width: 220px;
+}
+
+.admin-learning-table td:first-child strong,
+.admin-learning-table td:first-child small {
+  display: block;
+}
+
+.admin-learning-table td:first-child small {
+  margin-top: 3px;
+  color: var(--admin-muted);
+}
+
+.admin-learning-badge {
+  display: inline-flex;
+  padding: 5px 8px;
+  border-radius: 999px;
+  color: var(--admin-muted);
+  background: var(--admin-bg);
+  font-size: 0.7rem;
+  font-weight: 750;
+}
+
+.admin-learning-badge.is-published {
+  color: var(--admin-success);
+  background: var(--mandora-jade-100, #e1f1ed);
+}
+
+@media (max-width: 640px) {
+  .admin-learning-field--full {
+    grid-column: auto;
+  }
+
+  .admin-learning-form__actions,
+  .admin-learning-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

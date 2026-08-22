@@ -42,24 +42,31 @@ export function usePublicDetail(loader, id) {
   const [state, setState] = useState({
     data: null,
     error: '',
+    errorStatus: null,
     status: 'loading',
   });
 
   useEffect(() => {
     let isActive = true;
 
-    setState({ data: null, error: '', status: 'loading' });
+    setState({ data: null, error: '', errorStatus: null, status: 'loading' });
     Promise.resolve()
       .then(() => loader(id))
       .then((payload) => {
         if (!isActive) return;
-        setState({ data: normalizeDetail(payload), error: '', status: 'ready' });
+        setState({
+          data: normalizeDetail(payload),
+          error: '',
+          errorStatus: null,
+          status: 'ready',
+        });
       })
       .catch((error) => {
         if (!isActive) return;
         setState({
           data: null,
           error: error?.message || 'Không thể tải nội dung.',
+          errorStatus: error?.status || null,
           status: 'error',
         });
       });

@@ -652,3 +652,57 @@ Phase 1 is complete when the selected checks pass, the public bundle/rendered pa
 no obsolete corporate identity, redirects/status/canonical behavior are verified, secrets
 and proprietary assets are cleared for the chosen visibility, and the first learning slice
 uses server-validated Mandora data.
+
+## Phase 4A implemented baseline
+
+The first learning vertical slice uses three new MongoDB collections: `courses`, `units`,
+and `lessons`. No existing collection is renamed, reset, or deleted. The native-driver
+repository lazily and idempotently creates a unique slug index for Courses and Lessons,
+plus status/order and parent/order indexes. The repository has no general migration runner;
+production initialization therefore still needs an explicit deployment procedure before
+the first production write.
+
+The learning backend lives in `back-end/src/features/learning/` and keeps validation,
+services, and MongoDB access separate. Course detail performs one Course query, one Unit
+query, and one batched Lesson query rather than querying Lessons once per Unit. Deleting a
+Course with Units or a Unit with Lessons returns `409`; the API never cascades a destructive
+delete.
+
+Implemented routes are:
+
+- public: `GET /api/courses`, `GET /api/courses/:identifier`, and
+  `GET /api/lessons/:identifier`;
+- admin-only: list/create/detail/update/delete under `/api/admin/courses`,
+  `/api/admin/units`, and `/api/admin/lessons`.
+
+Public Course queries require `status=published`. Course structure includes every Unit of
+that Course but only published Lessons. A public Lesson is readable only when both the
+Lesson and its parent Course are published. Units intentionally have no independent
+publish status in this minimum contract.
+
+The supported Mandora roles are `admin` and `student`. New accounts may only be assigned
+one of these roles. Existing `employee` accounts remain login-compatible solely so the
+legacy CMS is not broken; they cannot access learning management routes and no new
+`employee` account can be created. Authentication reloads the account from MongoDB for
+each request, so a signed token alone is not an active session.
+
+The public Courses, Course Detail, Lesson, and homepage featured-course areas now consume
+the API and show loading, error, and empty states. The old demo-course fixture was removed.
+The Phase 3 admin shell now provides real shared Create/Edit forms and lists for Courses,
+Units, and Lessons.
+
+New Blog/content uploads use `mandora/blog` or `mandora/content`. Media listing and deletion
+continue to accept the old `spg/` prefix as a read/delete compatibility alias so existing
+database references do not break. Legacy recruitment CVs and Job imports intentionally
+retain `spg/cv` and `spg/jobs` until their sensitive-data retention decision is approved.
+The `MONGODB_DB` fallback also remains `spg` because changing an implicit database name
+could silently point an existing deployment at an empty database; a verified environment
+value and separately approved cutover are required before that fallback is removed.
+
+### Deferred publish and lifecycle edge cases
+
+Phase 4C should decide and implement any required atomic publish validation (for example,
+whether a Course may publish with no published Lesson), slug redirect/history behavior,
+transactional reordering, archive versus delete semantics, thumbnail ownership/cleanup,
+and the visibility effect of future Vocabulary and Quiz records. No Enrollment, Progress,
+VocabularyProgress, or QuizAttempt behavior is implied by this slice.

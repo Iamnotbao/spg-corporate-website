@@ -14,7 +14,7 @@ export default function CourseOutline({ course, currentLessonSlug, compact = fal
   return (
     <div className={`course-outline${compact ? ' course-outline--compact' : ''}`}>
       {course.units.map((unit, unitIndex) => (
-        <section className="course-unit" key={unit.slug}>
+        <section className="course-unit" key={unit.id}>
           <header>
             <span>{String(unitIndex + 1).padStart(2, '0')}</span>
             <div>
@@ -39,6 +39,9 @@ export default function CourseOutline({ course, currentLessonSlug, compact = fal
               </li>
             ))}
           </ol>
+          {unit.lessons.length === 0 && (
+            <p className="course-unit__empty">Chưa có bài học được xuất bản.</p>
+          )}
         </section>
       ))}
     </div>

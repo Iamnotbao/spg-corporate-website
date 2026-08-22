@@ -4,16 +4,28 @@ import { env } from "../config/env.js";
 import { toObjectId } from "../utils/objectId.js";
 import { hashPassword, verifyPassword } from "../utils/password.js";
 import { normalizePermissions, PERMISSIONS } from "../utils/permissions.js";
+import {
+  AUTHENTICATED_ROLES,
+  isAuthenticatedRole,
+  LEGACY_CMS_ROLE,
+  MANDORA_ROLES,
+} from "../utils/roles.js";
 
-const ROLES = new Set(["admin", "employee"]);
+const FILTERABLE_ROLES = AUTHENTICATED_ROLES;
+const ASSIGNABLE_ROLES = new Set(MANDORA_ROLES);
 
 function normalizeUsername(value) {
-  return String(value || "").trim().toLowerCase();
+  return String(value || "")
+    .trim()
+    .toLowerCase();
 }
 
 function publicUser(user) {
   if (!user) return null;
-  const role = ROLES.has(user.role) ? user.role : "employee";
+  const role = String(user.role || "")
+    .trim()
+    .toLowerCase();
+  if (!isAuthenticatedRole(role)) return null;
   return {
     id: String(user._id),
     username: user.username,
@@ -31,7 +43,8 @@ async function ensureIndexes(collection) {
 }
 
 async function bootstrapAdmin(username, password) {
-  if (username !== env.adminUsername || password !== env.adminPassword) return null;
+  if (username !== env.adminUsername || password !== env.adminPassword)
+    return null;
 
   const collection = await getCollection("users");
   await ensureIndexes(collection);
@@ -55,7 +68,9 @@ export async function login(req, res) {
   const username = normalizeUsername(req.body?.username || env.adminUsername);
   const password = String(req.body?.password || "");
   if (!username || !password) {
-    return res.status(400).json({ error: "Username and password are required" });
+    return res
+      .status(400)
+      .json({ error: "Username and password are required" });
   }
 
   const collection = await getCollection("users");
@@ -63,7 +78,12 @@ export async function login(req, res) {
   let user = await collection.findOne({ username });
   if (!user) user = await bootstrapAdmin(username, password);
 
-  if (!user || user.active === false || !verifyPassword(password, user.passwordHash)) {
+  if (
+    !user ||
+    !isAuthenticatedRole(user.role) ||
+    user.active === false ||
+    !verifyPassword(password, user.passwordHash)
+  ) {
     return res.status(401).json({ error: "Invalid username or password" });
   }
 
@@ -96,10 +116,13 @@ export async function listUsers(req, res) {
 
   if (search) {
     filter.$or = ["username", "displayName"].map((field) => ({
-      [field]: { $regex: search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" },
+      [field]: {
+        $regex: search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+        $options: "i",
+      },
     }));
   }
-  if (ROLES.has(role)) filter.role = role;
+  if (FILTERABLE_ROLES.has(role)) filter.role = role;
 
   const collection = await getCollection("users");
   const total = await collection.countDocuments(filter);
@@ -121,13 +144,18 @@ export async function listUsers(req, res) {
 export async function createUser(req, res) {
   const username = normalizeUsername(req.body?.username);
   const displayName = String(req.body?.displayName || username).trim();
-  const role = String(req.body?.role || "employee").trim().toLowerCase();
+  const role = String(req.body?.role || "")
+    .trim()
+    .toLowerCase();
   const password = String(req.body?.password || "");
 
   if (!/^[a-z0-9._-]{3,40}$/.test(username)) {
-    return res.status(400).json({ error: "Username must be 3-40 valid characters" });
+    return res
+      .status(400)
+      .json({ error: "Username must be 3-40 valid characters" });
   }
-  if (!ROLES.has(role)) return res.status(400).json({ error: "Invalid role" });
+  if (!ASSIGNABLE_ROLES.has(role))
+    return res.status(400).json({ error: "Invalid role" });
 
   let passwordHash;
   try {
@@ -149,7 +177,9 @@ export async function createUser(req, res) {
       createdAt: new Date(),
     };
     const result = await collection.insertOne(document);
-    return res.status(201).json({ data: publicUser({ ...document, _id: result.insertedId }) });
+    return res
+      .status(201)
+      .json({ data: publicUser({ ...document, _id: result.insertedId }) });
   } catch (error) {
     if (error?.code === 11000) {
       return res.status(409).json({ error: "Username already exists" });
@@ -170,26 +200,38 @@ export async function updateUser(req, res) {
   let nextRole = existing.role || "employee";
 
   if (req.body?.displayName != null) {
-    update.displayName = String(req.body.displayName || existing.username).trim();
+    update.displayName = String(
+      req.body.displayName || existing.username,
+    ).trim();
   }
   if (req.body?.role != null) {
     nextRole = String(req.body.role).trim().toLowerCase();
-    if (!ROLES.has(nextRole)) return res.status(400).json({ error: "Invalid role" });
+    const keepsLegacyRole =
+      existing.role === LEGACY_CMS_ROLE && nextRole === LEGACY_CMS_ROLE;
+    if (!ASSIGNABLE_ROLES.has(nextRole) && !keepsLegacyRole) {
+      return res.status(400).json({ error: "Invalid role" });
+    }
     if (String(existing._id) === String(req.user._id) && nextRole !== "admin") {
-      return res.status(400).json({ error: "You cannot remove your own admin role" });
+      return res
+        .status(400)
+        .json({ error: "You cannot remove your own admin role" });
     }
     update.role = nextRole;
   }
   if (req.body?.permissions != null || req.body?.role != null) {
     update.permissions = normalizePermissions(
-      req.body?.permissions != null ? req.body.permissions : existing.permissions,
+      req.body?.permissions != null
+        ? req.body.permissions
+        : existing.permissions,
       nextRole,
     );
   }
   if (req.body?.active != null) {
     const active = Boolean(req.body.active);
     if (String(existing._id) === String(req.user._id) && !active) {
-      return res.status(400).json({ error: "You cannot disable your own account" });
+      return res
+        .status(400)
+        .json({ error: "You cannot disable your own account" });
     }
     update.active = active;
   }
@@ -209,11 +251,14 @@ export async function deleteUser(req, res) {
   const id = toObjectId(req.params.id);
   if (!id) return res.status(400).json({ error: "Invalid user id" });
   if (String(id) === String(req.user._id)) {
-    return res.status(400).json({ error: "You cannot delete your own account" });
+    return res
+      .status(400)
+      .json({ error: "You cannot delete your own account" });
   }
 
   const collection = await getCollection("users");
   const result = await collection.deleteOne({ _id: id });
-  if (!result.deletedCount) return res.status(404).json({ error: "User not found" });
+  if (!result.deletedCount)
+    return res.status(404).json({ error: "User not found" });
   return res.json({ ok: true });
 }

@@ -1,10 +1,12 @@
+import { useCallback, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import DemoNotice from '../../../components/ui/DemoNotice.jsx';
+import { ErrorState, LoadingState } from '../../../components/ui/ContentState.jsx';
 import { usePageTitle } from '../../../hooks/usePageTitle.js';
 import NotFoundPage from '../../public/pages/NotFoundPage.jsx';
+import { usePublicDetail } from '../../public/hooks/usePublicContent.js';
 import CourseOutline from '../components/CourseOutline.jsx';
 import LessonNavigation from '../components/LessonNavigation.jsx';
-import { findDemoCourse, flattenDemoLessons } from '../data/demoCourses.js';
+import { getPublicCourse, getPublicLesson } from '../services/courseCatalogService.js';
 import '../styles/courses.css';
 
 const TYPE_LABELS = {
@@ -17,84 +19,92 @@ const TYPE_LABELS = {
   vocabulary: 'Từ vựng',
 };
 
-function LessonBlock({ block }) {
-  if (block.type === 'example') {
-    return (
-      <figure className="lesson-example">
-        <strong lang="zh-Hans">{block.chinese}</strong>
-        <span>{block.pinyin}</span>
-        <figcaption>{block.meaning}</figcaption>
-      </figure>
-    );
-  }
-
-  return (
-    <section className={`lesson-block lesson-block--${block.type}`}>
-      <h2>{block.title}</h2>
-      <p>{block.text}</p>
-    </section>
-  );
-}
-
 export default function LessonPage() {
   const { courseSlug, lessonSlug } = useParams();
-  const course = findDemoCourse(courseSlug);
-  const lessons = flattenDemoLessons(course);
+  const loadCourse = useCallback((slug) => getPublicCourse(slug), []);
+  const loadLesson = useCallback((slug) => getPublicLesson(slug), []);
+  const course = usePublicDetail(loadCourse, courseSlug);
+  const lesson = usePublicDetail(loadLesson, lessonSlug);
+  const lessons = useMemo(
+    () =>
+      (course.data?.units || []).flatMap((unit) =>
+        unit.lessons.map((item) => ({ ...item, unitTitle: unit.title })),
+      ),
+    [course.data],
+  );
   const lessonIndex = lessons.findIndex((item) => item.slug === lessonSlug);
-  const lesson = lessons[lessonIndex];
-  usePageTitle(lesson?.title || 'Bài học');
+  usePageTitle(lesson.data?.title || 'Bài học');
 
-  if (!course || !lesson) return <NotFoundPage />;
+  if (course.status === 'loading' || lesson.status === 'loading') {
+    return (
+      <section className="course-detail-loading">
+        <LoadingState count={1} label="Đang tải bài học" />
+      </section>
+    );
+  }
+  if (
+    (course.status === 'error' && course.errorStatus === 404) ||
+    (lesson.status === 'error' && lesson.errorStatus === 404)
+  ) {
+    return <NotFoundPage />;
+  }
+  if (course.status === 'error' || lesson.status === 'error') {
+    return (
+      <section className="course-detail-loading">
+        <ErrorState
+          message={course.error || lesson.error}
+          onRetry={course.status === 'error' ? course.retry : lesson.retry}
+        />
+      </section>
+    );
+  }
+  if (
+    !course.data ||
+    !lesson.data ||
+    lesson.data.course?.slug !== course.data.slug ||
+    lessonIndex < 0
+  ) {
+    return <NotFoundPage />;
+  }
 
   return (
     <section className="lesson-page">
       <div className="public-container lesson-page__grid">
         <aside className="lesson-sidebar">
-          <Link className="breadcrumb-link" to={`/courses/${course.slug}`}>
-            ← {course.title}
+          <Link className="breadcrumb-link" to={`/courses/${course.data.slug}`}>
+            ← {course.data.title}
           </Link>
-          <CourseOutline compact course={course} currentLessonSlug={lesson.slug} />
+          <CourseOutline
+            compact
+            course={course.data}
+            currentLessonSlug={lesson.data.slug}
+          />
         </aside>
 
         <article className="lesson-content">
           <header className="lesson-header">
             <div>
-              <span>{lesson.unitTitle}</span>
-              <span>{TYPE_LABELS[lesson.type] || lesson.type}</span>
+              <span>{lesson.data.unit?.title}</span>
+              <span>{TYPE_LABELS[lesson.data.type] || lesson.data.type}</span>
             </div>
-            <h1>{lesson.title}</h1>
-            <p>{lesson.summary}</p>
+            <h1>{lesson.data.title}</h1>
+            {lesson.data.description && <p>{lesson.data.description}</p>}
           </header>
 
-          <DemoNotice>
-            {' '}
-            Đây là nội dung minh họa bố cục bài học; trạng thái hoàn thành chưa được lưu.
-          </DemoNotice>
-
-          <div className="lesson-body">
-            {lesson.content.map((block, index) => (
-              <LessonBlock block={block} key={`${block.type}-${index}`} />
-            ))}
+          <div className="lesson-body lesson-body--plain">
+            {lesson.data.content
+              .split(/\r?\n/)
+              .map((paragraph, index) =>
+                paragraph ? (
+                  <p key={`${paragraph.slice(0, 24)}-${index}`}>{paragraph}</p>
+                ) : (
+                  <br key={index} />
+                ),
+              )}
           </div>
 
-          <section className="lesson-completion-foundation">
-            <div>
-              <span aria-hidden="true">✓</span>
-              <div>
-                <strong>Tiến độ bài học</strong>
-                <p>
-                  Sẽ khả dụng sau khi xác thực học viên và quy tắc hoàn thành được thống
-                  nhất.
-                </p>
-              </div>
-            </div>
-            <button disabled type="button">
-              Đánh dấu hoàn thành
-            </button>
-          </section>
-
           <LessonNavigation
-            courseSlug={course.slug}
+            courseSlug={course.data.slug}
             next={lessons[lessonIndex + 1]}
             previous={lessons[lessonIndex - 1]}
           />

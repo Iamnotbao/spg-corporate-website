@@ -40,7 +40,7 @@ export default function SiteProfilePanel({ onNotify, onUnauthorized }) {
     if (!file) return;
     setUploadingIndex(index); setError('');
     try {
-      const uploaded = await uploadAdminImage(file, 'spg/content');
+      const uploaded = await uploadAdminImage(file, 'mandora/content');
       setForm((current) => ({ ...current, partners: current.partners.map((item, itemIndex) => itemIndex === index ? { ...item, logoUrl: uploaded.url, logoPublicId: uploaded.publicId || '' } : item) }));
     } catch (requestError) {
       if (!onUnauthorized(requestError)) setError(requestError?.message || 'Không thể tải logo đối tác.');

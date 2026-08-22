@@ -41,7 +41,7 @@ export default function MediaLibraryPanel({ onNotify, onUnauthorized }) {
     try {
       for (const file of selected) {
         // eslint-disable-next-line no-await-in-loop
-        await uploadAdminImage(file, 'spg/content');
+        await uploadAdminImage(file, 'mandora/content');
       }
       await load();
       onNotify(`Đã tải ${selected.length} ảnh vào thư viện.`);

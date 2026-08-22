@@ -41,7 +41,7 @@ export default function PostGalleryField({ form, onChange, onError, onUnauthoriz
       for (const file of files) {
         // Upload tuần tự để tránh tạo burst lớn lên Render/Cloudinary.
         // eslint-disable-next-line no-await-in-loop
-        uploaded.push(await uploadAdminImage(file, `spg/${type}`));
+        uploaded.push(await uploadAdminImage(file, type === 'posts' ? 'mandora/blog' : `spg/${type}`));
       }
       onChange({
         images: [...images, ...uploaded.map((item) => item.url)],

@@ -21,7 +21,9 @@ function itemPublicIds(item = {}) {
     item.imagePublicId,
     ...(Array.isArray(item.imagePublicIds) ? item.imagePublicIds : []),
     ...blockPublicIds(item.contentBlocks),
-  ].filter(Boolean).map(stringId);
+  ]
+    .filter(Boolean)
+    .map(stringId);
 }
 
 async function collectUsage() {
@@ -36,7 +38,19 @@ async function collectUsage() {
 
   for (const type of ["posts", "jobs"]) {
     const collection = await getCollection(type);
-    const items = await collection.find({}, { projection: { title: 1, imagePublicId: 1, imagePublicIds: 1, contentBlocks: 1 } }).toArray();
+    const items = await collection
+      .find(
+        {},
+        {
+          projection: {
+            title: 1,
+            imagePublicId: 1,
+            imagePublicIds: 1,
+            contentBlocks: 1,
+          },
+        },
+      )
+      .toArray();
     for (const item of items) {
       const label = `${type === "posts" ? "Bài viết" : "Tuyển dụng"}: ${String(item.title || "Không tiêu đề").slice(0, 80)}`;
       itemPublicIds(item).forEach((publicId) => add(publicId, label));
@@ -49,16 +63,23 @@ async function collectUsage() {
     settings.findOne({ _id: "public-site-profile" }),
   ]);
   add(banner?.backgroundImagePublicId, "Banner sự kiện");
-  for (const partner of profile?.partners || []) add(partner?.logoPublicId, `Logo đối tác: ${partner?.name || "Không tên"}`);
+  for (const partner of profile?.partners || [])
+    add(partner?.logoPublicId, `Logo đối tác: ${partner?.name || "Không tên"}`);
 
   return usage;
 }
 
 export async function listMedia(req, res) {
-  const search = String(req.query.search || "").trim().toLowerCase();
+  const search = String(req.query.search || "")
+    .trim()
+    .toLowerCase();
   const folder = String(req.query.folder || "").trim();
   const usage = await collectUsage();
-  const assets = await listImageAssets({ prefix: "spg/", maxItems: 500 });
+  const assetGroups = await Promise.all([
+    listImageAssets({ prefix: "mandora/", maxItems: 500 }),
+    listImageAssets({ prefix: "spg/", maxItems: 500 }),
+  ]);
+  const assets = assetGroups.flat().slice(0, 500);
 
   let items = assets.map((asset) => ({
     publicId: asset.public_id,
@@ -67,20 +88,36 @@ export async function listMedia(req, res) {
     height: asset.height || null,
     bytes: asset.bytes || 0,
     format: asset.format || "",
-    folder: asset.folder || String(asset.public_id || "").split("/").slice(0, -1).join("/"),
+    folder:
+      asset.folder ||
+      String(asset.public_id || "")
+        .split("/")
+        .slice(0, -1)
+        .join("/"),
     createdAt: asset.created_at || null,
     usage: usage.get(asset.public_id) || [],
   }));
 
-  if (folder) items = items.filter((item) => item.folder === folder || item.publicId.startsWith(`${folder}/`));
-  if (search) items = items.filter((item) => `${item.publicId} ${item.folder} ${item.usage.join(" ")}`.toLowerCase().includes(search));
+  if (folder)
+    items = items.filter(
+      (item) =>
+        item.folder === folder || item.publicId.startsWith(`${folder}/`),
+    );
+  if (search)
+    items = items.filter((item) =>
+      `${item.publicId} ${item.folder} ${item.usage.join(" ")}`
+        .toLowerCase()
+        .includes(search),
+    );
 
   return res.json({ data: items, total: items.length });
 }
 
 export async function deleteMedia(req, res) {
   const publicId = stringId(req.body?.publicId);
-  if (!publicId || !publicId.startsWith("spg/")) return res.status(400).json({ error: "Invalid media id" });
+  if (!publicId || !/^(?:mandora|spg)\//.test(publicId)) {
+    return res.status(400).json({ error: "Invalid media id" });
+  }
 
   const usage = await collectUsage();
   const referencedBy = usage.get(publicId) || [];

@@ -73,7 +73,7 @@ export default function ContentEditor({ item, onBack, onSave, onUnauthorized, ty
 
     setUploading(true); setError('');
     try {
-      const uploadedImage = await uploadAdminImage(file, `spg/${type}`);
+      const uploadedImage = await uploadAdminImage(file, type === 'posts' ? 'mandora/blog' : `spg/${type}`);
       setForm((current) => ({ ...current, imageUrl: uploadedImage.url, imagePublicId: uploadedImage.publicId || '' }));
       setImageError(false);
     } catch (uploadError) {

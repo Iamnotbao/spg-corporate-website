@@ -15,6 +15,7 @@ import * as chatController from "../controllers/chat.controller.js";
 import { addRealtimeClient } from "../utils/realtime.js";
 import { cvUpload, validateCvSignature } from "../middleware/upload.js";
 import { validateApplication } from "../middleware/application.js";
+import * as learningController from "../features/learning/learning.controller.js";
 
 const router = Router();
 const applicationLimiter = rateLimit({
@@ -39,12 +40,40 @@ router.get("/languages", asyncHandler(listPublicLanguages));
 router.get("/communications", asyncHandler(getPublicCommunications));
 router.get("/site-profile", asyncHandler(getPublicSiteProfile));
 router.get("/events", addRealtimeClient);
+router.get("/courses", asyncHandler(learningController.listPublishedCourses));
+router.get(
+  "/courses/:identifier",
+  asyncHandler(learningController.getPublishedCourse),
+);
+router.get(
+  "/lessons/:identifier",
+  asyncHandler(learningController.getPublishedLesson),
+);
 
-router.get("/chat/settings", asyncHandler(chatController.getPublicChatSettings));
-router.post("/chat/sessions", chatLimiter, asyncHandler(chatController.createChatSession));
-router.get("/chat/messages", chatLimiter, asyncHandler(chatController.getPublicMessages));
-router.post("/chat/messages", chatLimiter, asyncHandler(chatController.createPublicMessage));
-router.get("/chat/events", chatLimiter, asyncHandler(chatController.openPublicChatStream));
+router.get(
+  "/chat/settings",
+  asyncHandler(chatController.getPublicChatSettings),
+);
+router.post(
+  "/chat/sessions",
+  chatLimiter,
+  asyncHandler(chatController.createChatSession),
+);
+router.get(
+  "/chat/messages",
+  chatLimiter,
+  asyncHandler(chatController.getPublicMessages),
+);
+router.post(
+  "/chat/messages",
+  chatLimiter,
+  asyncHandler(chatController.createPublicMessage),
+);
+router.get(
+  "/chat/events",
+  chatLimiter,
+  asyncHandler(chatController.openPublicChatStream),
+);
 
 router.get(
   "/jobs/:id",

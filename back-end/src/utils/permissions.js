@@ -47,13 +47,22 @@ export const EMPLOYEE_DEFAULT_PERMISSIONS = [
 
 const PERMISSION_SET = new Set(PERMISSIONS);
 
-export function normalizePermissions(value, role = "employee") {
+export function normalizePermissions(value, role = "student") {
   if (role === "admin") return ["*"];
+  if (role === "student") return [];
   if (!Array.isArray(value)) return [...EMPLOYEE_DEFAULT_PERMISSIONS];
-  return [...new Set(value.map(String).filter((permission) => PERMISSION_SET.has(permission)))];
+  return [
+    ...new Set(
+      value.map(String).filter((permission) => PERMISSION_SET.has(permission)),
+    ),
+  ];
 }
 
 export function hasPermission(user, permission) {
   const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
-  return user?.role === "admin" || permissions.includes("*") || permissions.includes(permission);
+  return (
+    user?.role === "admin" ||
+    permissions.includes("*") ||
+    permissions.includes(permission)
+  );
 }

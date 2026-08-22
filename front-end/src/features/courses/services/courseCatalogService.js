@@ -1,10 +1,13 @@
-import { DEMO_COURSES, findDemoCourse } from '../data/demoCourses.js';
+import { apiRequest } from '../../../services/httpClient.js';
 
-// This service is the replacement seam for the future Course API.
-export async function listPublicCourses() {
-  return DEMO_COURSES;
+export function listPublicCourses() {
+  return apiRequest('/courses');
 }
 
-export async function getPublicCourse(slug) {
-  return findDemoCourse(slug);
+export function getPublicCourse(slug) {
+  return apiRequest(`/courses/${encodeURIComponent(slug)}`);
+}
+
+export function getPublicLesson(slug) {
+  return apiRequest(`/lessons/${encodeURIComponent(slug)}`);
 }

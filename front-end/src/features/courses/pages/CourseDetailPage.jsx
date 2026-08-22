@@ -1,6 +1,5 @@
 import { useCallback } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import DemoNotice from '../../../components/ui/DemoNotice.jsx';
 import { ErrorState, LoadingState } from '../../../components/ui/ContentState.jsx';
 import { usePageTitle } from '../../../hooks/usePageTitle.js';
 import NotFoundPage from '../../public/pages/NotFoundPage.jsx';
@@ -22,7 +21,7 @@ export default function CourseDetailPage() {
       </section>
     );
   }
-
+  if (course.status === 'error' && course.errorStatus === 404) return <NotFoundPage />;
   if (course.status === 'error') {
     return (
       <section className="course-detail-loading">
@@ -30,10 +29,9 @@ export default function CourseDetailPage() {
       </section>
     );
   }
-
   if (!course.data) return <NotFoundPage />;
 
-  const firstLesson = course.data.units[0]?.lessons[0];
+  const firstLesson = course.data.units.flatMap((unit) => unit.lessons)[0];
 
   return (
     <>
@@ -46,22 +44,23 @@ export default function CourseDetailPage() {
             <p className="public-eyebrow">{course.data.level}</p>
             <h1>{course.data.title}</h1>
             <p>{course.data.description}</p>
-            <div className="course-detail-hero__actions">
-              {firstLesson && (
+            {firstLesson && (
+              <div className="course-detail-hero__actions">
                 <Link
                   className="button button--primary"
                   to={`/courses/${course.data.slug}/lessons/${firstLesson.slug}`}
                 >
                   Xem bài học đầu tiên <span aria-hidden="true">→</span>
                 </Link>
-              )}
-              <Link className="button button--secondary" to="/login">
-                Đăng nhập để học
-              </Link>
-            </div>
+              </div>
+            )}
           </div>
-          <div className={`course-detail-cover is-${course.data.tone}`}>
-            <span lang="zh-Hans">{course.data.coverCharacter}</span>
+          <div className="course-detail-cover">
+            {course.data.thumbnail ? (
+              <img alt="" src={course.data.thumbnail} />
+            ) : (
+              <span lang="zh-Hans">课</span>
+            )}
             <small>{course.data.level}</small>
           </div>
         </div>
@@ -70,26 +69,33 @@ export default function CourseDetailPage() {
       <section className="course-detail-content">
         <div className="public-container course-detail-content__grid">
           <div>
-            <DemoNotice>
-              {' '}
-              Khóa học và bài học bên dưới chỉ minh họa cấu trúc Course → Unit → Lesson.
-            </DemoNotice>
             <div className="course-detail-heading">
               <p className="public-eyebrow">Nội dung khóa học</p>
               <h2>Học theo từng Unit rõ ràng.</h2>
             </div>
-            <CourseOutline course={course.data} />
+            {course.data.units.length ? (
+              <CourseOutline course={course.data} />
+            ) : (
+              <p className="course-outline-empty">
+                Khóa học chưa có nội dung được xuất bản.
+              </p>
+            )}
           </div>
           <aside className="course-enrollment-card">
             <span aria-hidden="true">学</span>
-            <h2>Bắt đầu khi bạn sẵn sàng</h2>
-            <p>
-              Đăng nhập học viên, ghi danh và tiến độ sẽ được kết nối khi API tương ứng
-              được triển khai.
-            </p>
-            <Link className="button button--primary" to="/login">
-              Mở cổng học viên
-            </Link>
+            <h2>Thông tin khóa học</h2>
+            <p>Cấp độ: {course.data.level}</p>
+            {course.data.estimatedDuration != null && (
+              <p>Thời lượng dự kiến: {course.data.estimatedDuration} phút</p>
+            )}
+            {firstLesson && (
+              <Link
+                className="button button--primary"
+                to={`/courses/${course.data.slug}/lessons/${firstLesson.slug}`}
+              >
+                Mở bài học đầu tiên
+              </Link>
+            )}
           </aside>
         </div>
       </section>

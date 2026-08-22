@@ -123,10 +123,12 @@ reasonable future extension impossible.
 
 ## Current-to-target gap
 
-The current application provides a corporate Home, Posts, Jobs, recruitment applications,
-visitor chat, company profile/settings, media, and an admin CMS. It does not provide any
-Mandora course, unit, lesson, vocabulary, quiz, student registration, My Courses, or
-Progress capability.
+The current application now provides Mandora public Course, Course Detail, and Lesson
+reads backed by the first Course -> Unit -> Lesson API slice, plus admin CRUD for those
+three resources. It does not yet provide Vocabulary, Quiz engines, student registration,
+My Courses, Enrollment, or Progress. Legacy Posts/Blog, Jobs, applications, visitor chat,
+company settings, media, and CMS compatibility code still exists in the backend and must
+be retired only through an approved data-retention process.
 
 The closest structural reuse candidates are:
 
@@ -149,8 +151,8 @@ not guessed during coding:
 3. where Vocabulary belongs in the Course -> Unit -> Lesson hierarchy;
 4. where Quizzes belong, which question formats V1 supports, and whether attempts/results
    must persist for Progress;
-5. the publish/visibility rules for courses, units, lessons, vocabulary, quizzes, and
-   Blog posts;
+5. publish cascades beyond the Phase 4A minimum (published Course plus published Lesson;
+   Unit has no independent publish state), including Vocabulary, Quizzes, and Blog posts;
 6. the public URL patterns and final production hostname;
 7. whether the interface itself is Vietnamese-only in V1 or has crawlable locale variants;
 8. the retention/migration policy for legacy users, content, applications, CVs, chat data,

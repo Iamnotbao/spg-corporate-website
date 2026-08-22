@@ -53,7 +53,7 @@ export default function CommunicationsPanel({ onNotify, onUnauthorized }) {
     if (!file) return;
     setUploadingBackground(true);
     try {
-      const uploaded = await uploadAdminImage(file, 'spg/content');
+      const uploaded = await uploadAdminImage(file, 'mandora/content');
       setBanner((current) => ({ ...current, backgroundImageUrl: uploaded.url, backgroundImagePublicId: uploaded.publicId || '' }));
       onNotify('Đã upload ảnh nền. Nhấn Lưu sự kiện để áp dụng.');
     } catch (error) {

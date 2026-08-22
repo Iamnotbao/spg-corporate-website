@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import DemoNotice from '../../../components/ui/DemoNotice.jsx';
 import {
   EmptyState,
   ErrorState,
@@ -13,30 +12,37 @@ import CourseCard from '../components/CourseCard.jsx';
 import { listPublicCourses } from '../services/courseCatalogService.js';
 import '../styles/courses.css';
 
-const LEVELS = ['Tất cả', 'HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5', 'HSK 6'];
+const ALL_LEVELS = 'Tất cả';
 
 export default function CoursesPage() {
   usePageTitle('Khóa học');
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState(searchParams.get('q') || '');
-  const level = searchParams.get('level') || 'Tất cả';
+  const level = searchParams.get('level') || ALL_LEVELS;
   const loadCourses = useCallback(() => listPublicCourses(), []);
   const courses = usePublicCollection(loadCourses);
 
   const visibleCourses = useMemo(() => {
     const query = search.trim().toLocaleLowerCase('vi');
     return courses.data.filter((course) => {
-      const matchesLevel = level === 'Tất cả' || course.level === level;
+      const matchesLevel = level === ALL_LEVELS || course.level === level;
       const matchesSearch =
         !query ||
-        `${course.title} ${course.summary}`.toLocaleLowerCase('vi').includes(query);
+        `${course.title} ${course.description}`.toLocaleLowerCase('vi').includes(query);
       return matchesLevel && matchesSearch;
     });
   }, [courses.data, level, search]);
+  const levels = useMemo(
+    () => [
+      ALL_LEVELS,
+      ...new Set(courses.data.map((course) => course.level).filter(Boolean)),
+    ],
+    [courses.data],
+  );
 
   function selectLevel(nextLevel) {
     const params = new URLSearchParams(searchParams);
-    if (nextLevel === 'Tất cả') params.delete('level');
+    if (nextLevel === ALL_LEVELS) params.delete('level');
     else params.set('level', nextLevel);
     setSearchParams(params);
   }
@@ -50,7 +56,6 @@ export default function CoursesPage() {
       />
       <section className="catalog-section">
         <div className="public-container">
-          <DemoNotice />
           <div className="catalog-toolbar">
             <label className="catalog-search">
               <span className="visually-hidden">Tìm khóa học</span>
@@ -63,7 +68,7 @@ export default function CoursesPage() {
               />
             </label>
             <div aria-label="Lọc theo cấp độ" className="filter-chips" role="group">
-              {LEVELS.map((item) => (
+              {levels.map((item) => (
                 <button
                   aria-pressed={level === item}
                   className={level === item ? 'is-active' : undefined}
@@ -83,7 +88,11 @@ export default function CoursesPage() {
           )}
           {courses.status === 'ready' && visibleCourses.length === 0 && (
             <EmptyState
-              description="Hãy thử từ khóa khác hoặc chọn một cấp độ khác."
+              description={
+                courses.data.length
+                  ? 'Hãy thử từ khóa khác hoặc chọn một cấp độ khác.'
+                  : 'Các khóa học đã xuất bản sẽ xuất hiện tại đây.'
+              }
               icon="课"
               title="Chưa có khóa học phù hợp"
             />

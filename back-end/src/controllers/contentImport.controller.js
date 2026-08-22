@@ -130,13 +130,18 @@ async function applyPdfImport(type, files, rows, collection) {
     let uploaded;
 
     try {
-      uploaded = await uploadFile(file, { folder: `spg/${type}/documents`, resourceType: "raw" });
-      const existing = await collection.findOne({
-        _id: row.target.id,
-      }).catch(() => null);
+      const folder =
+        type === "posts" ? "mandora/blog/documents" : `spg/${type}/documents`;
+      uploaded = await uploadFile(file, { folder, resourceType: "raw" });
+      const existing = await collection
+        .findOne({
+          _id: row.target.id,
+        })
+        .catch(() => null);
 
       // MongoDB _id is an ObjectId in this project; use the matched title to avoid converting twice.
-      const matched = existing || (await collection.findOne({ title: row.target.title }));
+      const matched =
+        existing || (await collection.findOne({ title: row.target.title }));
       if (!matched) throw new Error("Nội dung đích không còn tồn tại.");
 
       await collection.updateOne(
@@ -153,7 +158,10 @@ async function applyPdfImport(type, files, rows, collection) {
         },
       );
 
-      if (matched.attachmentPublicId && matched.attachmentPublicId !== uploaded.public_id) {
+      if (
+        matched.attachmentPublicId &&
+        matched.attachmentPublicId !== uploaded.public_id
+      ) {
         await destroyAsset(
           matched.attachmentPublicId,
           matched.attachmentResourceType || "raw",
@@ -163,9 +171,10 @@ async function applyPdfImport(type, files, rows, collection) {
       successful.push({ ...row, url: uploaded.secure_url });
     } catch (error) {
       if (uploaded?.public_id) {
-        await destroyAsset(uploaded.public_id, uploaded.resource_type || "raw").catch(
-          () => undefined,
-        );
+        await destroyAsset(
+          uploaded.public_id,
+          uploaded.resource_type || "raw",
+        ).catch(() => undefined);
       }
       failures.push({ ...row, action: "error", message: error.message });
     }
@@ -189,7 +198,10 @@ async function applySpreadsheetImport(type, rows, collection) {
           createdAt: new Date(),
         };
         const result = await collection.insertOne(document);
-        successful.push({ ...row, target: { id: String(result.insertedId), title: document.title } });
+        successful.push({
+          ...row,
+          target: { id: String(result.insertedId), title: document.title },
+        });
         continue;
       }
 
@@ -210,27 +222,43 @@ async function applySpreadsheetImport(type, rows, collection) {
 
 export async function importContent(type, req, res) {
   if (!new Set(["posts", "jobs"]).has(type)) {
-    return res.status(400).json({ error: "Loại nội dung import không hợp lệ." });
+    return res
+      .status(400)
+      .json({ error: "Loại nội dung import không hợp lệ." });
   }
 
   const files = req.files || [];
   if (!files.length) {
-    return res.status(400).json({ error: "Vui lòng chọn file PDF, XLSX hoặc CSV." });
+    return res
+      .status(400)
+      .json({ error: "Vui lòng chọn file PDF, XLSX hoặc CSV." });
   }
 
   const format = importFileFormat(files);
   if (format === "mixed") {
     return res.status(400).json({
-      error: "Mỗi lần import chỉ chọn PDF hoặc một file Excel/CSV, không trộn nhiều loại.",
+      error:
+        "Mỗi lần import chỉ chọn PDF hoặc một file Excel/CSV, không trộn nhiều loại.",
     });
   }
   if (format === "excel" && files.length !== 1) {
-    return res.status(400).json({ error: "Mỗi lần chỉ import một file XLSX/CSV." });
+    return res
+      .status(400)
+      .json({ error: "Mỗi lần chỉ import một file XLSX/CSV." });
   }
 
   const collection = await getCollection(type);
   const existingItems = await collection
-    .find({}, { projection: { title: 1, attachmentPublicId: 1, attachmentResourceType: 1 } })
+    .find(
+      {},
+      {
+        projection: {
+          title: 1,
+          attachmentPublicId: 1,
+          attachmentResourceType: 1,
+        },
+      },
+    )
     .toArray();
   const titleIndex = buildTitleIndex(existingItems);
 
@@ -241,12 +269,15 @@ export async function importContent(type, req, res) {
         ? buildPdfPreview(files, titleIndex)
         : buildSpreadsheetPreview(type, files[0], titleIndex);
   } catch (error) {
-    return res.status(400).json({ error: error.message || "Không đọc được file import." });
+    return res
+      .status(400)
+      .json({ error: error.message || "Không đọc được file import." });
   }
 
   const preview = {
     format,
-    filename: files.length === 1 ? files[0].originalname : `${files.length} file PDF`,
+    filename:
+      files.length === 1 ? files[0].originalname : `${files.length} file PDF`,
     summary: summarizeImport(rows),
     rows,
   };
@@ -256,7 +287,9 @@ export async function importContent(type, req, res) {
 
   const executableRows = rows.filter((row) => row.action !== "error");
   if (!executableRows.length) {
-    return res.status(400).json({ error: "Không có dòng hợp lệ để import.", data: preview });
+    return res
+      .status(400)
+      .json({ error: "Không có dòng hợp lệ để import.", data: preview });
   }
 
   const result =

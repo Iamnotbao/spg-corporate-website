@@ -1,12 +1,15 @@
+import { useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import DemoNotice from '../../../components/ui/DemoNotice.jsx';
+import { EmptyState, ErrorState, LoadingState } from '../../../components/ui/ContentState.jsx';
 import { usePageTitle } from '../../../hooks/usePageTitle.js';
 import BlogHighlights from '../../blog/components/BlogHighlights.jsx';
 import CourseCard from '../../courses/components/CourseCard.jsx';
-import { DEMO_COURSES } from '../../courses/data/demoCourses.js';
+import { listPublicCourses } from '../../courses/services/courseCatalogService.js';
 import HskLevelCard from '../../learning/components/HskLevelCard.jsx';
 import VocabularyCard from '../../learning/components/VocabularyCard.jsx';
 import { DEMO_VOCABULARY, HSK_LEVELS } from '../../learning/data/demoLearningContent.js';
+import { usePublicCollection } from '../hooks/usePublicContent.js';
 import '../styles/home.css';
 
 const LEARNING_FEATURES = [
@@ -29,6 +32,8 @@ const LEARNING_FEATURES = [
 
 export default function HomePage() {
   usePageTitle('Học tiếng Trung cho người Việt');
+  const loadCourses = useCallback(() => listPublicCourses(), []);
+  const courses = usePublicCollection(loadCourses);
 
   return (
     <>
@@ -111,12 +116,24 @@ export default function HomePage() {
               Tất cả khóa học <span aria-hidden="true">→</span>
             </Link>
           </div>
-          <DemoNotice />
-          <div className="course-grid home-course-grid">
-            {DEMO_COURSES.map((course) => (
-              <CourseCard course={course} key={course.slug} />
-            ))}
-          </div>
+          {courses.status === 'loading' && <LoadingState label="Đang tải khóa học" />}
+          {courses.status === 'error' && (
+            <ErrorState message={courses.error} onRetry={courses.retry} />
+          )}
+          {courses.status === 'ready' && courses.data.length === 0 && (
+            <EmptyState
+              description="Các khóa học đã xuất bản sẽ xuất hiện tại đây."
+              icon="课"
+              title="Chưa có khóa học"
+            />
+          )}
+          {courses.status === 'ready' && courses.data.length > 0 && (
+            <div className="course-grid home-course-grid">
+              {courses.data.slice(0, 3).map((course) => (
+                <CourseCard course={course} key={course.slug} />
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

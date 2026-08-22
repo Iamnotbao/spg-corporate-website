@@ -8,10 +8,17 @@ import {
 } from './httpClient.js';
 
 const CONTENT_TYPES = new Set(['posts', 'jobs']);
+const LEARNING_TYPES = new Set(['courses', 'units', 'lessons']);
 
 function assertContentType(type) {
   if (!CONTENT_TYPES.has(type)) {
     throw new Error(`Loại nội dung không hợp lệ: ${type}`);
+  }
+}
+
+function assertLearningType(type) {
+  if (!LEARNING_TYPES.has(type)) {
+    throw new Error(`Loại nội dung học tập không hợp lệ: ${type}`);
   }
 }
 
@@ -69,6 +76,45 @@ export async function updateAdminUser(id, payload) {
 
 export async function deleteAdminUser(id) {
   return apiRequest(`/admin/users/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    auth: true,
+  });
+}
+
+export function listAdminLearning(type, options = {}) {
+  assertLearningType(type);
+  const params = new URLSearchParams();
+  if (options.courseId) params.set('courseId', options.courseId);
+  if (options.unitId) params.set('unitId', options.unitId);
+  const query = params.toString();
+  return apiRequest(`/admin/${type}${query ? `?${query}` : ''}`, {
+    method: 'GET',
+    auth: true,
+    signal: options.signal,
+  });
+}
+
+export function createAdminLearning(type, payload) {
+  assertLearningType(type);
+  return apiRequest(`/admin/${type}`, {
+    method: 'POST',
+    auth: true,
+    body: payload,
+  });
+}
+
+export function updateAdminLearning(type, id, payload) {
+  assertLearningType(type);
+  return apiRequest(`/admin/${type}/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    auth: true,
+    body: payload,
+  });
+}
+
+export function deleteAdminLearning(type, id) {
+  assertLearningType(type);
+  return apiRequest(`/admin/${type}/${encodeURIComponent(id)}`, {
     method: 'DELETE',
     auth: true,
   });
@@ -219,7 +265,7 @@ export async function listAdminApplications(options = {}) {
   });
 }
 
-export async function uploadAdminImage(file, folder = 'spg/content') {
+export async function uploadAdminImage(file, folder = 'mandora/content') {
   const formData = new FormData();
   formData.append('image', file);
   formData.append('folder', folder);
