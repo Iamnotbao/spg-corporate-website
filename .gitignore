@@ -1,0 +1,33 @@
+# Dependencies and build output
+**/node_modules/
+**/dist/
+**/coverage/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Runtime data
+**/logs/
+**/uploads/
+*.log
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Local certificates and keys
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Temporary files
+*.tmp
+*.temp
