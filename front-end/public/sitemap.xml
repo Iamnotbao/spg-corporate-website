@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://spg-corporate-website.pages.dev/</loc>
-    <changefreq>weekly</changefreq>
-    <priority>1.0</priority>
-  </url>
+  <url><loc>/</loc></url>
+  <url><loc>/courses</loc></url>
+  <url><loc>/hsk</loc></url>
+  <url><loc>/vocabulary</loc></url>
+  <url><loc>/characters</loc></url>
+  <url><loc>/practice</loc></url>
+  <url><loc>/blog</loc></url>
 </urlset>
