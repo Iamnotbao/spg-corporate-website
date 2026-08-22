@@ -35,20 +35,6 @@ export const ADMIN_NAV_GROUPS = [
         adminOnly: true,
       },
       {
-        key: 'grammar',
-        label: 'Ngữ pháp',
-        icon: 'grammar',
-        path: '/admin/grammar',
-        adminOnly: true,
-      },
-      {
-        key: 'characters',
-        label: 'Hán tự',
-        icon: 'characters',
-        path: '/admin/characters',
-        adminOnly: true,
-      },
-      {
         key: 'quizzes',
         label: 'Quiz',
         icon: 'quizzes',
@@ -73,6 +59,13 @@ export const ADMIN_NAV_GROUPS = [
         icon: 'media',
         path: '/admin/media',
         permission: 'media.read',
+      },
+      {
+        key: 'chat',
+        label: 'Chat & AI',
+        icon: 'chat',
+        path: '/admin/chat',
+        permission: 'chat.read',
       },
     ],
   },
@@ -104,13 +97,6 @@ export const ADMIN_NAV_GROUPS = [
         icon: 'categories',
         path: '/admin/categories',
         permission: 'categories.read',
-      },
-      {
-        key: 'settings',
-        label: 'Cài đặt',
-        icon: 'settings',
-        path: '/admin/settings',
-        adminOnly: true,
       },
       {
         key: 'accounts',
