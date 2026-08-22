@@ -116,11 +116,65 @@ img {
 }
 
 .app-route-loading {
+  position: relative;
   display: grid;
   min-height: 100vh;
   place-items: center;
+  overflow: hidden;
   padding: 24px;
   color: var(--mandora-muted);
   background: var(--mandora-paper);
   font-weight: 700;
+}
+
+.app-route-loading::before {
+  width: 34px;
+  height: 34px;
+  margin-right: 12px;
+  border: 3px solid var(--mandora-line);
+  border-top-color: var(--mandora-red-700);
+  border-radius: 50%;
+  animation: mandora-spin 700ms linear infinite;
+  content: '';
+}
+
+.motion-reveal {
+  opacity: 0;
+  transform: translate3d(0, 18px, 0);
+  transition:
+    opacity 520ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+
+.motion-reveal.is-revealed {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+@keyframes mandora-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .motion-reveal,
+  .motion-reveal.is-revealed {
+    opacity: 1;
+    transform: none;
+  }
 }
