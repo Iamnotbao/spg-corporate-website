@@ -16,6 +16,7 @@ export const ADMIN_NAV_GROUPS = [
   {
     label: 'Content',
     items: [
+      { key: 'homepage', label: 'Trang chủ & bản đồ', icon: 'settings', path: '/admin/homepage', adminOnly: true },
       { key: 'blog', label: 'Blog', icon: 'posts', path: '/admin/blog', permission: 'posts.read' },
       { key: 'media', label: 'Media', icon: 'media', path: '/admin/media', permission: 'media.read' },
       { key: 'communications', label: 'Thông báo & sự kiện', icon: 'communications', path: '/admin/communications', permission: 'communications.read' },
