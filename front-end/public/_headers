@@ -1,0 +1,17 @@
+/admin/*
+  X-Robots-Tag: noindex, nofollow
+
+/login
+  X-Robots-Tag: noindex, nofollow
+
+/register
+  X-Robots-Tag: noindex, nofollow
+
+/my-courses
+  X-Robots-Tag: noindex, nofollow
+
+/progress
+  X-Robots-Tag: noindex, nofollow
+
+/courses/*/lessons/*/quiz
+  X-Robots-Tag: noindex, nofollow
