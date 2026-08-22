@@ -1,4 +1,9 @@
 User-agent: *
 Allow: /
+Disallow: /admin
+Disallow: /login
+Disallow: /register
+Disallow: /my-courses
+Disallow: /progress
 
-Sitemap: https://spg-corporate-website.pages.dev/sitemap.xml
+Sitemap: /sitemap.xml
