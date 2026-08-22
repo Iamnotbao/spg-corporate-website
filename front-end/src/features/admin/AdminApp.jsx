@@ -8,6 +8,7 @@ import './styles/users.css';
 import './styles/categories.css';
 import './styles/admin-phase-three.css';
 import './styles/learning.css';
+import './styles/chat.css';
 import AdminLogin from './components/AdminLogin.jsx';
 import AdminLearningPanel from './components/AdminLearningPanel.jsx';
 import AdminQuizPanel from './components/AdminQuizPanel.jsx';
