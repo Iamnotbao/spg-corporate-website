@@ -37,6 +37,17 @@ export default function AdminLayout({
     return () => window.removeEventListener('keydown', shortcut);
   }, []);
 
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 900px)');
+    const syncMobileState = () => {
+      if (media.matches) setSidebarCollapsed(false);
+      else setDrawerOpen(false);
+    };
+    syncMobileState();
+    media.addEventListener('change', syncMobileState);
+    return () => media.removeEventListener('change', syncMobileState);
+  }, []);
+
   function navigate(section) {
     setDrawerOpen(false);
     onNavigate(section);
@@ -60,9 +71,7 @@ export default function AdminLayout({
             onClick={() => navigate('dashboard')}
             type="button"
           >
-            <span className="admin-brand__mark" aria-hidden="true">
-              文
-            </span>
+            <span className="admin-brand__mark" aria-hidden="true">文</span>
             <span className="admin-brand__name">Mandora</span>
           </button>
           <button
@@ -105,9 +114,7 @@ export default function AdminLayout({
                 .toUpperCase()}
             </span>
             <div>
-              <strong>
-                {currentUser?.displayName || currentUser?.username || 'Mandora User'}
-              </strong>
+              <strong>{currentUser?.displayName || currentUser?.username || 'Mandora User'}</strong>
               <small>{role === 'admin' ? 'Administrator' : 'CMS staff'}</small>
             </div>
           </div>
@@ -154,9 +161,7 @@ export default function AdminLayout({
                   .toUpperCase()}
               </span>
               <div>
-                <strong>
-                  {currentUser?.displayName || currentUser?.username || 'Mandora User'}
-                </strong>
+                <strong>{currentUser?.displayName || currentUser?.username || 'Mandora User'}</strong>
                 <small>{role}</small>
               </div>
             </div>
