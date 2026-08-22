@@ -1,27 +1,71 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { API_URL, apiRequest } from '../../../services/httpClient.js';
+import { API_URL, apiRequest, getStudentToken } from '../../../services/httpClient.js';
+import {
+  dismissStudentNotification,
+  listStudentNotifications,
+  markStudentNotificationRead,
+} from '../../student/services/studentLearningService.js';
 import '../../../styles/public-communications.css';
 
-function itemId(item, index) {
-  return String(item?._id?.$oid || item?._id || `${item?.title || 'notification'}-${index}`);
+const GUEST_READ_KEY = 'mandora_guest_notification_reads';
+
+function itemId(item, index = 0) {
+  return String(item?._id?.$oid || item?._id || item?.id || `${item?.title || 'notification'}-${index}`);
+}
+
+function readGuestIds() {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(GUEST_READ_KEY) || '[]'));
+  } catch {
+    return new Set();
+  }
+}
+
+function rememberGuestRead(id) {
+  const ids = readGuestIds();
+  ids.add(id);
+  localStorage.setItem(GUEST_READ_KEY, JSON.stringify([...ids].slice(-100)));
 }
 
 export default function PublicCommunications() {
+  const signedIn = Boolean(getStudentToken());
   const [data, setData] = useState({ banner: null, notifications: [] });
   const [open, setOpen] = useState(false);
   const [flash, setFlash] = useState('');
+  const [studentPage, setStudentPage] = useState(1);
+  const [studentTotalPages, setStudentTotalPages] = useState(1);
+  const [studentUnread, setStudentUnread] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async ({ append = false, page = 1 } = {}) => {
     try {
-      const payload = await apiRequest('/communications', { method: 'GET' });
-      setData({
-        banner: payload?.data?.banner || null,
-        notifications: payload?.data?.notifications || [],
-      });
+      const publicPayload = await apiRequest('/communications', { method: 'GET' });
+      const banner = publicPayload?.data?.banner || null;
+      if (!signedIn) {
+        const guestReads = readGuestIds();
+        const notifications = (publicPayload?.data?.notifications || []).slice(0, 5).map((item) => ({
+          ...item,
+          read: guestReads.has(itemId(item)),
+        }));
+        setData({ banner, notifications });
+        return;
+      }
+
+      const payload = await listStudentNotifications({ page, pageSize: 5 });
+      const incoming = payload?.data || [];
+      setData((current) => ({
+        banner,
+        notifications: append
+          ? [...current.notifications, ...incoming.filter((item) => !current.notifications.some((existing) => itemId(existing) === itemId(item)))]
+          : incoming,
+      }));
+      setStudentPage(payload?.pagination?.page || page);
+      setStudentTotalPages(payload?.pagination?.totalPages || 1);
+      setStudentUnread(Number(payload?.unreadTotal) || 0);
     } catch {
       // Public communications are optional and should never block the page.
     }
-  }, []);
+  }, [signedIn]);
 
   useEffect(() => {
     load();
@@ -36,14 +80,64 @@ export default function PublicCommunications() {
       } catch {
         // A malformed realtime payload should not break the public shell.
       }
-      load();
+      setStudentPage(1);
+      load({ page: 1 });
     };
     source.addEventListener('communications', refresh);
     return () => source.close();
   }, [load]);
 
-  const notifications = useMemo(() => data.notifications.slice(0, 20), [data.notifications]);
+  const notifications = useMemo(() => data.notifications, [data.notifications]);
   const banner = data.banner;
+  const guestUnread = signedIn ? 0 : notifications.filter((item) => !item.read).length;
+  const unreadCount = signedIn ? studentUnread : guestUnread;
+
+  async function viewNotification(item) {
+    const id = itemId(item);
+    if (!item.read) {
+      if (signedIn) {
+        try {
+          await markStudentNotificationRead(id);
+          setStudentUnread((value) => Math.max(0, value - 1));
+        } catch {
+          return;
+        }
+      } else {
+        rememberGuestRead(id);
+      }
+      setData((current) => ({
+        ...current,
+        notifications: current.notifications.map((entry) =>
+          itemId(entry) === id ? { ...entry, read: true } : entry,
+        ),
+      }));
+    }
+  }
+
+  async function dismissNotification(item) {
+    if (!signedIn) return;
+    const id = itemId(item);
+    try {
+      await dismissStudentNotification(id);
+      setData((current) => ({
+        ...current,
+        notifications: current.notifications.filter((entry) => itemId(entry) !== id),
+      }));
+      if (!item.read) setStudentUnread((value) => Math.max(0, value - 1));
+    } catch {
+      // Keep the notification visible if dismissing fails.
+    }
+  }
+
+  async function loadMore() {
+    if (!signedIn || loadingMore || studentPage >= studentTotalPages) return;
+    setLoadingMore(true);
+    try {
+      await load({ append: true, page: studentPage + 1 });
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   return (
     <>
@@ -72,13 +166,13 @@ export default function PublicCommunications() {
         <div className="public-notification-center">
           <button
             aria-expanded={open}
-            aria-label={`Thông báo Mandora, ${notifications.length} mục`}
+            aria-label={`Thông báo Mandora, ${unreadCount} chưa xem`}
             className="public-notification-center__trigger"
             onClick={() => setOpen((current) => !current)}
             type="button"
           >
             <span aria-hidden="true">◔</span>
-            <b>{Math.min(notifications.length, 99)}</b>
+            {unreadCount > 0 && <b>{Math.min(unreadCount, 99)}</b>}
           </button>
           {open && (
             <section className="public-notification-center__panel" aria-label="Thông báo Mandora">
@@ -91,13 +185,39 @@ export default function PublicCommunications() {
               </header>
               <div className="public-notification-center__list">
                 {notifications.map((item, index) => (
-                  <article className={`is-${item.type || 'info'}`} key={itemId(item, index)}>
-                    <strong>{item.title}</strong>
-                    <p>{item.message}</p>
-                    {item.link && <a href={item.link}>Xem thêm →</a>}
+                  <article
+                    className={`${item.read ? 'is-read' : 'is-unread'} is-${item.type || 'info'}`}
+                    key={itemId(item, index)}
+                    onClick={() => viewNotification(item)}
+                  >
+                    <div className="public-notification-center__item-copy">
+                      <strong>{item.title}</strong>
+                      <p>{item.message}</p>
+                      {item.link && <a href={item.link}>Xem thêm →</a>}
+                    </div>
+                    {signedIn && (
+                      <button
+                        aria-label={`Ẩn thông báo ${item.title}`}
+                        className="public-notification-center__dismiss"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          dismissNotification(item);
+                        }}
+                        type="button"
+                      >
+                        ×
+                      </button>
+                    )}
                   </article>
                 ))}
               </div>
+              {signedIn && studentPage < studentTotalPages && (
+                <footer className="public-notification-center__footer">
+                  <button disabled={loadingMore} onClick={loadMore} type="button">
+                    {loadingMore ? 'Đang tải…' : 'Xem thêm thông báo'}
+                  </button>
+                </footer>
+              )}
             </section>
           )}
         </div>
