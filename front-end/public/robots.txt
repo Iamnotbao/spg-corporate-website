@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://spg-corporate-website.pages.dev/sitemap.xml
