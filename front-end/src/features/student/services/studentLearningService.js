@@ -16,6 +16,25 @@ export function getStudentProgress() {
   return apiRequest('/student/progress', { auth: 'student' });
 }
 
+export function listStudentNotifications({ page = 1, pageSize = 5 } = {}) {
+  const query = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+  return apiRequest(`/student/notifications?${query}`, { auth: 'student' });
+}
+
+export function markStudentNotificationRead(id) {
+  return apiRequest(`/student/notifications/${encodeURIComponent(id)}/read`, {
+    auth: 'student',
+    method: 'PUT',
+  });
+}
+
+export function dismissStudentNotification(id) {
+  return apiRequest(`/student/notifications/${encodeURIComponent(id)}`, {
+    auth: 'student',
+    method: 'DELETE',
+  });
+}
+
 export function archiveEnrollment(courseId) {
   return apiRequest(`/student/enrollments/${encodeURIComponent(courseId)}`, {
     auth: 'student',

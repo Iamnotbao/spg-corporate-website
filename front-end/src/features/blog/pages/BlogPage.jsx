@@ -1,10 +1,11 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   EmptyState,
   ErrorState,
   LoadingState,
 } from '../../../components/ui/ContentState.jsx';
 import PageHeader from '../../../components/ui/PageHeader.jsx';
+import PublicPagination from '../../../components/ui/PublicPagination.jsx';
 import { usePageTitle } from '../../../hooks/usePageTitle.js';
 import { usePublicCollection } from '../../public/hooks/usePublicContent.js';
 import BlogCard from '../components/BlogCard.jsx';
@@ -12,20 +13,33 @@ import { BLOG_CATEGORIES } from '../constants.js';
 import { listPublishedBlogPosts } from '../services/blogService.js';
 import '../styles/blog.css';
 
+const PAGE_SIZE = 9;
+
 export default function BlogPage() {
   usePageTitle('Blog');
   const [draftSearch, setDraftSearch] = useState('');
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
+  const [page, setPage] = useState(1);
   const loadPosts = useCallback(
     () => listPublishedBlogPosts({ category, search }),
     [category, search],
   );
   const posts = usePublicCollection(loadPosts);
+  const pagedPosts = useMemo(
+    () => posts.data.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [page, posts.data],
+  );
 
   function submitSearch(event) {
     event.preventDefault();
     setSearch(draftSearch.trim());
+    setPage(1);
+  }
+
+  function selectCategory(nextCategory) {
+    setCategory(nextCategory);
+    setPage(1);
   }
 
   return (
@@ -58,7 +72,7 @@ export default function BlogPage() {
               <button
                 aria-pressed={!category}
                 className={!category ? 'is-active' : undefined}
-                onClick={() => setCategory('')}
+                onClick={() => selectCategory('')}
                 type="button"
               >
                 Tất cả
@@ -68,7 +82,7 @@ export default function BlogPage() {
                   aria-pressed={category === item.slug}
                   className={category === item.slug ? 'is-active' : undefined}
                   key={item.slug}
-                  onClick={() => setCategory(item.slug)}
+                  onClick={() => selectCategory(item.slug)}
                   type="button"
                 >
                   {item.label}
@@ -89,11 +103,19 @@ export default function BlogPage() {
             />
           )}
           {posts.status === 'ready' && posts.data.length > 0 && (
-            <div className="blog-grid">
-              {posts.data.map((post) => (
-                <BlogCard key={post._id?.$oid || post._id || post.id} post={post} />
-              ))}
-            </div>
+            <>
+              <div className="blog-grid">
+                {pagedPosts.map((post) => (
+                  <BlogCard key={post._id?.$oid || post._id || post.id} post={post} />
+                ))}
+              </div>
+              <PublicPagination
+                onPageChange={setPage}
+                page={page}
+                pageSize={PAGE_SIZE}
+                total={posts.data.length}
+              />
+            </>
           )}
         </div>
       </section>
