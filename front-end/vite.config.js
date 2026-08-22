@@ -4,16 +4,20 @@ import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
 const PUBLIC_ROUTES = ['/', '/courses', '/hsk', '/vocabulary', '/characters', '/practice', '/blog'];
+const SITE_TOKEN = '__MANDORA_SITE_URL__';
 
 function normalizeOrigin(value) {
   return String(value || '').trim().replace(/\/$/, '');
 }
 
-function seoFilesPlugin(siteOrigin) {
+function seoPlugin(siteOrigin) {
+  const origin = siteOrigin || 'http://localhost:5173';
   return {
-    name: 'mandora-seo-files',
+    name: 'mandora-seo',
+    transformIndexHtml(html) {
+      return html.replaceAll(SITE_TOKEN, origin);
+    },
     async closeBundle() {
-      const origin = siteOrigin || 'http://localhost:5173';
       if (!siteOrigin) {
         console.warn('[seo] VITE_SITE_URL is not configured; build SEO files use localhost.');
       }
@@ -35,8 +39,11 @@ function seoFilesPlugin(siteOrigin) {
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const siteOrigin = normalizeOrigin(env.VITE_SITE_URL);
+  if (!siteOrigin && process.env.CF_PAGES) {
+    throw new Error('VITE_SITE_URL is required for Cloudflare Pages production builds.');
+  }
 
   return {
-    plugins: [react(), seoFilesPlugin(siteOrigin)],
+    plugins: [react(), seoPlugin(siteOrigin)],
   };
 });
