@@ -102,6 +102,9 @@ export default function LessonPage() {
   )
     return <NotFoundPage />;
 
+  const isQuizLesson = lesson.data.type === 'quiz';
+  const quizUrl = `/courses/${courseSlug}/lessons/${lessonSlug}/quiz`;
+
   return (
     <section className="lesson-page">
       <div className="public-container lesson-page__grid">
@@ -140,8 +143,15 @@ export default function LessonPage() {
               <span aria-hidden="true">{isComplete ? '✓' : '○'}</span>
               <div>
                 <strong>
-                  {isComplete ? 'Bài học đã hoàn thành' : 'Hoàn thành bài học'}
+                  {isComplete
+                    ? 'Bài học đã hoàn thành'
+                    : isQuizLesson
+                      ? 'Hoàn thành bằng Quiz'
+                      : 'Hoàn thành bài học'}
                 </strong>
+                {isQuizLesson && !isComplete && (
+                  <p>Đạt điểm yêu cầu của Quiz để hoàn thành bài học này.</p>
+                )}
                 {studentState?.enrolled && (
                   <LearningProgress value={studentState.progressPercentage} />
                 )}
@@ -151,7 +161,7 @@ export default function LessonPage() {
             {auth.status !== 'signed-in' ? (
               <Link
                 className="button button--primary"
-                state={{ from: location.pathname }}
+                state={{ from: isQuizLesson ? quizUrl : location.pathname }}
                 to="/login"
               >
                 Đăng nhập để lưu tiến độ
@@ -159,6 +169,10 @@ export default function LessonPage() {
             ) : !studentState?.enrolled ? (
               <Link className="button button--primary" to={`/courses/${courseSlug}`}>
                 Đăng ký khóa học
+              </Link>
+            ) : isQuizLesson ? (
+              <Link className="button button--primary" to={quizUrl}>
+                {isComplete ? 'Làm lại Quiz' : 'Bắt đầu Quiz'}
               </Link>
             ) : (
               <button

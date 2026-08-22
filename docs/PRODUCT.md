@@ -126,9 +126,10 @@ reasonable future extension impossible.
 The current application now provides Mandora public Course, Course Detail, Lesson, and
 Vocabulary reads; admin CRUD APIs for those learning resources; public student
 registration/login; Enrollment; My Courses; explicit Lesson completion; derived Course
-progress; and student-owned saved Vocabulary. It does not yet provide Quiz engines,
-password recovery/email verification, a separate aggregate Progress page, or an admin
-student/progress reporting API. Legacy Posts/Blog, Jobs, applications, visitor chat,
+progress; student-owned saved Vocabulary; and the Quiz, Question, QuizAttempt, scoring,
+and result flow. It does not yet provide password recovery/email verification, a separate
+aggregate Progress page, or an admin student/progress reporting API. Legacy Posts/Blog,
+Jobs, applications, visitor chat,
 company settings, media, and CMS compatibility code still exists in the backend and must
 be retired only through an approved data-retention process.
 
@@ -148,13 +149,11 @@ Legacy content and data are not Mandora seed data.
 The supplied V1 scope does not decide the following. They must be resolved explicitly,
 not guessed during coding:
 
-1. where Quizzes belong, which question formats V1 supports, and whether attempts/results
-   must persist for Progress;
-2. publish cascades beyond the Phase 4B minimum (published Course, Lesson, and Vocabulary;
-   Unit has no independent publish state), including Quizzes and Blog posts;
-3. the public URL patterns and final production hostname;
-4. whether the interface itself is Vietnamese-only in V1 or has crawlable locale variants;
-5. the retention/migration policy for legacy users, content, applications, CVs, chat data,
+1. publish cascades beyond the Phase 4C-1 minimum (published Course, Lesson, Vocabulary,
+   and valid Quiz; Unit has no independent publish state), including Blog posts;
+2. the public URL patterns and final production hostname;
+3. whether the interface itself is Vietnamese-only in V1 or has crawlable locale variants;
+4. the retention/migration policy for legacy users, content, applications, CVs, chat data,
    and media.
 
 Phase 4B defines My Courses as active student enrollment in a published Course. A Lesson
@@ -163,6 +162,15 @@ complete. Course progress is calculated dynamically as completed published Lesso
 divided by all published Lessons in Unit order; no percentage is stored. Vocabulary is
 attached to a Lesson, and V1 persistence records only whether the authenticated student
 saved it. Learned state and spaced-repetition scheduling remain out of scope.
+
+Phase 4C-1 defines exactly one Quiz per Lesson, and only Lessons whose type is `quiz` may
+own one. Supported Question types are `multiple_choice`, `true_false`, `fill_blank`, and
+`arrange_sentence`. Students may retry a published Quiz without an attempt limit; every
+submission is stored as a separate QuizAttempt. A normal Lesson still requires explicit
+Mark Complete. A `quiz` Lesson can only be completed by passing its associated published
+Quiz. Failed attempts are retained but do not change LessonProgress. Passing retries use
+the existing idempotent LessonProgress record and therefore do not inflate Course
+progress.
 
 Until decided, architecture documents may identify these as open boundaries but must not
 invent product behavior.

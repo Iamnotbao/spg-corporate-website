@@ -19,18 +19,20 @@ The original audit below remains the historical baseline. Phase 1 through Phase 
 changed the current frontend as follows:
 
 - public routing now covers Home, Courses, Course Detail, Lesson, HSK, Vocabulary,
-  Characters, Practice, Blog list/detail, student Login/Register, My Courses, and a
-  client-side 404;
+  Characters, Practice, Quiz attempts/results, Blog list/detail, student Login/Register,
+  My Courses, and a client-side 404;
 - reusable public UI lives under `src/components/ui/`, while Courses, learning discovery,
   and Blog presentation are organized by feature;
-- Course, Unit, Lesson, Enrollment, LessonProgress, Vocabulary, and saved-Vocabulary
-  persistence now exists. Character, HSK, and Practice composition remains illustrative;
+- Course, Unit, Lesson, Enrollment, LessonProgress, Vocabulary, saved-Vocabulary, Quiz,
+  Question, and QuizAttempt persistence now exists. Character, HSK, and non-Quiz Practice
+  composition remains illustrative;
 - Blog list/detail pages reuse the existing Posts API, but expose only records assigned to
   the approved Mandora Blog category allowlist; legacy corporate Posts are not silently
   published as Mandora content;
 - student registration/login, guarded My Courses, enrollment-aware Course Detail,
   explicit Lesson completion, derived Course progress, and Vocabulary save/unsave now use
-  authenticated APIs;
+  authenticated APIs; Quiz submissions are graded server-side and passing quiz-type
+  Lessons update the same progress model;
 - the legacy backend domains remain present and unchanged except where compatibility was
   required by the Mandora learning slices.
 
@@ -41,9 +43,9 @@ or SEO decisions documented later in this file.
 
 The Mandora Admin frontend now uses URL-addressable destinations under `/admin`, a
 responsive grouped sidebar, a compact desktop mode, and a mobile drawer. The active
-navigation covers Dashboard; UI foundations for Courses, Units, Lessons, Vocabulary,
-Grammar, Characters, Quizzes, Students, Progress, and Settings; and the working Blog,
-Media, Blog Categories, and CMS-account modules.
+navigation covers Dashboard; working Courses, Units, Lessons, and Quiz management; UI
+foundations for Vocabulary, Grammar, Characters, Students, Progress, and Settings; and the
+working Blog, Media, Blog Categories, and CMS-account modules.
 
 Phase 3 intentionally keeps these boundaries explicit:
 
@@ -53,16 +55,16 @@ Phase 3 intentionally keeps these boundaries explicit:
   permission checks;
 - Dashboard shows the real Posts total and recent Posts, but does not fabricate learning,
   student, or progress metrics;
-- learning, Students, Progress, and Mandora Settings pages are labelled UI foundations
-  and make no persistence requests;
-- the existing `users` collection remains a legacy `admin`/`employee` CMS-account domain
-  and is not displayed as Mandora student data;
+- Vocabulary administration, Grammar, Characters, Students, aggregate Progress, and
+  Mandora Settings pages remain UI foundations and make no persistence requests;
+- the shared `users` collection now contains backend-enforced student accounts alongside
+  compatible legacy CMS accounts, but the Admin Students foundation does not list them;
 - legacy Jobs, Applications, visitor Chat, Communications, Languages, and corporate site
   settings remain in source for preservation/audit purposes but are not exposed by the
   Mandora Admin navigation.
 
-Phase 4C still needs Quiz contracts and any aggregate Progress/admin reporting and
-Mandora-settings domains approved for that phase. It must also resolve the remaining legacy
+Phase 4C-2 still needs any aggregate Progress/admin reporting and Mandora-settings domains
+approved for that phase. It must also resolve the remaining legacy
 `admin`/`employee` role model, unrestricted Posts payloads/public projections, the lack of
 an explicit permission on image upload, and the Cloudinary upload/media implementation
 that currently accepts and lists only the legacy `spg/` namespace. Frontend menu hiding
@@ -745,9 +747,53 @@ remain readable, but enrollment is required to persist completion.
 
 ### Deferred publish and lifecycle edge cases
 
-Phase 4C should decide and implement any required atomic publish validation (for example,
-whether a Course may publish with no published Lesson), slug redirect/history behavior,
+Phase 4C-2 should decide any broader atomic publish validation (for example, whether a
+Course may publish with no published Lesson), slug redirect/history behavior,
 transactional reordering, archive versus delete semantics, thumbnail ownership/cleanup,
-and Quiz visibility. Phase 4C must also decide Quiz attachment, question/attempt contracts,
-whether Quiz results contribute to progress, aggregate Progress/admin reporting, and
-archive/unenroll behavior. No QuizAttempt behavior is implied by Phase 4B.
+aggregate Progress/admin reporting, and archive/unenroll behavior. Phase 4B itself did
+not imply QuizAttempt behavior; the Phase 4C-1 section below defines it.
+
+## Phase 4C-1 implemented Quiz baseline
+
+The Quiz vertical slice adds three native MongoDB collections:
+
+- `quizzes`: one record per `quiz`-type Lesson, enforced by a unique `lessonId` index;
+- `quiz_questions`: ordered Question records belonging to one Quiz;
+- `quiz_attempts`: append-only, student-owned submission/result snapshots.
+
+Answers are represented inside each Question instead of through a generic Answer engine.
+`multiple_choice` and `true_false` store ordered options with exactly one `isCorrect`
+option. `fill_blank` stores one or more accepted strings. `arrange_sentence` stores token
+IDs/content and a correct ID sequence. Student Quiz reads project only prompts, points,
+safe option content, and non-answer-ordered arrangement tokens; correct flags, accepted
+answers, answer order, explanations, and scoring keys are omitted until the server returns
+a completed result.
+
+A Quiz can be created only for an existing Lesson whose type is `quiz`, and the unique
+Lesson relationship prevents silent replacement by another Quiz. Publishing requires at
+least one valid Question and positive total points. The Quiz, parent Lesson, and parent
+Course must all be published before an attempt; Unit continues to have no independent
+status. Student submission additionally requires an active Enrollment.
+
+Scoring is deterministic and server-owned: earned Question points divided by total
+Question points, multiplied by 100 and rounded to two decimal places. Choice answers use
+exact option-ID comparison. Fill-blank answers are trimmed, normalized to Unicode NFC,
+and compared case-insensitively without changing Chinese characters. Arrangement answers
+use exact token-ID sequence comparison. The client never submits a score, pass flag,
+progress percentage, or user ID.
+
+Each retry inserts a new QuizAttempt. Attempts store the submitted/result snapshot, score,
+earned/total points, pass flag, and submission timestamp so later Question edits do not
+rewrite history. Own attempt history is queried by authenticated `userId` plus `quizId`;
+there is no cross-student identifier in the route contract.
+
+Normal Lessons retain explicit Mark Complete. Manual completion is rejected for a
+`quiz`-type Lesson. A failed Quiz stores its attempt but does not write LessonProgress. A
+passing Quiz uses the Phase 4B idempotent `(userId, lessonId)` LessonProgress upsert, after
+which Course progress and Continue Learning are recalculated from published Lessons.
+
+Admin Quiz CRUD and the Question builder are available at `/admin/quizzes`. Unsafe Quiz
+deletion is blocked while Questions or attempts exist; Question deletion is blocked after
+attempts exist and cannot leave a published Quiz empty. Full archive behavior, aggregate
+attempt/progress reporting, attempt retention, and cross-collection transactional
+guarantees remain Phase 4C-2 decisions.

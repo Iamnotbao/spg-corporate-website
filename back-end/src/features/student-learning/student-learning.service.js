@@ -112,6 +112,56 @@ export function createStudentLearningService(
     return buildCourseState(course, enrollment, units, lessons, progress);
   }
 
+  async function recordLessonCompletion(
+    user,
+    lessonIdentifier,
+    { quizOnly = false } = {},
+  ) {
+    const userId = requireStudent(user);
+    const lesson = await repository.findPublishedLesson(lessonIdentifier);
+    if (!lesson)
+      throw new StudentLearningError(404, "Published lesson not found");
+    if (quizOnly && lesson.type !== "quiz") {
+      throw new StudentLearningError(
+        409,
+        "Only quiz lessons can be completed by a quiz attempt",
+      );
+    }
+    if (!quizOnly && lesson.type === "quiz") {
+      throw new StudentLearningError(
+        409,
+        "Pass the published quiz to complete this lesson",
+      );
+    }
+    const unit = await repository.findUnit(lesson.unitId);
+    if (!unit)
+      throw new StudentLearningError(404, "Lesson hierarchy not found");
+    const course = await repository.findPublishedCourse(unit.courseId);
+    if (!course)
+      throw new StudentLearningError(404, "Lesson hierarchy not found");
+    const enrollment = await repository.findEnrollment(userId, course._id);
+    if (!enrollment) {
+      throw new StudentLearningError(
+        403,
+        "Enrollment is required to complete lessons",
+      );
+    }
+    const progress = await repository.completeLesson(
+      userId,
+      lesson._id,
+      new Date(),
+    );
+    return {
+      lessonProgress: {
+        id: String(progress._id),
+        lessonId: String(progress.lessonId),
+        completed: progress.completed,
+        completedAt: progress.completedAt,
+      },
+      courseState: await loadCourseState(userId, course, enrollment),
+    };
+  }
+
   return {
     async enroll(user, input) {
       const userId = requireStudent(user);
@@ -167,37 +217,11 @@ export function createStudentLearningService(
     },
 
     async completeLesson(user, lessonIdentifier) {
-      const userId = requireStudent(user);
-      const lesson = await repository.findPublishedLesson(lessonIdentifier);
-      if (!lesson)
-        throw new StudentLearningError(404, "Published lesson not found");
-      const unit = await repository.findUnit(lesson.unitId);
-      if (!unit)
-        throw new StudentLearningError(404, "Lesson hierarchy not found");
-      const course = await repository.findPublishedCourse(unit.courseId);
-      if (!course)
-        throw new StudentLearningError(404, "Lesson hierarchy not found");
-      const enrollment = await repository.findEnrollment(userId, course._id);
-      if (!enrollment) {
-        throw new StudentLearningError(
-          403,
-          "Enrollment is required to complete lessons",
-        );
-      }
-      const progress = await repository.completeLesson(
-        userId,
-        lesson._id,
-        new Date(),
-      );
-      return {
-        lessonProgress: {
-          id: String(progress._id),
-          lessonId: String(progress.lessonId),
-          completed: progress.completed,
-          completedAt: progress.completedAt,
-        },
-        courseState: await loadCourseState(userId, course, enrollment),
-      };
+      return recordLessonCompletion(user, lessonIdentifier);
+    },
+
+    async completeQuizLesson(user, lessonIdentifier) {
+      return recordLessonCompletion(user, lessonIdentifier, { quizOnly: true });
     },
   };
 }

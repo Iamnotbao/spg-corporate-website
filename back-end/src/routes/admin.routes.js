@@ -19,6 +19,7 @@ import * as mediaController from "../controllers/media.controller.js";
 import { importContent } from "../controllers/contentImport.controller.js";
 import * as learningController from "../features/learning/learning.controller.js";
 import * as vocabularyController from "../features/vocabulary/vocabulary.controller.js";
+import * as quizController from "../features/quiz/quiz.controller.js";
 
 const router = Router();
 const loginLimiter = rateLimit({
@@ -145,6 +146,35 @@ router.delete(
   "/vocabulary/:id",
   requireAdmin,
   asyncHandler(vocabularyController.remove),
+);
+
+router.get("/quizzes", requireAdmin, asyncHandler(quizController.listAdmin));
+router.get("/quizzes/:id", requireAdmin, asyncHandler(quizController.getAdmin));
+router.post("/quizzes", requireAdmin, asyncHandler(quizController.createQuiz));
+router.put(
+  "/quizzes/:id",
+  requireAdmin,
+  asyncHandler(quizController.updateQuiz),
+);
+router.delete(
+  "/quizzes/:id",
+  requireAdmin,
+  asyncHandler(quizController.deleteQuiz),
+);
+router.post(
+  "/quizzes/:quizId/questions",
+  requireAdmin,
+  asyncHandler(quizController.createQuestion),
+);
+router.put(
+  "/quiz-questions/:id",
+  requireAdmin,
+  asyncHandler(quizController.updateQuestion),
+);
+router.delete(
+  "/quiz-questions/:id",
+  requireAdmin,
+  asyncHandler(quizController.deleteQuestion),
 );
 
 router.get(

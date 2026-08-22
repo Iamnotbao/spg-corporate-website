@@ -76,7 +76,7 @@ export const PRACTICE_AREAS = [
   {
     slug: 'quiz',
     title: 'Quiz',
-    description: 'Điểm vào cho bài kiểm tra theo nội dung học.',
+    description: 'Làm Quiz trong bài học đã xuất bản và lưu kết quả theo tài khoản.',
     character: '测',
     to: '/practice/quiz',
   },

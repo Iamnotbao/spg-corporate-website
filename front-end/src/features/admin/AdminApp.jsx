@@ -11,6 +11,7 @@ import './styles/learning.css';
 import AdminFoundationPage from './components/AdminFoundationPage.jsx';
 import AdminLogin from './components/AdminLogin.jsx';
 import AdminLearningPanel from './components/AdminLearningPanel.jsx';
+import AdminQuizPanel from './components/AdminQuizPanel.jsx';
 import AdminRouteState from './components/AdminRouteState.jsx';
 import CategoriesPanel from './components/CategoriesPanel.jsx';
 import ContentDetailModal from './components/ContentDetailModal.jsx';
@@ -32,7 +33,6 @@ const FOUNDATION_SECTIONS = new Set([
   'vocabulary',
   'grammar',
   'characters',
-  'quizzes',
   'students',
   'progress',
   'settings',
@@ -149,6 +149,8 @@ export default function AdminApp() {
         section={section}
       />
     );
+  } else if (section === 'quizzes') {
+    page = <AdminQuizPanel onNotify={notify} onUnauthorized={auth.handleUnauthorized} />;
   } else if (FOUNDATION_SECTIONS.has(section)) {
     page = <AdminFoundationPage section={section} />;
   } else if (section === 'blog') {

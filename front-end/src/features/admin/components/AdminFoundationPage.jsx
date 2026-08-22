@@ -47,26 +47,18 @@ const FOUNDATIONS = {
     createLabel: 'Tạo Hán tự',
     filterLabel: 'Cấp độ',
   },
-  quizzes: {
-    eyebrow: 'Learning content',
-    title: 'Quiz',
-    description:
-      'Nơi quản lý câu hỏi và bài kiểm tra sau khi phạm vi Quiz V1 được quyết định.',
-    createLabel: 'Tạo Quiz',
-    filterLabel: 'Trạng thái',
-  },
   students: {
     eyebrow: 'Users',
     title: 'Học viên',
     description:
-      'Danh sách học viên sẽ xuất hiện khi xác thực student và Student API được triển khai.',
+      'Tài khoản học viên đã tồn tại; danh sách quản trị học viên được dành cho giai đoạn báo cáo tiếp theo.',
     filterLabel: 'Trạng thái tài khoản',
   },
   progress: {
     eyebrow: 'Users',
     title: 'Tiến độ học tập',
     description:
-      'Dữ liệu đăng ký học, hoàn thành bài và kết quả Quiz chưa tồn tại trong backend.',
+      'Enrollment, LessonProgress và QuizAttempt đã tồn tại; báo cáo tổng hợp chưa thuộc Phase 4C-1.',
     filterLabel: 'Khóa học',
   },
   settings: {

@@ -26,10 +26,26 @@ export default function PracticeModePage() {
         <p className="public-eyebrow">Nền tảng luyện tập</p>
         <h1>{area.title}</h1>
         <p>{area.description}</p>
-        <DemoNotice>
-          {' '}
-          Hoạt động tương tác và chấm điểm chưa được triển khai trong Phase 2.
-        </DemoNotice>
+        {mode === 'quiz' ? (
+          <div className="student-access-card__notice" role="status">
+            <span aria-hidden="true">测</span>
+            <div>
+              <strong>Quiz nằm trong lộ trình khóa học</strong>
+              <p>
+                Chọn một khóa học, đăng ký và mở bài học loại Quiz để làm bài, nhận kết
+                quả và cập nhật tiến độ.
+              </p>
+              <Link className="button button--primary" to="/courses">
+                Chọn khóa học
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <DemoNotice>
+            {' '}
+            Hoạt động tương tác này chưa được triển khai trong V1 hiện tại.
+          </DemoNotice>
+        )}
       </div>
     </section>
   );

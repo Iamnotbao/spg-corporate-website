@@ -18,6 +18,7 @@ import { validateApplication } from "../middleware/application.js";
 import * as learningController from "../features/learning/learning.controller.js";
 import * as studentAuthController from "../features/student-auth/student-auth.controller.js";
 import * as vocabularyController from "../features/vocabulary/vocabulary.controller.js";
+import * as quizController from "../features/quiz/quiz.controller.js";
 import { auth, requireRole } from "../middleware/auth.js";
 
 const router = Router();
@@ -77,6 +78,10 @@ router.get(
   asyncHandler(learningController.getPublishedLesson),
 );
 router.get("/vocabulary", asyncHandler(vocabularyController.listPublic));
+router.get(
+  "/lessons/:identifier/quiz",
+  asyncHandler(quizController.getPublicByLesson),
+);
 
 router.get(
   "/chat/settings",

@@ -10,7 +10,7 @@ export const STUDENT_COLLECTIONS = Object.freeze({
 
 let indexPromise;
 
-async function ensureStudentLearningIndexes() {
+export async function ensureStudentLearningIndexes() {
   if (!indexPromise) {
     indexPromise = Promise.all([
       getCollection(STUDENT_COLLECTIONS.enrollments).then((collection) =>

@@ -210,3 +210,47 @@ test("draft lessons stay outside the progress denominator", async () => {
   assert.equal(state.completedLessons, 1);
   assert.equal(state.progressPercentage, 50);
 });
+
+test("quiz lessons cannot bypass scoring through manual completion", async () => {
+  const service = createStudentLearningService(
+    repository({
+      async findPublishedLesson() {
+        return { ...lessons[1], type: "quiz" };
+      },
+    }),
+  );
+  await assert.rejects(
+    () =>
+      service.completeLesson(
+        { _id: ids.studentA, role: "student" },
+        "lesson-2",
+      ),
+    { status: 409, message: "Pass the published quiz to complete this lesson" },
+  );
+});
+
+test("repeated passing completions keep one logical LessonProgress record", async () => {
+  const progressKeys = new Set();
+  const service = createStudentLearningService(
+    repository({
+      async findPublishedLesson() {
+        return { ...lessons[1], type: "quiz" };
+      },
+      async completeLesson(userId, lessonId) {
+        const key = `${userId}:${lessonId}`;
+        progressKeys.add(key);
+        return {
+          _id: ids.progress,
+          userId,
+          lessonId,
+          completed: true,
+          completedAt: new Date(),
+        };
+      },
+    }),
+  );
+  const user = { _id: ids.studentA, role: "student" };
+  await service.completeQuizLesson(user, "lesson-2");
+  await service.completeQuizLesson(user, "lesson-2");
+  assert.equal(progressKeys.size, 1);
+});
