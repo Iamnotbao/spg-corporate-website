@@ -10,6 +10,7 @@ import './styles/admin-phase-three.css';
 import './styles/learning.css';
 import './styles/chat.css';
 import './styles/communications.css';
+import './styles/mobile-polish.css';
 import AdminLogin from './components/AdminLogin.jsx';
 import AdminLearningPanel from './components/AdminLearningPanel.jsx';
 import AdminQuizPanel from './components/AdminQuizPanel.jsx';
