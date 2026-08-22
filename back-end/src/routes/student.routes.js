@@ -3,6 +3,11 @@ import * as studentLearningController from "../features/student-learning/student
 import * as vocabularyController from "../features/vocabulary/vocabulary.controller.js";
 import * as quizController from "../features/quiz/quiz.controller.js";
 import * as progressController from "../features/progress/progress.controller.js";
+import {
+  dismissStudentNotification,
+  listStudentNotifications,
+  markStudentNotificationRead,
+} from "../controllers/communications.controller.js";
 import { auth, requireRole } from "../middleware/auth.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
@@ -16,6 +21,15 @@ router.delete(
 );
 router.get("/courses", asyncHandler(studentLearningController.listMyCourses));
 router.get("/progress", asyncHandler(progressController.getStudentProgress));
+router.get("/notifications", asyncHandler(listStudentNotifications));
+router.put(
+  "/notifications/:id/read",
+  asyncHandler(markStudentNotificationRead),
+);
+router.delete(
+  "/notifications/:id",
+  asyncHandler(dismissStudentNotification),
+);
 router.get(
   "/courses/:identifier",
   asyncHandler(studentLearningController.getCourseState),
