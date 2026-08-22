@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { listAdminLearning } from '../../../services/adminService.js';
 import {
   createAdminVocabulary,
@@ -99,7 +100,7 @@ export default function AdminVocabularyPanel({ onNotify, onUnauthorized }) {
   }
 
   function exportVocabulary() { downloadCsv('mandora-vocabulary.csv', vocabularyToCsv(items)); onNotify(`Đã export ${items.length} từ vựng.`); }
-  function downloadTemplate() { downloadCsv('mandora-vocabulary-template.csv', vocabularyTemplateCsv(lessons[0]?.id || '')); onNotify('Đã tải file mẫu CSV.'); }
+  function downloadTemplate() { downloadCsv('mandora-vocabulary-template.csv', vocabularyTemplateCsv(lessons[0]?.id || '')); onNotify(lessons.length ? 'Đã tải file mẫu CSV.' : 'Đã tải mẫu CSV. Tạo Lesson rồi điền lessonId trước khi import.'); }
 
   async function importVocabulary(event) {
     const file = event.target.files?.[0]; event.target.value = ''; if (!file) return;
@@ -135,7 +136,12 @@ export default function AdminVocabularyPanel({ onNotify, onUnauthorized }) {
         description="Quản lý từ vựng gắn với bài học, HSK và trạng thái xuất bản. Có thể tạo tay hoặc nhập/xuất hàng loạt bằng CSV."
         eyebrow="Learning content" title="Từ vựng"
       />
-      {!lessons.length && status === 'ready' && <AdminAlert>Hãy tạo ít nhất một bài học trước. Mỗi từ vựng bắt buộc phải thuộc một Lesson.</AdminAlert>}
+      {!lessons.length && status === 'ready' && (
+        <AdminAlert>
+          Chưa có Lesson nên Mandora chưa thể gắn từ vựng vào lộ trình học. Hãy tạo Course → Unit →{' '}
+          <Link className="admin-inline-link" to="/admin/lessons">Lesson trước</Link>; sau đó nút Tạo từ vựng và Import CSV sẽ tự bật.
+        </AdminAlert>
+      )}
       {error && <AdminAlert onRetry={status === 'error' ? load : undefined}>{error}</AdminAlert>}
 
       {form && <form className="admin-form-section admin-learning-form" onSubmit={submit}>
