@@ -22,10 +22,11 @@ import '../styles/learning.css';
 const PAGE_SIZE = 12;
 
 export default function VocabularyPage() {
-  usePageTitle('Từ vựng');
   const auth = useStudentAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const savedOnly = new URLSearchParams(location.search).get('saved') === '1';
+  usePageTitle(savedOnly ? 'Từ vựng đã lưu' : 'Từ vựng');
   const [query, setQuery] = useState('');
   const [level, setLevel] = useState('Tất cả');
   const [page, setPage] = useState(1);
@@ -33,13 +34,18 @@ export default function VocabularyPage() {
   const [savedIds, setSavedIds] = useState(new Set());
   const [busyId, setBusyId] = useState('');
   const [notice, setNotice] = useState({ message: '', variant: 'success' });
+
   const load = useCallback(() => {
     setState((current) => ({ ...current, status: 'loading' }));
     listPublicVocabulary()
       .then((result) => setState({ status: 'ready', data: result.data || [], error: '' }))
       .catch((error) => setState({ status: 'error', data: [], error: error.message }));
   }, []);
-  useEffect(load, [load]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
   useEffect(() => {
     if (auth.status !== 'signed-in') {
       setSavedIds(new Set());
@@ -50,21 +56,28 @@ export default function VocabularyPage() {
       .catch(() => setSavedIds(new Set()));
   }, [auth.status]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [savedOnly]);
+
   const levels = useMemo(
     () => ['Tất cả', ...new Set(state.data.map((item) => item.hskLevel).filter(Boolean))],
     [state.data],
   );
+
   const items = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase('vi');
     return state.data.filter(
       (item) =>
+        (!savedOnly || savedIds.has(item.id)) &&
         (level === 'Tất cả' || item.hskLevel === level) &&
         (!normalized ||
           `${item.simplified} ${item.traditional || ''} ${item.pinyin} ${item.meaningVietnamese}`
             .toLocaleLowerCase('vi')
             .includes(normalized)),
     );
-  }, [level, query, state.data]);
+  }, [level, query, savedIds, savedOnly, state.data]);
+
   const pagedItems = useMemo(
     () => items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
     [items, page],
@@ -82,7 +95,7 @@ export default function VocabularyPage() {
 
   async function toggleSave(item) {
     if (auth.status !== 'signed-in') {
-      navigate('/login', { state: { from: location.pathname } });
+      navigate('/login', { state: { from: `${location.pathname}${location.search}` } });
       return;
     }
     setBusyId(item.id);
@@ -97,11 +110,16 @@ export default function VocabularyPage() {
         return next;
       });
       setNotice({
-        message: wasSaved ? `Đã bỏ lưu “${item.simplified}”.` : `Đã lưu “${item.simplified}” vào từ vựng của bạn.`,
+        message: wasSaved
+          ? `Đã bỏ lưu “${item.simplified}”.`
+          : `Đã lưu “${item.simplified}” vào từ vựng của bạn.`,
         variant: 'success',
       });
     } catch (caught) {
-      setNotice({ message: caught.message || 'Không thể cập nhật từ đã lưu.', variant: 'error' });
+      setNotice({
+        message: caught.message || 'Không thể cập nhật từ đã lưu.',
+        variant: 'error',
+      });
     } finally {
       setBusyId('');
     }
@@ -110,12 +128,22 @@ export default function VocabularyPage() {
   return (
     <>
       <PageHeader
-        description="Duyệt từ theo chữ giản thể, phồn thể, Pinyin, nghĩa tiếng Việt và ngữ cảnh sử dụng."
-        eyebrow="Xây vốn từ"
-        title="Từ vựng"
+        description={
+          savedOnly
+            ? 'Các từ bạn đã đánh dấu để ôn lại. Bỏ lưu bất kỳ lúc nào mà không ảnh hưởng nội dung khóa học.'
+            : 'Duyệt từ theo chữ giản thể, phồn thể, Pinyin, nghĩa tiếng Việt và ngữ cảnh sử dụng.'
+        }
+        eyebrow={savedOnly ? 'Không gian học viên' : 'Xây vốn từ'}
+        title={savedOnly ? 'Từ vựng đã lưu' : 'Từ vựng'}
       />
       <section className="learning-index-section">
         <div className="public-container">
+          {savedOnly && auth.status !== 'signed-in' && (
+            <div className="demo-notice">
+              <span>i</span>
+              <p>Đăng nhập để xem danh sách từ vựng bạn đã lưu.</p>
+            </div>
+          )}
           <div className="learning-toolbar">
             <label className="catalog-search">
               <span aria-hidden="true">⌕</span>
@@ -142,9 +170,7 @@ export default function VocabularyPage() {
             </div>
           </div>
           {state.status === 'loading' && <LoadingState count={6} label="Đang tải từ vựng" />}
-          {state.status === 'error' && (
-            <ErrorState message={state.error} onRetry={load} />
-          )}
+          {state.status === 'error' && <ErrorState message={state.error} onRetry={load} />}
           {state.status === 'ready' &&
             (items.length ? (
               <>
@@ -168,9 +194,13 @@ export default function VocabularyPage() {
               </>
             ) : (
               <EmptyState
-                description="Hãy thử từ khóa hoặc cấp độ khác."
+                description={
+                  savedOnly
+                    ? 'Vào trang Từ vựng và bấm Lưu ở những từ bạn muốn ôn lại.'
+                    : 'Hãy thử từ khóa hoặc cấp độ khác.'
+                }
                 icon="词"
-                title="Chưa tìm thấy từ phù hợp"
+                title={savedOnly ? 'Bạn chưa lưu từ nào' : 'Chưa tìm thấy từ phù hợp'}
               />
             ))}
         </div>
