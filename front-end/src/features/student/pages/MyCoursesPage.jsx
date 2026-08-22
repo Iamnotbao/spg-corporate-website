@@ -20,15 +20,27 @@ export default function MyCoursesPage() {
   const [state, setState] = useState({ status: 'loading', data: [], error: '' });
   const [archiving, setArchiving] = useState('');
   const [actionError, setActionError] = useState('');
-  const load = useCallback(() => {
+
+  const load = useCallback(async () => {
     setState((current) => ({ ...current, status: 'loading', error: '' }));
-    return listMyCourses()
-      .then((result) => setState({ status: 'ready', data: result.data || [], error: '' }))
-      .catch((error) => setState({ status: 'error', data: [], error: error.message }));
+    try {
+      const result = await listMyCourses();
+      setState({ status: 'ready', data: result?.data || [], error: '' });
+    } catch (error) {
+      setState({
+        status: 'error',
+        data: [],
+        error: error?.message || 'Không thể tải khóa học của bạn.',
+      });
+    }
   }, []);
-  useEffect(load, [load]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   async function leaveCourse(item) {
+    if (!item?.course?.id) return;
     if (!window.confirm(`Rời khóa học “${item.course.title}”? Lịch sử học vẫn được giữ lại.`)) {
       return;
     }
@@ -38,11 +50,13 @@ export default function MyCoursesPage() {
       await archiveEnrollment(item.course.id);
       await load();
     } catch (error) {
-      setActionError(error.message);
+      setActionError(error?.message || 'Không thể rời khóa học.');
     } finally {
       setArchiving('');
     }
   }
+
+  const validItems = state.data.filter((item) => item?.enrollment?.id && item?.course?.id);
 
   return (
     <>
@@ -64,7 +78,7 @@ export default function MyCoursesPage() {
               {actionError}
             </p>
           )}
-          {state.status === 'ready' && !state.data.length && (
+          {state.status === 'ready' && !validItems.length && (
             <EmptyState
               action={
                 <Link className="button button--primary" to="/courses">
@@ -76,9 +90,9 @@ export default function MyCoursesPage() {
               title="Bạn chưa tham gia khóa học nào"
             />
           )}
-          {state.status === 'ready' && state.data.length > 0 && (
+          {state.status === 'ready' && validItems.length > 0 && (
             <div className="course-grid">
-              {state.data.map((item) => (
+              {validItems.map((item) => (
                 <article className="course-card my-course-card" key={item.enrollment.id}>
                   <div className="course-card__body">
                     <p className="public-eyebrow">{item.course.level}</p>
