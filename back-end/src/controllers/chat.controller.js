@@ -16,8 +16,14 @@ function publicSettings(settings = {}) {
     enabled: settings.enabled !== false,
     autoReplyEnabled: settings.autoReplyEnabled !== false,
     aiEnabled: settings.aiEnabled === true,
-    welcomeMessage: String(settings.welcomeMessage || "Xin chào! Bạn cần SPG hỗ trợ nội dung gì?").trim(),
-    fallbackMessage: String(settings.fallbackMessage || "Mình đã ghi nhận tin nhắn. Admin SPG sẽ phản hồi sớm nhất có thể.").trim(),
+    welcomeMessage: String(
+      settings.welcomeMessage ||
+        "Xin chào! Mandora có thể hỗ trợ bạn về khóa học, HSK, từ vựng, bài học và luyện tập tiếng Trung.",
+    ).trim(),
+    fallbackMessage: String(
+      settings.fallbackMessage ||
+        "Mình đã ghi nhận câu hỏi của bạn. Nếu trợ lý chưa có đủ thông tin, quản trị viên Mandora sẽ phản hồi sớm nhất có thể.",
+    ).trim(),
     facebookUrl: String(settings.facebookUrl || "").trim(),
     zaloUrl: String(settings.zaloUrl || "").trim(),
   };
@@ -70,17 +76,20 @@ async function insertMessage(sessionId, sender, text, metadata = {}) {
 
 function automatedReply(text, settings) {
   const normalized = String(text || "").toLocaleLowerCase("vi-VN");
-  if (/tuy[eể]n|vi[eệ]c|career|job|ứng tuyển|ung tuyen/.test(normalized)) {
-    return "Bạn có thể xem các vị trí đang tuyển tại mục Tuyển dụng. Nếu cần hỏi thêm về một vị trí cụ thể, hãy để lại tên vị trí để admin hỗ trợ.";
+  if (/hsk|cấp độ|cap do|trình độ|trinh do/.test(normalized)) {
+    return "Bạn có thể mở mục HSK để xem lộ trình theo cấp độ, hoặc vào Khóa học để chọn khóa phù hợp với trình độ hiện tại.";
   }
-  if (/cv|h[oồ] s[oơ]|resume/.test(normalized)) {
-    return "Bạn có thể gửi CV trực tiếp trong trang chi tiết vị trí tuyển dụng. Hồ sơ sẽ được lưu để bộ phận phụ trách xem xét.";
+  if (/từ vựng|tu vung|pinyin|nghĩa|nghia/.test(normalized)) {
+    return "Bạn có thể mở mục Từ vựng để tìm theo chữ Hán, Pinyin hoặc nghĩa tiếng Việt và lưu những từ cần ôn lại.";
   }
-  if (/sản xuất|san xuat|giày|giay|footwear|factory|nhà máy|nha may|cắt|cat|may|lắp ráp|lap rap|chất lượng|chat luong/.test(normalized)) {
-    return "Bạn có thể xem mục Sản xuất và Quy trình sản xuất để tìm hiểu nội dung công khai về hoạt động sản xuất giày tại Chí Hùng SPG. Nếu cần thông tin doanh nghiệp cụ thể chưa có trên website, admin SPG sẽ hỗ trợ thêm.";
+  if (/khóa học|khoa hoc|bài học|bai hoc|lesson|course/.test(normalized)) {
+    return "Bạn có thể vào Khóa học để xem lộ trình, đăng ký khóa đã xuất bản và tiếp tục từ bài học chưa hoàn thành gần nhất.";
   }
-  if (/li[eê]n h[eệ]|contact|địa chỉ|dia chi|điện thoại|dien thoai/.test(normalized)) {
-    return "Bạn có thể mở mục Liên hệ trên website. Nếu cần trao đổi trực tiếp, cứ để lại nội dung ở đây để admin phản hồi.";
+  if (/quiz|luyện tập|luyen tap|practice|bài tập|bai tap/.test(normalized)) {
+    return "Bạn có thể vào Luyện tập hoặc mở Quiz trong bài học. Kết quả Quiz được chấm ở backend và được dùng để cập nhật tiến độ cho bài Quiz.";
+  }
+  if (/đăng nhập|dang nhap|đăng ký|dang ky|tài khoản|tai khoan/.test(normalized)) {
+    return "Bạn có thể đăng nhập hoặc tạo tài khoản Mandora để lưu khóa học, tiến độ và từ vựng đã lưu.";
   }
   return settings.fallbackMessage;
 }
