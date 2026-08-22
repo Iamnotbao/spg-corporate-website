@@ -11,4 +11,5 @@
 /register /index.html 200
 /my-courses /index.html 200
 /progress /index.html 200
+/admin /index.html 200
 /admin/* /index.html 200
