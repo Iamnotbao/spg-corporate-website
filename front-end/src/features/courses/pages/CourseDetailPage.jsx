@@ -1,37 +1,100 @@
-import { useCallback } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useCallback, useEffect, useState } from 'react';
+import { Link, useLocation, useParams } from 'react-router-dom';
+import LearningProgress from '../../../components/ui/LearningProgress.jsx';
 import { ErrorState, LoadingState } from '../../../components/ui/ContentState.jsx';
 import { usePageTitle } from '../../../hooks/usePageTitle.js';
+import { useStudentAuth } from '../../auth/StudentAuthContext.jsx';
 import NotFoundPage from '../../public/pages/NotFoundPage.jsx';
 import { usePublicDetail } from '../../public/hooks/usePublicContent.js';
+import {
+  enrollInCourse,
+  getStudentCourseState,
+} from '../../student/services/studentLearningService.js';
 import CourseOutline from '../components/CourseOutline.jsx';
 import { getPublicCourse } from '../services/courseCatalogService.js';
 import '../styles/courses.css';
 
 export default function CourseDetailPage() {
   const { courseSlug } = useParams();
+  const location = useLocation();
+  const auth = useStudentAuth();
   const loadCourse = useCallback((slug) => getPublicCourse(slug), []);
   const course = usePublicDetail(loadCourse, courseSlug);
+  const [studentState, setStudentState] = useState(null);
+  const [studentError, setStudentError] = useState('');
+  const [enrolling, setEnrolling] = useState(false);
   usePageTitle(course.data?.title || 'Chi tiết khóa học');
 
-  if (course.status === 'loading') {
+  useEffect(() => {
+    if (auth.status !== 'signed-in') {
+      setStudentState(null);
+      return;
+    }
+    getStudentCourseState(courseSlug)
+      .then((result) => setStudentState(result.data))
+      .catch((error) => setStudentError(error.message));
+  }, [auth.status, courseSlug]);
+
+  async function enroll() {
+    setEnrolling(true);
+    setStudentError('');
+    try {
+      const result = await enrollInCourse(course.data.id);
+      setStudentState(result.data);
+    } catch (error) {
+      setStudentError(error.message);
+    } finally {
+      setEnrolling(false);
+    }
+  }
+
+  if (course.status === 'loading')
     return (
       <section className="course-detail-loading">
         <LoadingState count={1} label="Đang tải khóa học" />
       </section>
     );
-  }
   if (course.status === 'error' && course.errorStatus === 404) return <NotFoundPage />;
-  if (course.status === 'error') {
+  if (course.status === 'error')
     return (
       <section className="course-detail-loading">
         <ErrorState message={course.error} onRetry={course.retry} />
       </section>
     );
-  }
   if (!course.data) return <NotFoundPage />;
 
   const firstLesson = course.data.units.flatMap((unit) => unit.lessons)[0];
+  const continueLesson = studentState?.continueLesson || firstLesson;
+  const learningUrl = continueLesson
+    ? `/courses/${course.data.slug}/lessons/${continueLesson.slug}`
+    : '';
+  const action =
+    auth.status !== 'signed-in' ? (
+      <Link
+        className="button button--primary"
+        state={{ from: location.pathname }}
+        to="/login"
+      >
+        Đăng nhập để bắt đầu
+      </Link>
+    ) : studentState?.enrolled ? (
+      learningUrl ? (
+        <Link className="button button--primary" to={learningUrl}>
+          Tiếp tục học
+        </Link>
+      ) : (
+        <span className="course-completed-label">Khóa học đã hoàn thành</span>
+      )
+    ) : (
+      <button
+        className="button button--primary"
+        disabled={enrolling}
+        onClick={enroll}
+        type="button"
+      >
+        {enrolling ? 'Đang đăng ký…' : 'Bắt đầu học'}
+      </button>
+    );
 
   return (
     <>
@@ -44,16 +107,7 @@ export default function CourseDetailPage() {
             <p className="public-eyebrow">{course.data.level}</p>
             <h1>{course.data.title}</h1>
             <p>{course.data.description}</p>
-            {firstLesson && (
-              <div className="course-detail-hero__actions">
-                <Link
-                  className="button button--primary"
-                  to={`/courses/${course.data.slug}/lessons/${firstLesson.slug}`}
-                >
-                  Xem bài học đầu tiên <span aria-hidden="true">→</span>
-                </Link>
-              </div>
-            )}
+            <div className="course-detail-hero__actions">{action}</div>
           </div>
           <div className="course-detail-cover">
             {course.data.thumbnail ? (
@@ -65,7 +119,6 @@ export default function CourseDetailPage() {
           </div>
         </div>
       </section>
-
       <section className="course-detail-content">
         <div className="public-container course-detail-content__grid">
           <div>
@@ -85,17 +138,11 @@ export default function CourseDetailPage() {
             <span aria-hidden="true">学</span>
             <h2>Thông tin khóa học</h2>
             <p>Cấp độ: {course.data.level}</p>
-            {course.data.estimatedDuration != null && (
-              <p>Thời lượng dự kiến: {course.data.estimatedDuration} phút</p>
+            {studentState?.enrolled && (
+              <LearningProgress value={studentState.progressPercentage} />
             )}
-            {firstLesson && (
-              <Link
-                className="button button--primary"
-                to={`/courses/${course.data.slug}/lessons/${firstLesson.slug}`}
-              >
-                Mở bài học đầu tiên
-              </Link>
-            )}
+            {studentError && <p role="alert">{studentError}</p>}
+            {action}
           </aside>
         </div>
       </section>

@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import AuthLayout from '../layouts/AuthLayout.jsx';
 import PublicLayout from '../layouts/PublicLayout.jsx';
+import StudentLayout from '../layouts/StudentLayout.jsx';
 import BlogDetailPage from '../features/blog/pages/BlogDetailPage.jsx';
 import BlogPage from '../features/blog/pages/BlogPage.jsx';
 import LoginPage from '../features/auth/pages/LoginPage.jsx';
@@ -15,6 +16,7 @@ import PracticePage from '../features/learning/pages/PracticePage.jsx';
 import VocabularyPage from '../features/learning/pages/VocabularyPage.jsx';
 import HomePage from '../features/public/pages/HomePage.jsx';
 import NotFoundPage from '../features/public/pages/NotFoundPage.jsx';
+import MyCoursesPage from '../features/student/pages/MyCoursesPage.jsx';
 
 const AdminApp = lazy(() => import('../features/admin/AdminApp.jsx'));
 
@@ -32,6 +34,7 @@ export default function AppRoutes() {
       <Route path="/admin/*" element={<AdminRoute />} />
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<LoginPage initialMode="register" />} />
       </Route>
       <Route element={<PublicLayout />}>
         <Route index element={<HomePage />} />
@@ -45,6 +48,9 @@ export default function AppRoutes() {
         <Route path="/practice/:mode" element={<PracticeModePage />} />
         <Route path="/blog" element={<BlogPage />} />
         <Route path="/blog/:id" element={<BlogDetailPage />} />
+        <Route element={<StudentLayout />}>
+          <Route path="/my-courses" element={<MyCoursesPage />} />
+        </Route>
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

@@ -1,0 +1,26 @@
+import { apiRequest } from '../../../services/httpClient.js';
+
+export function enrollInCourse(courseId) {
+  return apiRequest('/student/enrollments', {
+    auth: 'student',
+    method: 'POST',
+    body: { courseId },
+  });
+}
+
+export function listMyCourses() {
+  return apiRequest('/student/courses', { auth: 'student' });
+}
+
+export function getStudentCourseState(identifier) {
+  return apiRequest(`/student/courses/${encodeURIComponent(identifier)}`, {
+    auth: 'student',
+  });
+}
+
+export function completeLesson(identifier) {
+  return apiRequest(`/student/lessons/${encodeURIComponent(identifier)}/complete`, {
+    auth: 'student',
+    method: 'PUT',
+  });
+}

@@ -32,49 +32,6 @@ export const HSK_LEVELS = [
   },
 ];
 
-export const DEMO_VOCABULARY = [
-  {
-    simplified: '学习',
-    traditional: '學習',
-    pinyin: 'xuéxí',
-    meaning: 'học tập',
-    level: 'HSK 1',
-    example: '我学习中文。',
-    examplePinyin: 'Wǒ xuéxí Zhōngwén.',
-    exampleMeaning: 'Tôi học tiếng Trung.',
-  },
-  {
-    simplified: '朋友',
-    traditional: '朋友',
-    pinyin: 'péngyou',
-    meaning: 'bạn bè',
-    level: 'HSK 1',
-    example: '他是我的朋友。',
-    examplePinyin: 'Tā shì wǒ de péngyou.',
-    exampleMeaning: 'Anh ấy là bạn của tôi.',
-  },
-  {
-    simplified: '喜欢',
-    traditional: '喜歡',
-    pinyin: 'xǐhuan',
-    meaning: 'thích',
-    level: 'HSK 1',
-    example: '我喜欢喝茶。',
-    examplePinyin: 'Wǒ xǐhuan hē chá.',
-    exampleMeaning: 'Tôi thích uống trà.',
-  },
-  {
-    simplified: '时间',
-    traditional: '時間',
-    pinyin: 'shíjiān',
-    meaning: 'thời gian',
-    level: 'HSK 2',
-    example: '你有时间吗？',
-    examplePinyin: 'Nǐ yǒu shíjiān ma?',
-    exampleMeaning: 'Bạn có thời gian không?',
-  },
-];
-
 export const DEMO_CHARACTERS = [
   {
     simplified: '学',

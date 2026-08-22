@@ -1,9 +1,15 @@
-import { useCallback, useMemo } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link, useLocation, useParams } from 'react-router-dom';
+import LearningProgress from '../../../components/ui/LearningProgress.jsx';
 import { ErrorState, LoadingState } from '../../../components/ui/ContentState.jsx';
 import { usePageTitle } from '../../../hooks/usePageTitle.js';
+import { useStudentAuth } from '../../auth/StudentAuthContext.jsx';
 import NotFoundPage from '../../public/pages/NotFoundPage.jsx';
 import { usePublicDetail } from '../../public/hooks/usePublicContent.js';
+import {
+  completeLesson,
+  getStudentCourseState,
+} from '../../student/services/studentLearningService.js';
 import CourseOutline from '../components/CourseOutline.jsx';
 import LessonNavigation from '../components/LessonNavigation.jsx';
 import { getPublicCourse, getPublicLesson } from '../services/courseCatalogService.js';
@@ -21,10 +27,19 @@ const TYPE_LABELS = {
 
 export default function LessonPage() {
   const { courseSlug, lessonSlug } = useParams();
-  const loadCourse = useCallback((slug) => getPublicCourse(slug), []);
-  const loadLesson = useCallback((slug) => getPublicLesson(slug), []);
-  const course = usePublicDetail(loadCourse, courseSlug);
-  const lesson = usePublicDetail(loadLesson, lessonSlug);
+  const location = useLocation();
+  const auth = useStudentAuth();
+  const course = usePublicDetail(
+    useCallback((slug) => getPublicCourse(slug), []),
+    courseSlug,
+  );
+  const lesson = usePublicDetail(
+    useCallback((slug) => getPublicLesson(slug), []),
+    lessonSlug,
+  );
+  const [studentState, setStudentState] = useState(null);
+  const [completionError, setCompletionError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const lessons = useMemo(
     () =>
       (course.data?.units || []).flatMap((unit) =>
@@ -33,22 +48,44 @@ export default function LessonPage() {
     [course.data],
   );
   const lessonIndex = lessons.findIndex((item) => item.slug === lessonSlug);
+  const isComplete = studentState?.completedLessonIds?.includes(lesson.data?.id);
   usePageTitle(lesson.data?.title || 'Bài học');
 
-  if (course.status === 'loading' || lesson.status === 'loading') {
+  useEffect(() => {
+    if (auth.status !== 'signed-in') {
+      setStudentState(null);
+      return;
+    }
+    getStudentCourseState(courseSlug)
+      .then((result) => setStudentState(result.data))
+      .catch((error) => setCompletionError(error.message));
+  }, [auth.status, courseSlug]);
+
+  async function markComplete() {
+    setSubmitting(true);
+    setCompletionError('');
+    try {
+      const result = await completeLesson(lessonSlug);
+      setStudentState(result.data.courseState);
+    } catch (error) {
+      setCompletionError(error.message);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (course.status === 'loading' || lesson.status === 'loading')
     return (
       <section className="course-detail-loading">
         <LoadingState count={1} label="Đang tải bài học" />
       </section>
     );
-  }
   if (
     (course.status === 'error' && course.errorStatus === 404) ||
     (lesson.status === 'error' && lesson.errorStatus === 404)
-  ) {
+  )
     return <NotFoundPage />;
-  }
-  if (course.status === 'error' || lesson.status === 'error') {
+  if (course.status === 'error' || lesson.status === 'error')
     return (
       <section className="course-detail-loading">
         <ErrorState
@@ -57,15 +94,13 @@ export default function LessonPage() {
         />
       </section>
     );
-  }
   if (
     !course.data ||
     !lesson.data ||
     lesson.data.course?.slug !== course.data.slug ||
     lessonIndex < 0
-  ) {
+  )
     return <NotFoundPage />;
-  }
 
   return (
     <section className="lesson-page">
@@ -80,7 +115,6 @@ export default function LessonPage() {
             currentLessonSlug={lesson.data.slug}
           />
         </aside>
-
         <article className="lesson-content">
           <header className="lesson-header">
             <div>
@@ -90,7 +124,6 @@ export default function LessonPage() {
             <h1>{lesson.data.title}</h1>
             {lesson.data.description && <p>{lesson.data.description}</p>}
           </header>
-
           <div className="lesson-body lesson-body--plain">
             {lesson.data.content
               .split(/\r?\n/)
@@ -102,7 +135,46 @@ export default function LessonPage() {
                 ),
               )}
           </div>
-
+          <div className="lesson-completion-foundation">
+            <div>
+              <span aria-hidden="true">{isComplete ? '✓' : '○'}</span>
+              <div>
+                <strong>
+                  {isComplete ? 'Bài học đã hoàn thành' : 'Hoàn thành bài học'}
+                </strong>
+                {studentState?.enrolled && (
+                  <LearningProgress value={studentState.progressPercentage} />
+                )}
+                {completionError && <p role="alert">{completionError}</p>}
+              </div>
+            </div>
+            {auth.status !== 'signed-in' ? (
+              <Link
+                className="button button--primary"
+                state={{ from: location.pathname }}
+                to="/login"
+              >
+                Đăng nhập để lưu tiến độ
+              </Link>
+            ) : !studentState?.enrolled ? (
+              <Link className="button button--primary" to={`/courses/${courseSlug}`}>
+                Đăng ký khóa học
+              </Link>
+            ) : (
+              <button
+                className="button button--primary"
+                disabled={isComplete || submitting}
+                onClick={markComplete}
+                type="button"
+              >
+                {submitting
+                  ? 'Đang lưu…'
+                  : isComplete
+                    ? 'Đã hoàn thành'
+                    : 'Đánh dấu hoàn thành'}
+              </button>
+            )}
+          </div>
           <LessonNavigation
             courseSlug={course.data.slug}
             next={lessons[lessonIndex + 1]}

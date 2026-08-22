@@ -15,23 +15,24 @@ or access Search Console. Those systems may contain additional legacy data and a
 
 ## Frontend implementation update
 
-The original audit below remains the historical baseline. The committed frontend Phase 1
-foundation and the subsequent Phase 2 public-learning work have changed the current
-frontend as follows:
+The original audit below remains the historical baseline. Phase 1 through Phase 4B have
+changed the current frontend as follows:
 
 - public routing now covers Home, Courses, Course Detail, Lesson, HSK, Vocabulary,
-  Characters, Practice, Blog list/detail, Login foundation, and a client-side 404;
+  Characters, Practice, Blog list/detail, student Login/Register, My Courses, and a
+  client-side 404;
 - reusable public UI lives under `src/components/ui/`, while Courses, learning discovery,
   and Blog presentation are organized by feature;
-- no Mandora learning API or persistence exists yet, so Course, Lesson, Vocabulary,
-  Character, HSK, and Practice composition data is isolated in explicitly named demo data
-  modules and labelled as illustrative in the interface;
+- Course, Unit, Lesson, Enrollment, LessonProgress, Vocabulary, and saved-Vocabulary
+  persistence now exists. Character, HSK, and Practice composition remains illustrative;
 - Blog list/detail pages reuse the existing Posts API, but expose only records assigned to
   the approved Mandora Blog category allowlist; legacy corporate Posts are not silently
   published as Mandora content;
-- student authentication, enrollment, completion, and progress remain unimplemented, and
-  their frontend controls are non-persistent foundations only;
-- the backend and its legacy data domains have not been modified by these frontend phases.
+- student registration/login, guarded My Courses, enrollment-aware Course Detail,
+  explicit Lesson completion, derived Course progress, and Vocabulary save/unsave now use
+  authenticated APIs;
+- the legacy backend domains remain present and unchanged except where compatibility was
+  required by the Mandora learning slices.
 
 This update does not supersede the unresolved product, data, authentication, deployment,
 or SEO decisions documented later in this file.
@@ -60,8 +61,8 @@ Phase 3 intentionally keeps these boundaries explicit:
   settings remain in source for preservation/audit purposes but are not exposed by the
   Mandora Admin navigation.
 
-Phase 4 still needs backend contracts and server-enforced authorization for all learning,
-student, progress, and Mandora-settings domains. It must also resolve the legacy
+Phase 4C still needs Quiz contracts and any aggregate Progress/admin reporting and
+Mandora-settings domains approved for that phase. It must also resolve the remaining legacy
 `admin`/`employee` role model, unrestricted Posts payloads/public projections, the lack of
 an explicit permission on image upload, and the Cloudinary upload/media implementation
 that currently accepts and lists only the legacy `spg/` namespace. Frontend menu hiding
@@ -699,10 +700,54 @@ The `MONGODB_DB` fallback also remains `spg` because changing an implicit databa
 could silently point an existing deployment at an empty database; a verified environment
 value and separately approved cutover are required before that fallback is removed.
 
+## Phase 4B implemented student-learning baseline
+
+Phase 4B adds three backend feature boundaries without changing the native MongoDB stack:
+
+- `student-auth` creates public accounts with a backend-enforced `student` role and uses
+  the existing scrypt password and JWT/session foundation;
+- `student-learning` owns `enrollments` and `lesson_progress` queries and the rules for
+  enrollment, completion, My Courses, progress, and Continue Learning;
+- `vocabulary` owns Vocabulary validation/content plus student records in
+  `vocabulary_progress`.
+
+The new indexes enforce one Enrollment per student/Course, one LessonProgress per
+student/Lesson, and one VocabularyProgress per student/Vocabulary. Owned routes never
+accept a `userId`; the authentication middleware reloads the user and services use
+`req.user._id`. Enrollment and completion are idempotent upserts. Only active students
+can use `/api/student/*`, while Vocabulary administration remains admin-only.
+
+Implemented HTTP contracts are:
+
+- auth: `POST /api/auth/register`, `POST /api/auth/login`, and authenticated
+  `GET /api/auth/session`;
+- student learning: `POST /api/student/enrollments`, `GET /api/student/courses`,
+  `GET /api/student/courses/:identifier`, and
+  `PUT /api/student/lessons/:identifier/complete`;
+- Vocabulary: public `GET /api/vocabulary`; student saved-list/save/remove under
+  `/api/student/vocabulary`; and admin CRUD under `/api/admin/vocabulary`.
+
+Progress is not stored as a percentage. It is derived from completed published Lessons
+divided by the Course's published Lessons. Draft Lessons and Lessons outside that Course
+are excluded, and a Course with no published Lessons reports zero percent. Continue
+Learning is the first incomplete published Lesson after sorting Unit order and then Lesson
+order; a Course with all Lessons complete returns no next Lesson.
+
+Vocabulary records belong to one existing Lesson and carry their own draft/published
+status. Public and saved lists additionally require a published Lesson and published
+parent Course. Saved state is the only student Vocabulary state in this phase; learned
+state and spaced-repetition fields are deliberately absent.
+
+The frontend holds the student JWT under `mandora_student_token`, separately from the
+admin token. `StudentAuthProvider` restores the session, `StudentLayout` guards My
+Courses, and feature services keep owned API calls out of page components. Public Lessons
+remain readable, but enrollment is required to persist completion.
+
 ### Deferred publish and lifecycle edge cases
 
 Phase 4C should decide and implement any required atomic publish validation (for example,
 whether a Course may publish with no published Lesson), slug redirect/history behavior,
 transactional reordering, archive versus delete semantics, thumbnail ownership/cleanup,
-and the visibility effect of future Vocabulary and Quiz records. No Enrollment, Progress,
-VocabularyProgress, or QuizAttempt behavior is implied by this slice.
+and Quiz visibility. Phase 4C must also decide Quiz attachment, question/attempt contracts,
+whether Quiz results contribute to progress, aggregate Progress/admin reporting, and
+archive/unenroll behavior. No QuizAttempt behavior is implied by Phase 4B.

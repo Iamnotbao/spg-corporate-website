@@ -1,14 +1,16 @@
 import { useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import DemoNotice from '../../../components/ui/DemoNotice.jsx';
-import { EmptyState, ErrorState, LoadingState } from '../../../components/ui/ContentState.jsx';
+import {
+  EmptyState,
+  ErrorState,
+  LoadingState,
+} from '../../../components/ui/ContentState.jsx';
 import { usePageTitle } from '../../../hooks/usePageTitle.js';
 import BlogHighlights from '../../blog/components/BlogHighlights.jsx';
 import CourseCard from '../../courses/components/CourseCard.jsx';
 import { listPublicCourses } from '../../courses/services/courseCatalogService.js';
 import HskLevelCard from '../../learning/components/HskLevelCard.jsx';
-import VocabularyCard from '../../learning/components/VocabularyCard.jsx';
-import { DEMO_VOCABULARY, HSK_LEVELS } from '../../learning/data/demoLearningContent.js';
+import { HSK_LEVELS } from '../../learning/data/demoLearningContent.js';
 import { usePublicCollection } from '../hooks/usePublicContent.js';
 import '../styles/home.css';
 
@@ -183,9 +185,8 @@ export default function HomePage() {
               Khám phá từ vựng <span aria-hidden="true">→</span>
             </Link>
           </div>
-          <div>
-            <DemoNotice />
-            <VocabularyCard item={DEMO_VOCABULARY[0]} />
+          <div className="home-vocabulary__character" aria-hidden="true" lang="zh-Hans">
+            词
           </div>
         </div>
       </section>

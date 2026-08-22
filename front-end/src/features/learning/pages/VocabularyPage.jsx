@@ -1,30 +1,84 @@
-import { useMemo, useState } from 'react';
-import DemoNotice from '../../../components/ui/DemoNotice.jsx';
-import { EmptyState } from '../../../components/ui/ContentState.jsx';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import {
+  EmptyState,
+  ErrorState,
+  LoadingState,
+} from '../../../components/ui/ContentState.jsx';
 import PageHeader from '../../../components/ui/PageHeader.jsx';
 import { usePageTitle } from '../../../hooks/usePageTitle.js';
+import { useStudentAuth } from '../../auth/StudentAuthContext.jsx';
 import VocabularyCard from '../components/VocabularyCard.jsx';
-import { DEMO_VOCABULARY } from '../data/demoLearningContent.js';
+import {
+  listPublicVocabulary,
+  listSavedVocabulary,
+  saveVocabulary,
+  unsaveVocabulary,
+} from '../services/vocabularyService.js';
 import '../styles/learning.css';
-
-const LEVELS = ['Tất cả', 'HSK 1', 'HSK 2', 'HSK 3'];
 
 export default function VocabularyPage() {
   usePageTitle('Từ vựng');
+  const auth = useStudentAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [level, setLevel] = useState('Tất cả');
+  const [state, setState] = useState({ status: 'loading', data: [], error: '' });
+  const [savedIds, setSavedIds] = useState(new Set());
+  const [busyId, setBusyId] = useState('');
+  const load = useCallback(() => {
+    setState((current) => ({ ...current, status: 'loading' }));
+    listPublicVocabulary()
+      .then((result) => setState({ status: 'ready', data: result.data || [], error: '' }))
+      .catch((error) => setState({ status: 'error', data: [], error: error.message }));
+  }, []);
+  useEffect(load, [load]);
+  useEffect(() => {
+    if (auth.status !== 'signed-in') {
+      setSavedIds(new Set());
+      return;
+    }
+    listSavedVocabulary()
+      .then((result) => setSavedIds(new Set((result.data || []).map((item) => item.id))))
+      .catch(() => setSavedIds(new Set()));
+  }, [auth.status]);
 
+  const levels = useMemo(
+    () => ['Tất cả', ...new Set(state.data.map((item) => item.hskLevel))],
+    [state.data],
+  );
   const items = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase('vi');
-    return DEMO_VOCABULARY.filter((item) => {
-      const matchesLevel = level === 'Tất cả' || item.level === level;
-      const haystack = `${item.simplified} ${item.traditional} ${item.pinyin} ${item.meaning}`;
-      return (
-        matchesLevel &&
-        (!normalized || haystack.toLocaleLowerCase('vi').includes(normalized))
-      );
-    });
-  }, [level, query]);
+    return state.data.filter(
+      (item) =>
+        (level === 'Tất cả' || item.hskLevel === level) &&
+        (!normalized ||
+          `${item.simplified} ${item.traditional || ''} ${item.pinyin} ${item.meaningVietnamese}`
+            .toLocaleLowerCase('vi')
+            .includes(normalized)),
+    );
+  }, [level, query, state.data]);
+
+  async function toggleSave(item) {
+    if (auth.status !== 'signed-in') {
+      navigate('/login', { state: { from: location.pathname } });
+      return;
+    }
+    setBusyId(item.id);
+    try {
+      if (savedIds.has(item.id)) await unsaveVocabulary(item.id);
+      else await saveVocabulary(item.id);
+      setSavedIds((current) => {
+        const next = new Set(current);
+        if (next.has(item.id)) next.delete(item.id);
+        else next.add(item.id);
+        return next;
+      });
+    } finally {
+      setBusyId('');
+    }
+  }
 
   return (
     <>
@@ -35,10 +89,6 @@ export default function VocabularyPage() {
       />
       <section className="learning-index-section">
         <div className="public-container">
-          <DemoNotice>
-            {' '}
-            Các thẻ dưới đây là ví dụ giao diện. Âm thanh và lưu từ chưa được kết nối.
-          </DemoNotice>
           <div className="learning-toolbar">
             <label className="catalog-search">
               <span aria-hidden="true">⌕</span>
@@ -51,7 +101,7 @@ export default function VocabularyPage() {
               />
             </label>
             <div aria-label="Lọc từ vựng theo HSK" className="filter-chips" role="group">
-              {LEVELS.map((item) => (
+              {levels.map((item) => (
                 <button
                   aria-pressed={level === item}
                   className={level === item ? 'is-active' : undefined}
@@ -64,19 +114,30 @@ export default function VocabularyPage() {
               ))}
             </div>
           </div>
-          {items.length ? (
-            <div className="vocabulary-grid">
-              {items.map((item) => (
-                <VocabularyCard item={item} key={item.simplified} />
-              ))}
-            </div>
-          ) : (
-            <EmptyState
-              description="Hãy thử từ khóa hoặc cấp độ khác."
-              icon="词"
-              title="Chưa tìm thấy từ phù hợp"
-            />
+          {state.status === 'loading' && <LoadingState label="Đang tải từ vựng" />}
+          {state.status === 'error' && (
+            <ErrorState message={state.error} onRetry={load} />
           )}
+          {state.status === 'ready' &&
+            (items.length ? (
+              <div className="vocabulary-grid">
+                {items.map((item) => (
+                  <VocabularyCard
+                    busy={busyId === item.id}
+                    item={item}
+                    key={item.id}
+                    onToggleSave={toggleSave}
+                    saved={savedIds.has(item.id)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                description="Hãy thử từ khóa hoặc cấp độ khác."
+                icon="词"
+                title="Chưa tìm thấy từ phù hợp"
+              />
+            ))}
         </div>
       </section>
     </>

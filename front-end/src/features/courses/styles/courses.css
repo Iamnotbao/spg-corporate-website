@@ -120,6 +120,18 @@
   padding: 24px;
 }
 
+.my-course-card .course-card__body {
+  height: 100%;
+}
+
+.my-course-card .course-card__body > small {
+  color: var(--mandora-muted);
+}
+
+.my-course-card .button {
+  margin-top: auto;
+}
+
 .course-card__meta {
   display: flex;
   align-items: center;
@@ -406,6 +418,15 @@
 
 .course-enrollment-card .button {
   width: 100%;
+}
+
+.course-completed-label {
+  display: inline-flex;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: var(--mandora-jade-100);
+  color: var(--mandora-jade-700);
+  font-weight: 800;
 }
 
 .course-detail-loading {

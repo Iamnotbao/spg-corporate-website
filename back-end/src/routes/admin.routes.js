@@ -18,6 +18,7 @@ import * as siteProfileController from "../controllers/siteProfile.controller.js
 import * as mediaController from "../controllers/media.controller.js";
 import { importContent } from "../controllers/contentImport.controller.js";
 import * as learningController from "../features/learning/learning.controller.js";
+import * as vocabularyController from "../features/vocabulary/vocabulary.controller.js";
 
 const router = Router();
 const loginLimiter = rateLimit({
@@ -118,6 +119,32 @@ router.delete(
   "/lessons/:id",
   requireAdmin,
   asyncHandler(learningController.deleteLesson),
+);
+
+router.get(
+  "/vocabulary",
+  requireAdmin,
+  asyncHandler(vocabularyController.listAdmin),
+);
+router.get(
+  "/vocabulary/:id",
+  requireAdmin,
+  asyncHandler(vocabularyController.getAdmin),
+);
+router.post(
+  "/vocabulary",
+  requireAdmin,
+  asyncHandler(vocabularyController.create),
+);
+router.put(
+  "/vocabulary/:id",
+  requireAdmin,
+  asyncHandler(vocabularyController.update),
+);
+router.delete(
+  "/vocabulary/:id",
+  requireAdmin,
+  asyncHandler(vocabularyController.remove),
 );
 
 router.get(

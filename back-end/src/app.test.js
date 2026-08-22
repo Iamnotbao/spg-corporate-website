@@ -75,6 +75,34 @@ test("learning administration routes require authentication", async () => {
   assert.deepEqual(await response.json(), { error: "Missing access token" });
 });
 
+test("student enrollment and owned learning routes require authentication", async () => {
+  for (const [path, method] of [
+    ["/api/student/enrollments", "POST"],
+    ["/api/student/courses", "GET"],
+    ["/api/student/lessons/lesson-1/complete", "PUT"],
+    ["/api/student/vocabulary", "GET"],
+  ]) {
+    const response = await fetch(`${baseUrl}${path}`, { method });
+    assert.equal(response.status, 401);
+    assert.deepEqual(await response.json(), { error: "Missing access token" });
+  }
+});
+
+test("public registration cannot supply an admin role", async () => {
+  const response = await fetch(`${baseUrl}/api/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      username: "learner",
+      email: "learner@example.com",
+      password: "password1",
+      role: "admin",
+    }),
+  });
+  assert.equal(response.status, 400);
+  assert.deepEqual(await response.json(), { error: "Unknown fields: role" });
+});
+
 test("admin session rejects an invalid bearer token before database access", async () => {
   const response = await fetch(`${baseUrl}/api/admin/session`, {
     headers: { Authorization: "Bearer invalid-token" },

@@ -669,6 +669,51 @@
   box-shadow: 0 14px 40px rgba(74, 45, 34, 0.06);
 }
 
+.student-auth-form {
+  display: grid;
+  gap: 16px;
+  margin-top: 26px;
+}
+
+.student-auth-form label {
+  display: grid;
+  gap: 7px;
+  color: var(--mandora-ink);
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.student-auth-form input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--mandora-line);
+  border-radius: 12px;
+  background: var(--mandora-paper);
+  color: var(--mandora-ink);
+}
+
+.student-auth-form__error {
+  margin: 0;
+  color: var(--mandora-red-700);
+}
+
+.public-nav button.public-nav__login {
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+}
+
+.home-vocabulary__character {
+  display: grid;
+  min-height: 310px;
+  place-items: center;
+  border-radius: var(--mandora-radius-lg);
+  background: var(--mandora-red-700);
+  color: #fff;
+  font-family: var(--font-chinese);
+  font-size: clamp(7rem, 15vw, 12rem);
+}
+
 .foundation-page__status > span,
 .student-access-card__notice > span {
   display: grid;

@@ -16,6 +16,9 @@ import { addRealtimeClient } from "../utils/realtime.js";
 import { cvUpload, validateCvSignature } from "../middleware/upload.js";
 import { validateApplication } from "../middleware/application.js";
 import * as learningController from "../features/learning/learning.controller.js";
+import * as studentAuthController from "../features/student-auth/student-auth.controller.js";
+import * as vocabularyController from "../features/vocabulary/vocabulary.controller.js";
+import { auth, requireRole } from "../middleware/auth.js";
 
 const router = Router();
 const applicationLimiter = rateLimit({
@@ -32,6 +35,30 @@ const chatLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: "Bạn đang gửi tin nhắn quá nhanh. Vui lòng thử lại sau." },
 });
+const studentAuthLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { error: "Quá nhiều yêu cầu xác thực. Vui lòng thử lại sau." },
+});
+
+router.post(
+  "/auth/register",
+  studentAuthLimiter,
+  asyncHandler(studentAuthController.register),
+);
+router.post(
+  "/auth/login",
+  studentAuthLimiter,
+  asyncHandler(studentAuthController.login),
+);
+router.get(
+  "/auth/session",
+  auth,
+  requireRole("student"),
+  studentAuthController.session,
+);
 
 router.get("/jobs", asyncHandler(listJobs));
 router.get("/posts", asyncHandler(listPosts));
@@ -49,6 +76,7 @@ router.get(
   "/lessons/:identifier",
   asyncHandler(learningController.getPublishedLesson),
 );
+router.get("/vocabulary", asyncHandler(vocabularyController.listPublic));
 
 router.get(
   "/chat/settings",

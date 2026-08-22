@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { Link, NavLink } from 'react-router-dom';
 import Brand from '../../../components/ui/Brand.jsx';
 import { PUBLIC_NAVIGATION } from '../../../constants/navigation.js';
 import ThemeToggle from '../../shared/ThemeToggle.jsx';
+import { useStudentAuth } from '../../auth/StudentAuthContext.jsx';
 
 export default function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const auth = useStudentAuth();
 
   useEffect(() => {
     if (!menuOpen) return undefined;
@@ -38,9 +40,27 @@ export default function SiteHeader() {
               {item.label}
             </NavLink>
           ))}
-          <NavLink className="public-nav__login" onClick={closeMenu} to="/login">
-            Đăng nhập
-          </NavLink>
+          {auth.status === 'signed-in' ? (
+            <>
+              <NavLink onClick={closeMenu} to="/my-courses">
+                Khóa học của tôi
+              </NavLink>
+              <button
+                className="public-nav__login"
+                onClick={() => {
+                  auth.logout();
+                  closeMenu();
+                }}
+                type="button"
+              >
+                Đăng xuất
+              </button>
+            </>
+          ) : (
+            <Link className="public-nav__login" onClick={closeMenu} to="/login">
+              Đăng nhập
+            </Link>
+          )}
         </nav>
         <div className="public-header__utilities">
           <ThemeToggle compact />

@@ -10,6 +10,7 @@ function normalizeApiUrl(value) {
 
 export const API_URL = normalizeApiUrl(import.meta.env.VITE_API_URL);
 export const ADMIN_TOKEN_KEY = 'mandora_admin_token';
+export const STUDENT_TOKEN_KEY = 'mandora_student_token';
 const LEGACY_ADMIN_TOKEN_KEY = 'spg_admin_token';
 
 export class ApiError extends Error {
@@ -46,6 +47,18 @@ export function setAdminToken(token) {
   localStorage.removeItem(LEGACY_ADMIN_TOKEN_KEY);
 }
 
+export function getStudentToken() {
+  return localStorage.getItem(STUDENT_TOKEN_KEY) || '';
+}
+
+export function setStudentToken(token) {
+  if (token) {
+    localStorage.setItem(STUDENT_TOKEN_KEY, token);
+    return;
+  }
+  localStorage.removeItem(STUDENT_TOKEN_KEY);
+}
+
 async function parseResponse(response) {
   if (response.status === 204) return null;
 
@@ -66,7 +79,7 @@ export async function apiRequest(path, options = {}) {
   let requestBody = body;
 
   if (auth) {
-    const token = getAdminToken();
+    const token = auth === 'student' ? getStudentToken() : getAdminToken();
     if (token) headers.set('Authorization', `Bearer ${token}`);
   }
 

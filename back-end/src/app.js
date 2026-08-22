@@ -4,6 +4,7 @@ import helmet from "helmet";
 import { rateLimit } from "express-rate-limit";
 import adminRoutes from "./routes/admin.routes.js";
 import publicRoutes from "./routes/public.routes.js";
+import studentRoutes from "./routes/student.routes.js";
 import { env } from "./config/env.js";
 import { errorHandler, notFound } from "./middleware/errors.js";
 
@@ -51,6 +52,7 @@ app.use(helmet());
 app.use(express.json({ limit: "1mb" }));
 app.use("/api", apiLimiter);
 app.use("/api/admin", adminRoutes);
+app.use("/api/student", studentRoutes);
 app.use("/api", publicRoutes);
 app.get("/health", (_, res) => res.json({ ok: true }));
 app.use(notFound);

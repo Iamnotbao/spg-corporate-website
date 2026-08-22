@@ -123,10 +123,12 @@ reasonable future extension impossible.
 
 ## Current-to-target gap
 
-The current application now provides Mandora public Course, Course Detail, and Lesson
-reads backed by the first Course -> Unit -> Lesson API slice, plus admin CRUD for those
-three resources. It does not yet provide Vocabulary, Quiz engines, student registration,
-My Courses, Enrollment, or Progress. Legacy Posts/Blog, Jobs, applications, visitor chat,
+The current application now provides Mandora public Course, Course Detail, Lesson, and
+Vocabulary reads; admin CRUD APIs for those learning resources; public student
+registration/login; Enrollment; My Courses; explicit Lesson completion; derived Course
+progress; and student-owned saved Vocabulary. It does not yet provide Quiz engines,
+password recovery/email verification, a separate aggregate Progress page, or an admin
+student/progress reporting API. Legacy Posts/Blog, Jobs, applications, visitor chat,
 company settings, media, and CMS compatibility code still exists in the backend and must
 be retired only through an approved data-retention process.
 
@@ -146,17 +148,21 @@ Legacy content and data are not Mandora seed data.
 The supplied V1 scope does not decide the following. They must be resolved explicitly,
 not guessed during coding:
 
-1. what action or admin rule associates a course with My Courses;
-2. what marks a lesson/course complete and how Progress is calculated;
-3. where Vocabulary belongs in the Course -> Unit -> Lesson hierarchy;
-4. where Quizzes belong, which question formats V1 supports, and whether attempts/results
+1. where Quizzes belong, which question formats V1 supports, and whether attempts/results
    must persist for Progress;
-5. publish cascades beyond the Phase 4A minimum (published Course plus published Lesson;
-   Unit has no independent publish state), including Vocabulary, Quizzes, and Blog posts;
-6. the public URL patterns and final production hostname;
-7. whether the interface itself is Vietnamese-only in V1 or has crawlable locale variants;
-8. the retention/migration policy for legacy users, content, applications, CVs, chat data,
+2. publish cascades beyond the Phase 4B minimum (published Course, Lesson, and Vocabulary;
+   Unit has no independent publish state), including Quizzes and Blog posts;
+3. the public URL patterns and final production hostname;
+4. whether the interface itself is Vietnamese-only in V1 or has crawlable locale variants;
+5. the retention/migration policy for legacy users, content, applications, CVs, chat data,
    and media.
+
+Phase 4B defines My Courses as active student enrollment in a published Course. A Lesson
+is complete only after the enrolled student explicitly marks the published Lesson
+complete. Course progress is calculated dynamically as completed published Lessons
+divided by all published Lessons in Unit order; no percentage is stored. Vocabulary is
+attached to a Lesson, and V1 persistence records only whether the authenticated student
+saved it. Learned state and spaced-repetition scheduling remain out of scope.
 
 Until decided, architecture documents may identify these as open boundaries but must not
 invent product behavior.
