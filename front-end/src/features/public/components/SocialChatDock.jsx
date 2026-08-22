@@ -8,7 +8,7 @@ import {
 } from '../../../services/chatService.js';
 import '../../../styles/social-chat.css';
 
-const STORAGE_KEY = 'spg-chat-session';
+const STORAGE_KEY = 'mandora-chat-session';
 
 function safeUrl(value) {
   try {
@@ -54,10 +54,7 @@ export default function SocialChatDock() {
   const refreshMessages = useCallback(async (activeSession = session) => {
     if (!activeSession?.sessionId || !activeSession?.clientToken) return;
     try {
-      const payload = await getPublicChatMessages(
-        activeSession.sessionId,
-        activeSession.clientToken,
-      );
+      const payload = await getPublicChatMessages(activeSession.sessionId, activeSession.clientToken);
       setMessages(payload?.data || []);
     } catch {
       // Keep chat usable; sending will surface actionable errors.
@@ -95,11 +92,7 @@ export default function SocialChatDock() {
     try {
       const active = await ensureSession();
       setText('');
-      await sendPublicChatMessage({
-        sessionId: active.sessionId,
-        clientToken: active.clientToken,
-        text: value,
-      });
+      await sendPublicChatMessage({ sessionId: active.sessionId, clientToken: active.clientToken, text: value });
       await refreshMessages(active);
     } catch (requestError) {
       setError(requestError?.message || 'Không thể gửi tin nhắn.');
@@ -117,24 +110,16 @@ export default function SocialChatDock() {
   return (
     <div className="public-social-chat">
       {open && chatEnabled && (
-        <section className="public-chat-panel" aria-label="Chat với SPG">
+        <section className="public-chat-panel" aria-label="Chat với Mandora">
           <header>
-            <div>
-              <small>SPG Support</small>
-              <strong>Chat với admin</strong>
-            </div>
+            <div><small>Mandora Support</small><strong>Chat với admin</strong></div>
             <button type="button" onClick={() => setOpen(false)} aria-label="Đóng chat">×</button>
           </header>
           <div className="public-chat-panel__messages" aria-live="polite">
-            {!messages.length && (
-              <div className="public-chat-panel__welcome">
-                <strong>Xin chào</strong>
-                <p>{settings.welcomeMessage || 'Bạn cần SPG hỗ trợ nội dung gì?'}</p>
-              </div>
-            )}
+            {!messages.length && <div className="public-chat-panel__welcome"><strong>Xin chào</strong><p>{settings.welcomeMessage || 'Mandora có thể hỗ trợ bạn về khóa học, HSK, từ vựng và việc học tiếng Trung.'}</p></div>}
             {messages.map((item, index) => (
               <article className={`is-${item.sender || 'bot'}`} key={messageId(item, index)}>
-                <small>{item.sender === 'visitor' ? 'Bạn' : item.sender === 'admin' ? 'SPG Admin' : 'Trợ lý tự động'}</small>
+                <small>{item.sender === 'visitor' ? 'Bạn' : item.sender === 'admin' ? 'Mandora Admin' : item.provider === 'openai' ? 'Trợ lý AI' : 'Trợ lý tự động'}</small>
                 <p>{item.text}</p>
               </article>
             ))}
@@ -142,35 +127,17 @@ export default function SocialChatDock() {
           </div>
           {error && <p className="public-chat-panel__error">{error}</p>}
           <form onSubmit={submit}>
-            <textarea
-              rows="2"
-              maxLength="1200"
-              placeholder="Nhập tin nhắn…"
-              value={text}
-              onChange={(event) => setText(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' && !event.shiftKey) {
-                  event.preventDefault();
-                  event.currentTarget.form?.requestSubmit();
-                }
-              }}
-            />
-            <button disabled={sending || !text.trim()} type="submit" aria-label="Gửi tin nhắn">
-              {sending ? '…' : '→'}
-            </button>
+            <textarea rows="2" maxLength="1200" placeholder="Nhập tin nhắn…" value={text} onChange={(event) => setText(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }} />
+            <button disabled={sending || !text.trim()} type="submit" aria-label="Gửi tin nhắn">{sending ? '…' : '→'}</button>
           </form>
-          <footer>Trợ lý tự động chỉ hỗ trợ câu hỏi phổ biến; admin có thể tiếp quản hội thoại.</footer>
+          <footer>Trợ lý tự động hỗ trợ câu hỏi phổ biến; admin Mandora có thể tiếp quản hội thoại.</footer>
         </section>
       )}
 
       <div className="public-social-chat__buttons" aria-label="Liên hệ nhanh">
         {facebookUrl && <a href={facebookUrl} target="_blank" rel="noreferrer" aria-label="Facebook">f</a>}
         {zaloUrl && <a className="is-zalo" href={zaloUrl} target="_blank" rel="noreferrer" aria-label="Zalo">Z</a>}
-        {chatEnabled && (
-          <button className="is-chat" type="button" onClick={() => setOpen((current) => !current)} aria-label="Chat ngay">
-            <span aria-hidden="true">*</span>
-          </button>
-        )}
+        {chatEnabled && <button className="is-chat" type="button" onClick={() => setOpen((current) => !current)} aria-label="Chat ngay"><span aria-hidden="true">✦</span></button>}
       </div>
     </div>
   );
