@@ -8,6 +8,13 @@
   animation: mandora-toast-enter 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+.admin-vocabulary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .public-toast {
   position: fixed;
   z-index: 120;
@@ -138,6 +145,13 @@
   to {
     opacity: 1;
     transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@media (max-width: 760px) {
+  .admin-vocabulary-actions {
+    width: 100%;
+    justify-content: flex-start;
   }
 }
 
