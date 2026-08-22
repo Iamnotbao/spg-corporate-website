@@ -2,9 +2,17 @@ import { lazy, Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import AuthLayout from '../layouts/AuthLayout.jsx';
 import PublicLayout from '../layouts/PublicLayout.jsx';
+import BlogDetailPage from '../features/blog/pages/BlogDetailPage.jsx';
 import BlogPage from '../features/blog/pages/BlogPage.jsx';
 import LoginPage from '../features/auth/pages/LoginPage.jsx';
-import FoundationPage from '../features/public/pages/FoundationPage.jsx';
+import CourseDetailPage from '../features/courses/pages/CourseDetailPage.jsx';
+import CoursesPage from '../features/courses/pages/CoursesPage.jsx';
+import LessonPage from '../features/courses/pages/LessonPage.jsx';
+import CharactersPage from '../features/learning/pages/CharactersPage.jsx';
+import HskPage from '../features/learning/pages/HskPage.jsx';
+import PracticeModePage from '../features/learning/pages/PracticeModePage.jsx';
+import PracticePage from '../features/learning/pages/PracticePage.jsx';
+import VocabularyPage from '../features/learning/pages/VocabularyPage.jsx';
 import HomePage from '../features/public/pages/HomePage.jsx';
 import NotFoundPage from '../features/public/pages/NotFoundPage.jsx';
 
@@ -27,57 +35,16 @@ export default function AppRoutes() {
       </Route>
       <Route element={<PublicLayout />}>
         <Route index element={<HomePage />} />
-        <Route
-          path="/courses"
-          element={
-            <FoundationPage
-              description="Khám phá lộ trình tiếng Trung được tổ chức theo mục tiêu học tập."
-              eyebrow="Lộ trình học tập"
-              title="Khóa học"
-            />
-          }
-        />
-        <Route
-          path="/hsk"
-          element={
-            <FoundationPage
-              description="Định hướng kiến thức và kỹ năng cần thiết cho từng cấp độ HSK."
-              eyebrow="Khung năng lực"
-              title="HSK"
-            />
-          }
-        />
-        <Route
-          path="/vocabulary"
-          element={
-            <FoundationPage
-              description="Xây dựng vốn từ tiếng Trung theo chủ đề và ngữ cảnh sử dụng."
-              eyebrow="Nền tảng ngôn ngữ"
-              title="Từ vựng"
-            />
-          }
-        />
-        <Route
-          path="/characters"
-          element={
-            <FoundationPage
-              description="Tìm hiểu cấu tạo, ý nghĩa và cách ghi nhớ Hán tự."
-              eyebrow="Chữ viết"
-              title="Hán tự"
-            />
-          }
-        />
-        <Route
-          path="/practice"
-          element={
-            <FoundationPage
-              description="Củng cố kiến thức bằng những hoạt động học tập tập trung."
-              eyebrow="Ôn tập"
-              title="Luyện tập"
-            />
-          }
-        />
+        <Route path="/courses" element={<CoursesPage />} />
+        <Route path="/courses/:courseSlug" element={<CourseDetailPage />} />
+        <Route path="/courses/:courseSlug/lessons/:lessonSlug" element={<LessonPage />} />
+        <Route path="/hsk" element={<HskPage />} />
+        <Route path="/vocabulary" element={<VocabularyPage />} />
+        <Route path="/characters" element={<CharactersPage />} />
+        <Route path="/practice" element={<PracticePage />} />
+        <Route path="/practice/:mode" element={<PracticeModePage />} />
         <Route path="/blog" element={<BlogPage />} />
+        <Route path="/blog/:id" element={<BlogDetailPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

@@ -1,7 +1,12 @@
 # Mandora Frontend
 
-Ứng dụng React cho nền tảng học tiếng Trung Mandora. Phase 1 gồm nền tảng website
-công khai, điểm vào đăng nhập học viên và dashboard quản trị hiện có.
+Ứng dụng React cho nền tảng học tiếng Trung Mandora. Frontend hiện có trải nghiệm công
+khai cho Home, Courses, Course Detail, Lesson, HSK, Vocabulary, Characters, Practice và
+Blog; cùng điểm vào đăng nhập học viên và dashboard quản trị hiện có.
+
+Các miền học tập chưa có API. Dữ liệu dùng để dựng giao diện nằm trong những module
+`demo*` riêng và được gắn nhãn minh họa trên trang. Blog sử dụng Posts API hiện có nhưng
+chỉ hiển thị bài thuộc các chuyên mục Mandora được cho phép.
 
 ## Chạy local
 
@@ -37,8 +42,10 @@ src/
 ├── features/
 │   ├── admin/            Dashboard, hooks và component quản trị hiện có
 │   ├── auth/             Điểm vào xác thực học viên
-│   ├── blog/             Trang Blog
-│   └── public/           Trang và component website công khai
+│   ├── blog/             Blog công khai và lớp lọc Posts Mandora
+│   ├── courses/          Course, Unit, Lesson UI và dữ liệu minh họa
+│   ├── learning/         HSK, Vocabulary, Characters và Practice UI
+│   └── public/           Home và component khung website công khai
 ├── hooks/                Hook dùng chung
 ├── layouts/              Public, Auth và Admin layouts
 ├── services/             HTTP client và API theo từng miền nghiệp vụ

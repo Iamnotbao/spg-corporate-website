@@ -1,114 +1,194 @@
 import { Link } from 'react-router-dom';
-import { LEARNING_AREAS } from '../../../constants/navigation.js';
+import DemoNotice from '../../../components/ui/DemoNotice.jsx';
 import { usePageTitle } from '../../../hooks/usePageTitle.js';
+import BlogHighlights from '../../blog/components/BlogHighlights.jsx';
+import CourseCard from '../../courses/components/CourseCard.jsx';
+import { DEMO_COURSES } from '../../courses/data/demoCourses.js';
+import HskLevelCard from '../../learning/components/HskLevelCard.jsx';
+import VocabularyCard from '../../learning/components/VocabularyCard.jsx';
+import { DEMO_VOCABULARY, HSK_LEVELS } from '../../learning/data/demoLearningContent.js';
+import '../styles/home.css';
+
+const LEARNING_FEATURES = [
+  {
+    character: '路',
+    title: 'Lộ trình rõ ràng',
+    description: 'Đi từ Course đến Unit và Lesson theo một cấu trúc dễ theo dõi.',
+  },
+  {
+    character: '词',
+    title: 'Học trong ngữ cảnh',
+    description: 'Kết nối từ vựng, Hán tự và ví dụ sử dụng thay vì học rời rạc.',
+  },
+  {
+    character: '练',
+    title: 'Củng cố đúng lúc',
+    description: 'Các điểm luyện tập được tổ chức gần với nội dung vừa học.',
+  },
+];
 
 export default function HomePage() {
   usePageTitle('Học tiếng Trung cho người Việt');
 
   return (
     <>
-      <section className="mandora-hero">
+      <section className="mandora-hero home-hero">
         <div className="public-container mandora-hero__grid">
           <div className="mandora-hero__copy">
             <p className="public-eyebrow">Mandora · Tiếng Trung cho người Việt</p>
             <h1>
-              Học tiếng Trung rõ ràng,
-              <span> từng bước một.</span>
+              Học tiếng Trung dễ dàng,
+              <span> từng bước mỗi ngày.</span>
             </h1>
             <p className="mandora-hero__lead">
-              Xây nền tảng ngôn ngữ qua lộ trình có cấu trúc, nội dung dễ tiếp cận và trải
-              nghiệm học tập tập trung.
+              Học từ vựng, ngữ pháp, Hán tự và luyện tập theo lộ trình phù hợp với bạn.
             </p>
             <div className="mandora-hero__actions">
               <Link className="button button--primary" to="/courses">
-                Khám phá lộ trình <span aria-hidden="true">→</span>
+                Bắt đầu học <span aria-hidden="true">→</span>
               </Link>
-              <Link className="button button--secondary" to="/blog">
-                Đọc Blog
+              <Link className="button button--secondary" to="/courses">
+                Khám phá khóa học
               </Link>
             </div>
+            <div className="home-hero__pillars" aria-label="Các khu vực học tập chính">
+              <span>课程 · Khóa học</span>
+              <span>汉字 · Hán tự</span>
+              <span>练习 · Luyện tập</span>
+            </div>
           </div>
-          <div className="mandora-hero__visual" aria-label="Ví dụ tiếng Trung: xin chào">
+          <div className="mandora-hero__visual" aria-label="Ví dụ học tiếng Trung">
             <div className="mandora-hero__halo" />
-            <article className="learning-card">
-              <span className="learning-card__label">Bắt đầu từ điều gần gũi</span>
-              <strong lang="zh-Hans">你好</strong>
-              <span className="learning-card__pinyin">nǐ hǎo</span>
-              <p>Xin chào</p>
+            <article className="learning-card home-learning-card">
+              <div className="home-learning-card__top">
+                <span>Bài học hôm nay</span>
+                <small>Minh họa</small>
+              </div>
+              <strong lang="zh-Hans">每天</strong>
+              <span className="learning-card__pinyin">měitiān</span>
+              <p>mỗi ngày</p>
+              <div className="home-learning-card__line">
+                <i />
+                <span>Giữ nhịp học đều đặn</span>
+              </div>
             </article>
-            <span className="learning-orbit learning-orbit--one">声调 · Thanh điệu</span>
-            <span className="learning-orbit learning-orbit--two">汉字 · Hán tự</span>
+            <span className="learning-orbit learning-orbit--one">听 · Nghe</span>
+            <span className="learning-orbit learning-orbit--two">读 · Đọc</span>
           </div>
         </div>
       </section>
 
-      <section className="mandora-section" aria-labelledby="learning-path-title">
+      <section className="home-section" aria-labelledby="hsk-discovery-title">
         <div className="public-container">
-          <div className="section-heading">
+          <div className="home-section-heading">
             <div>
-              <p className="public-eyebrow">Một nền tảng, nhiều cách học</p>
-              <h2 id="learning-path-title">Chọn điểm bắt đầu phù hợp.</h2>
+              <p className="public-eyebrow">Tìm điểm bắt đầu</p>
+              <h2 id="hsk-discovery-title">Khám phá theo cấp độ HSK</h2>
             </div>
-            <p>
-              Mandora tổ chức nội dung theo các khu vực học tập rõ ràng để người học dễ
-              định hướng và tập trung vào mục tiêu hiện tại.
-            </p>
+            <Link className="text-link" to="/hsk">
+              Xem toàn bộ HSK <span aria-hidden="true">→</span>
+            </Link>
           </div>
-          <div className="learning-area-grid">
-            {LEARNING_AREAS.map((area, index) => (
-              <Link className="learning-area-card" key={area.to} to={area.to}>
-                <span className="learning-area-card__index">
-                  {String(index + 1).padStart(2, '0')}
-                </span>
-                <p>{area.eyebrow}</p>
-                <h3>{area.title}</h3>
-                <span>{area.description}</span>
-                <i aria-hidden="true">→</i>
-              </Link>
+          <div className="home-hsk-grid">
+            {HSK_LEVELS.map((item) => (
+              <HskLevelCard item={item} key={item.level} />
             ))}
           </div>
         </div>
       </section>
 
-      <section className="mandora-section mandora-section--tinted">
-        <div className="public-container mandora-principles">
-          <div className="section-heading section-heading--compact">
+      <section
+        className="home-section home-section--tinted"
+        aria-labelledby="featured-courses-title"
+      >
+        <div className="public-container">
+          <div className="home-section-heading">
             <div>
-              <p className="public-eyebrow">Thiết kế cho hành trình học thật</p>
-              <h2>Gọn gàng để bạn tập trung.</h2>
+              <p className="public-eyebrow">Lộ trình nổi bật</p>
+              <h2 id="featured-courses-title">Bắt đầu bằng một khóa học phù hợp</h2>
             </div>
+            <Link className="text-link" to="/courses">
+              Tất cả khóa học <span aria-hidden="true">→</span>
+            </Link>
           </div>
-          <div className="principle-grid">
-            <article>
-              <span aria-hidden="true">01</span>
-              <h3>Dành cho người Việt</h3>
-              <p>
-                Giải thích và điều hướng bằng tiếng Việt, gần với cách người Việt học.
-              </p>
-            </article>
-            <article>
-              <span aria-hidden="true">02</span>
-              <h3>Học theo cấu trúc</h3>
-              <p>Nội dung được tổ chức thành những phần rõ ràng, không gây quá tải.</p>
-            </article>
-            <article>
-              <span aria-hidden="true">03</span>
-              <h3>Tiến bộ có định hướng</h3>
-              <p>Mỗi khu vực học tập phục vụ một mục tiêu cụ thể trong lộ trình.</p>
-            </article>
+          <DemoNotice />
+          <div className="course-grid home-course-grid">
+            {DEMO_COURSES.map((course) => (
+              <CourseCard course={course} key={course.slug} />
+            ))}
           </div>
         </div>
       </section>
 
-      <section className="mandora-cta">
+      <section
+        className="home-section home-features"
+        aria-labelledby="learning-features-title"
+      >
+        <div className="public-container home-features__grid">
+          <div className="home-features__intro">
+            <p className="public-eyebrow">Tập trung vào việc học</p>
+            <h2 id="learning-features-title">
+              Một trải nghiệm gọn gàng và có định hướng.
+            </h2>
+            <p>
+              Mandora đặt nội dung học ở trung tâm, với điều hướng nhất quán và những bước
+              tiếp theo dễ hiểu.
+            </p>
+          </div>
+          <div className="home-feature-list">
+            {LEARNING_FEATURES.map((feature, index) => (
+              <article key={feature.title}>
+                <span lang="zh-Hans">{feature.character}</span>
+                <div>
+                  <small>{String(index + 1).padStart(2, '0')}</small>
+                  <h3>{feature.title}</h3>
+                  <p>{feature.description}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section
+        className="home-section home-section--vocabulary"
+        aria-labelledby="daily-word-title"
+      >
+        <div className="public-container home-vocabulary__grid">
+          <div>
+            <p className="public-eyebrow">Một từ mỗi ngày</p>
+            <h2 id="daily-word-title">Học từ trong một câu hoàn chỉnh.</h2>
+            <p>
+              Mỗi thẻ từ được thiết kế để hỗ trợ chữ giản thể, phồn thể, Pinyin, nghĩa
+              tiếng Việt và ví dụ ngữ cảnh.
+            </p>
+            <Link className="button button--secondary" to="/vocabulary">
+              Khám phá từ vựng <span aria-hidden="true">→</span>
+            </Link>
+          </div>
+          <div>
+            <DemoNotice />
+            <VocabularyCard item={DEMO_VOCABULARY[0]} />
+          </div>
+        </div>
+      </section>
+
+      <BlogHighlights />
+
+      <section className="mandora-cta home-final-cta">
         <div className="public-container mandora-cta__inner">
           <div>
-            <p className="public-eyebrow public-eyebrow--light">Mandora V1</p>
-            <h2>Sẵn sàng xây nền tiếng Trung vững chắc?</h2>
+            <p className="public-eyebrow public-eyebrow--light">Hành trình Mandora</p>
+            <h2>Bắt đầu từ một bài học nhỏ hôm nay.</h2>
           </div>
-          <Link className="button button--light" to="/login">
-            Đăng nhập <span aria-hidden="true">→</span>
-          </Link>
+          <div className="home-final-cta__actions">
+            <Link className="button button--light" to="/courses">
+              Xem khóa học <span aria-hidden="true">→</span>
+            </Link>
+            <Link className="button button--ghost-light" to="/login">
+              Đăng nhập
+            </Link>
+          </div>
         </div>
       </section>
     </>

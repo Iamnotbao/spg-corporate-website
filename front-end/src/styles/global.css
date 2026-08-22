@@ -1,10 +1,14 @@
 :root {
   --font-sans:
-    'Segoe UI Variable Text', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont,
-    Roboto, 'Noto Sans', 'Helvetica Neue', Arial, sans-serif;
+    'Segoe UI Variable Text', 'Segoe UI', 'Noto Sans SC', 'Microsoft YaHei',
+    'PingFang SC', system-ui, -apple-system, BlinkMacSystemFont, Roboto, 'Noto Sans',
+    'Helvetica Neue', Arial, sans-serif;
   --font-display:
-    'Segoe UI Variable Display', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont,
-    Roboto, 'Noto Sans', 'Helvetica Neue', Arial, sans-serif;
+    'Segoe UI Variable Display', 'Segoe UI', 'Noto Sans SC', 'Microsoft YaHei',
+    'PingFang SC', system-ui, -apple-system, BlinkMacSystemFont, Roboto, 'Noto Sans',
+    'Helvetica Neue', Arial, sans-serif;
+  --font-chinese:
+    'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', 'STSong', 'SimSun', serif;
   font-family: var(--font-sans);
   color: #202321;
   background: #fffdf8;

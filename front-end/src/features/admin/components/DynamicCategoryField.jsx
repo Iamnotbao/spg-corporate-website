@@ -21,13 +21,21 @@ export default function DynamicCategoryField({ value, onChange }) {
 
   return (
     <label className="admin-form-field admin-form-field--full">
-      <span>Nhóm tin tức</span>
-      <select onChange={(event) => onChange(event.target.value)} value={hasValue ? value : items[0]?.slug || value || 'activity'}>
+      <span>Chuyên mục Blog</span>
+      <select
+        onChange={(event) => onChange(event.target.value)}
+        value={hasValue ? value : items[0]?.slug || value || 'hoc-tieng-trung'}
+      >
         {items.map((item) => (
-          <option key={item.slug} value={item.slug}>{item.name}</option>
+          <option key={item.slug} value={item.slug}>
+            {item.name}
+          </option>
         ))}
       </select>
-      <small>Danh sách này được quản lý trong mục Category và dùng trực tiếp cho tab Tin tức.</small>
+      <small>
+        Danh sách này được quản lý trong mục Chuyên mục Blog và dùng trên trang Blog công
+        khai.
+      </small>
     </label>
   );
 }

@@ -13,6 +13,29 @@ The audit was read-only with respect to application source. It did not connect t
 configured external MongoDB database, enumerate Cloudinary, inspect a live deployment,
 or access Search Console. Those systems may contain additional legacy data and assets.
 
+## Frontend implementation update
+
+The original audit below remains the historical baseline. The committed frontend Phase 1
+foundation and the subsequent Phase 2 public-learning work have changed the current
+frontend as follows:
+
+- public routing now covers Home, Courses, Course Detail, Lesson, HSK, Vocabulary,
+  Characters, Practice, Blog list/detail, Login foundation, and a client-side 404;
+- reusable public UI lives under `src/components/ui/`, while Courses, learning discovery,
+  and Blog presentation are organized by feature;
+- no Mandora learning API or persistence exists yet, so Course, Lesson, Vocabulary,
+  Character, HSK, and Practice composition data is isolated in explicitly named demo data
+  modules and labelled as illustrative in the interface;
+- Blog list/detail pages reuse the existing Posts API, but expose only records assigned to
+  the approved Mandora Blog category allowlist; legacy corporate Posts are not silently
+  published as Mandora content;
+- student authentication, enrollment, completion, and progress remain unimplemented, and
+  their frontend controls are non-persistent foundations only;
+- the backend and its legacy data domains have not been modified by these frontend phases.
+
+This update does not supersede the unresolved product, data, authentication, deployment,
+or SEO decisions documented later in this file.
+
 ## Executive audit
 
 The repository is a small two-package JavaScript application with a functioning corporate

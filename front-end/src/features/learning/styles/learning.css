@@ -1,0 +1,535 @@
+.learning-index-section {
+  padding: clamp(52px, 7vw, 88px) 0 clamp(82px, 10vw, 130px);
+  background: var(--mandora-surface);
+}
+
+.learning-index-section .demo-notice {
+  margin-bottom: 30px;
+}
+
+.hsk-level-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.hsk-level-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr);
+  align-items: center;
+  gap: 18px;
+  min-height: 180px;
+  padding: 24px;
+  overflow: hidden;
+  border: 1px solid var(--mandora-line);
+  border-radius: 23px 23px 23px 8px;
+  background: var(--mandora-paper);
+  transition:
+    border-color 180ms ease,
+    transform 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.hsk-level-card:hover {
+  border-color: color-mix(in srgb, var(--mandora-red-700) 50%, var(--mandora-line));
+  box-shadow: 0 20px 45px rgba(74, 45, 34, 0.09);
+  transform: translateY(-5px);
+}
+
+.hsk-level-card__number {
+  display: grid;
+  width: 74px;
+  height: 88px;
+  place-items: center;
+  border-radius: 22px 22px 22px 7px;
+  background: var(--mandora-red-700);
+  color: #fff;
+  font-size: 2.15rem;
+  font-weight: 900;
+}
+
+.hsk-level-card:nth-child(3n + 2) .hsk-level-card__number {
+  background: var(--mandora-jade-700);
+}
+
+.hsk-level-card:nth-child(3n) .hsk-level-card__number {
+  background: #b47717;
+}
+
+.hsk-level-card p {
+  margin: 0 0 4px;
+  color: var(--mandora-red-700);
+  font-size: 0.7rem;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.hsk-level-card h3 {
+  margin: 0 0 8px;
+  font-size: 1.25rem;
+}
+
+.hsk-level-card div > span {
+  color: var(--mandora-muted);
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+
+.hsk-level-card i {
+  position: absolute;
+  right: 18px;
+  bottom: 16px;
+  color: var(--mandora-red-700);
+  font-style: normal;
+}
+
+.learning-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.vocabulary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.vocabulary-card {
+  display: grid;
+  gap: 22px;
+  padding: 25px;
+  border: 1px solid var(--mandora-line);
+  border-radius: 24px 24px 24px 8px;
+  background: var(--mandora-paper);
+  box-shadow: 0 14px 40px rgba(74, 45, 34, 0.06);
+}
+
+.vocabulary-card > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.vocabulary-card > header > span {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--mandora-red-100);
+  color: var(--mandora-red-700);
+  font-size: 0.7rem;
+  font-weight: 850;
+}
+
+.vocabulary-card__actions {
+  display: flex;
+  gap: 7px;
+}
+
+.vocabulary-card__actions button {
+  display: grid;
+  width: 35px;
+  height: 35px;
+  place-items: center;
+  border: 1px solid var(--mandora-line);
+  border-radius: 50%;
+  background: var(--mandora-surface);
+  color: var(--mandora-muted);
+}
+
+.vocabulary-card__actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.64;
+}
+
+.vocabulary-card__word {
+  display: grid;
+  justify-items: start;
+}
+
+.vocabulary-card__word > strong {
+  color: var(--mandora-ink);
+  font-family: var(--font-chinese);
+  font-size: clamp(3.6rem, 7vw, 5.5rem);
+  font-weight: 500;
+  line-height: 1;
+}
+
+.vocabulary-card__word > small {
+  margin-top: 8px;
+  color: var(--mandora-muted);
+  font-size: 0.72rem;
+}
+
+.vocabulary-card__word > span {
+  margin-top: 12px;
+  color: var(--mandora-jade-700);
+  font-size: 1.03rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+.vocabulary-card__word > p {
+  margin: 4px 0 0;
+  font-weight: 750;
+}
+
+.vocabulary-card__example {
+  padding: 18px;
+  border-left: 3px solid var(--mandora-gold-500);
+  border-radius: 4px 14px 14px 4px;
+  background: var(--mandora-surface);
+}
+
+.vocabulary-card__example strong,
+.vocabulary-card__example span,
+.vocabulary-card__example p {
+  display: block;
+}
+
+.vocabulary-card__example strong {
+  font-family: var(--font-chinese);
+  font-size: 1.12rem;
+}
+
+.vocabulary-card__example span {
+  margin-top: 5px;
+  color: var(--mandora-jade-700);
+  font-size: 0.8rem;
+}
+
+.vocabulary-card__example p {
+  margin: 5px 0 0;
+  color: var(--mandora-muted);
+  font-size: 0.82rem;
+}
+
+.character-browser {
+  display: grid;
+  grid-template-columns: 290px minmax(0, 1fr);
+  align-items: start;
+  gap: 24px;
+}
+
+.character-list {
+  display: grid;
+  gap: 10px;
+}
+
+.character-card {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 15px;
+  border: 1px solid var(--mandora-line);
+  border-radius: 17px;
+  background: var(--mandora-paper);
+  color: var(--mandora-ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.character-card:hover,
+.character-card.is-active {
+  border-color: var(--mandora-red-700);
+  box-shadow: 0 12px 28px rgba(74, 45, 34, 0.07);
+}
+
+.character-card > strong {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  place-items: center;
+  border-radius: 16px 16px 16px 6px;
+  background: var(--mandora-red-100);
+  color: var(--mandora-red-700);
+  font-family: var(--font-chinese);
+  font-size: 2rem;
+  font-weight: 500;
+}
+
+.character-card div span {
+  color: var(--mandora-jade-700);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.character-card div p {
+  margin: 3px 0 0;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.character-card > small {
+  color: var(--mandora-muted);
+  font-size: 0.66rem;
+}
+
+.character-detail {
+  display: grid;
+  grid-template-columns: minmax(230px, 0.7fr) minmax(260px, 1fr);
+  gap: 30px;
+  padding: clamp(28px, 5vw, 50px);
+  border: 1px solid var(--mandora-line);
+  border-radius: 30px 30px 30px 10px;
+  background: var(--mandora-paper);
+  box-shadow: var(--mandora-shadow);
+}
+
+.character-detail__glyph {
+  display: grid;
+  min-height: 310px;
+  place-items: center;
+  align-content: center;
+  gap: 16px;
+  border-radius: 25px 25px 25px 8px;
+  background:
+    linear-gradient(rgba(173, 47, 67, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(173, 47, 67, 0.07) 1px, transparent 1px),
+    var(--mandora-surface);
+  background-size: 50% 50%;
+}
+
+.character-detail__glyph strong {
+  color: var(--mandora-red-700);
+  font-family: var(--font-chinese);
+  font-size: clamp(7rem, 15vw, 11rem);
+  font-weight: 500;
+  line-height: 1;
+}
+
+.character-detail__glyph span {
+  color: var(--mandora-muted);
+  font-size: 0.78rem;
+}
+
+.character-detail__copy h2 {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3.2rem);
+}
+
+.character-detail__copy > p:not(.public-eyebrow) {
+  margin: 8px 0 24px;
+  color: var(--mandora-muted);
+  font-size: 1.05rem;
+}
+
+.character-detail dl {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin: 0;
+}
+
+.character-detail dl div {
+  padding: 15px;
+  border: 1px solid var(--mandora-line);
+  border-radius: 14px;
+}
+
+.character-detail dt {
+  color: var(--mandora-muted);
+  font-size: 0.7rem;
+  font-weight: 750;
+}
+
+.character-detail dd {
+  margin: 7px 0 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.character-examples {
+  display: grid;
+  gap: 7px;
+  margin-top: 24px;
+}
+
+.character-examples strong {
+  margin-bottom: 4px;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+}
+
+.character-examples span {
+  color: var(--mandora-muted);
+}
+
+.stroke-order-foundation {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border: 1px dashed var(--mandora-line);
+  border-radius: 16px;
+}
+
+.stroke-order-foundation span {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--mandora-surface);
+  color: var(--mandora-muted);
+  font-family: serif;
+}
+
+.stroke-order-foundation p {
+  margin: 0;
+  color: var(--mandora-muted);
+  font-size: 0.8rem;
+}
+
+.practice-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.practice-card {
+  position: relative;
+  display: grid;
+  min-height: 300px;
+  align-content: start;
+  padding: 25px;
+  overflow: hidden;
+  border: 1px solid var(--mandora-line);
+  border-radius: 24px 24px 24px 8px;
+  background: var(--mandora-paper);
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.practice-card:hover {
+  box-shadow: 0 20px 46px rgba(74, 45, 34, 0.1);
+  transform: translateY(-5px);
+}
+
+.practice-card__index {
+  color: var(--mandora-red-700);
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.practice-card > strong {
+  margin: 26px 0;
+  color: var(--mandora-red-700);
+  font-family: var(--font-chinese);
+  font-size: 4.4rem;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.practice-card h2 {
+  margin: 0 0 9px;
+  font-size: 1.35rem;
+}
+
+.practice-card p {
+  margin: 0;
+  color: var(--mandora-muted);
+  font-size: 0.88rem;
+  line-height: 1.62;
+}
+
+.practice-card i {
+  position: absolute;
+  right: 22px;
+  bottom: 20px;
+  color: var(--mandora-red-700);
+  font-style: normal;
+}
+
+.practice-mode-page {
+  min-height: 72vh;
+  padding: clamp(70px, 9vw, 125px) 0;
+  background: var(--mandora-surface);
+}
+
+.practice-mode-page__inner {
+  display: grid;
+  max-width: 760px;
+  justify-items: start;
+}
+
+.practice-mode-page__character {
+  display: grid;
+  width: 100px;
+  height: 100px;
+  place-items: center;
+  margin-bottom: 28px;
+  border-radius: 28px 28px 28px 9px;
+  background: var(--mandora-red-700);
+  color: #fff;
+  font-family: var(--font-chinese);
+  font-size: 3.8rem;
+}
+
+.practice-mode-page h1 {
+  margin: 0;
+  font-size: clamp(3rem, 7vw, 6rem);
+  line-height: 1;
+  letter-spacing: -0.055em;
+}
+
+.practice-mode-page__inner > p:not(.public-eyebrow) {
+  max-width: 650px;
+  margin: 22px 0 32px;
+  color: var(--mandora-muted);
+  font-size: 1.06rem;
+  line-height: 1.7;
+}
+
+@media (max-width: 940px) {
+  .hsk-level-grid,
+  .practice-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .learning-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .character-browser {
+    grid-template-columns: 1fr;
+  }
+
+  .character-list {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 680px) {
+  .hsk-level-grid,
+  .vocabulary-grid,
+  .practice-grid,
+  .character-detail,
+  .character-list {
+    grid-template-columns: 1fr;
+  }
+
+  .character-detail__glyph {
+    min-height: 260px;
+  }
+
+  .stroke-order-foundation {
+    grid-column: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hsk-level-card,
+  .practice-card {
+    transition: none;
+  }
+}
