@@ -87,6 +87,12 @@ export default function PublicCommunications() {
     return () => source.close();
   }, [load]);
 
+  useEffect(() => {
+    const openNotifications = () => setOpen(true);
+    window.addEventListener('mandora:open-notifications', openNotifications);
+    return () => window.removeEventListener('mandora:open-notifications', openNotifications);
+  }, []);
+
   const notifications = useMemo(() => data.notifications, [data.notifications]);
   const banner = data.banner;
   const guestUnread = signedIn ? 0 : notifications.filter((item) => !item.read).length;
