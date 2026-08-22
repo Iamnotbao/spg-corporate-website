@@ -9,7 +9,8 @@ function normalizeApiUrl(value) {
 }
 
 export const API_URL = normalizeApiUrl(import.meta.env.VITE_API_URL);
-export const ADMIN_TOKEN_KEY = 'spg_admin_token';
+export const ADMIN_TOKEN_KEY = 'mandora_admin_token';
+const LEGACY_ADMIN_TOKEN_KEY = 'spg_admin_token';
 
 export class ApiError extends Error {
   constructor(message, status, payload = null) {
@@ -21,16 +22,28 @@ export class ApiError extends Error {
 }
 
 export function getAdminToken() {
-  return localStorage.getItem(ADMIN_TOKEN_KEY) || '';
+  const token =
+    localStorage.getItem(ADMIN_TOKEN_KEY) ||
+    localStorage.getItem(LEGACY_ADMIN_TOKEN_KEY) ||
+    '';
+
+  if (token && !localStorage.getItem(ADMIN_TOKEN_KEY)) {
+    localStorage.setItem(ADMIN_TOKEN_KEY, token);
+    localStorage.removeItem(LEGACY_ADMIN_TOKEN_KEY);
+  }
+
+  return token;
 }
 
 export function setAdminToken(token) {
   if (token) {
     localStorage.setItem(ADMIN_TOKEN_KEY, token);
+    localStorage.removeItem(LEGACY_ADMIN_TOKEN_KEY);
     return;
   }
 
   localStorage.removeItem(ADMIN_TOKEN_KEY);
+  localStorage.removeItem(LEGACY_ADMIN_TOKEN_KEY);
 }
 
 async function parseResponse(response) {

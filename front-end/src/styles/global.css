@@ -6,8 +6,8 @@
     'Segoe UI Variable Display', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont,
     Roboto, 'Noto Sans', 'Helvetica Neue', Arial, sans-serif;
   font-family: var(--font-sans);
-  color: #152033;
-  background: #ffffff;
+  color: #202321;
+  background: #fffdf8;
   font-kerning: normal;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -27,6 +27,23 @@
   --danger: #c4322b;
   --shadow-sm: 0 8px 30px rgba(11, 37, 69, 0.08);
   --shadow-lg: 0 28px 80px rgba(7, 26, 51, 0.16);
+  --mandora-red-800: #8f2436;
+  --mandora-red-700: #ad2f43;
+  --mandora-red-600: #c23b4f;
+  --mandora-red-100: #fbe9eb;
+  --mandora-gold-500: #e7a92f;
+  --mandora-gold-100: #fff4d6;
+  --mandora-jade-700: #24685e;
+  --mandora-jade-100: #e6f3ef;
+  --mandora-ink: #202321;
+  --mandora-muted: #646b67;
+  --mandora-paper: #fffdf8;
+  --mandora-surface: #f8f3e9;
+  --mandora-line: #e8dfd2;
+  --mandora-radius-sm: 12px;
+  --mandora-radius: 20px;
+  --mandora-radius-lg: 32px;
+  --mandora-shadow: 0 22px 60px rgba(74, 45, 34, 0.1);
 }
 
 * {
@@ -48,7 +65,8 @@ body,
 }
 
 body {
-  background: var(--white);
+  background: var(--mandora-paper);
+  color: var(--mandora-ink);
   font-family: var(--font-sans);
   font-size: 16px;
   line-height: 1.5;
@@ -85,11 +103,11 @@ img {
 
 ::selection {
   color: var(--white);
-  background: var(--blue-600);
+  background: var(--mandora-red-700);
 }
 
 :focus-visible {
-  outline: 3px solid rgba(31, 124, 240, 0.35);
+  outline: 3px solid rgba(194, 59, 79, 0.3);
   outline-offset: 3px;
 }
 
@@ -98,7 +116,7 @@ img {
   min-height: 100vh;
   place-items: center;
   padding: 24px;
-  color: var(--ink-500);
-  background: var(--surface);
+  color: var(--mandora-muted);
+  background: var(--mandora-paper);
   font-weight: 700;
 }

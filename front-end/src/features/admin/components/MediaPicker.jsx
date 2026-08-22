@@ -32,7 +32,7 @@ export default function MediaPicker({ open, onClose, onSelect, onUnauthorized })
     <div className="admin-media-modal" role="dialog" aria-modal="true" aria-label="Chọn ảnh từ thư viện">
       <button className="admin-media-modal__scrim" type="button" onClick={onClose} aria-label="Đóng" />
       <section className="admin-media-modal__panel">
-        <header><div><strong>Chọn ảnh từ thư viện</strong><small>Ảnh đang lưu trên Cloudinary trong thư mục SPG.</small></div><button type="button" onClick={onClose}>×</button></header>
+        <header><div><strong>Chọn ảnh từ thư viện</strong><small>Ảnh đang lưu trong thư viện nội dung hiện có.</small></div><button type="button" onClick={onClose}>×</button></header>
         <input className="admin-media-search" placeholder="Tìm theo tên file / thư mục…" value={search} onChange={(event) => setSearch(event.target.value)} />
         {error && <p className="admin-media-error">{error}</p>}
         {loading ? <p>Đang tải ảnh…</p> : (

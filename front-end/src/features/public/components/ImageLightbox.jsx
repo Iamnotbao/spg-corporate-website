@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { usePublicLanguage } from '../i18n.js';
 import '../../../styles/image-lightbox.css';
 
 const COPY = {
-  vi: { close: 'Đóng', previous: 'Ảnh trước', next: 'Ảnh sau', zoomIn: 'Phóng to', zoomOut: 'Thu nhỏ', reset: 'Về 100%', hint: 'Cuộn nút hoặc dùng + / − để zoom · kéo ảnh khi đã phóng to' },
-  en: { close: 'Close', previous: 'Previous image', next: 'Next image', zoomIn: 'Zoom in', zoomOut: 'Zoom out', reset: 'Reset to 100%', hint: 'Use + / − to zoom · drag the image while zoomed' },
-  'zh-tw': { close: '關閉', previous: '上一張', next: '下一張', zoomIn: '放大', zoomOut: '縮小', reset: '回到 100%', hint: '使用 + / − 縮放 · 放大後可拖曳圖片' },
+  close: 'Đóng',
+  previous: 'Ảnh trước',
+  next: 'Ảnh sau',
+  zoomIn: 'Phóng to',
+  zoomOut: 'Thu nhỏ',
+  reset: 'Về 100%',
+  hint: 'Dùng + / − để thu phóng · kéo ảnh khi đã phóng to',
 };
 
 function normalizeImages(images) {
@@ -19,8 +22,7 @@ function normalizeImages(images) {
 }
 
 export default function ImageLightbox({ images = [], index = null, onIndexChange, onClose }) {
-  const language = usePublicLanguage();
-  const t = COPY[language] || COPY.vi;
+  const t = COPY;
   const list = useMemo(() => normalizeImages(images), [images]);
   const open = Number.isInteger(index) && index >= 0 && index < list.length;
   const current = open ? list[index] : null;

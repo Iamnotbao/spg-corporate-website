@@ -81,7 +81,7 @@ export default function MediaLibraryPanel({ onNotify, onUnauthorized }) {
               <div className="admin-media-library__meta">
                 <strong title={item.publicId}>{item.publicId.split('/').pop()}</strong>
                 <small>{item.width || '?'} × {item.height || '?'} · {bytes(item.bytes)}</small>
-                <small>{item.folder || 'spg'}</small>
+                <small>{item.folder || 'legacy'}</small>
                 {item.usage?.length ? <div className="admin-media-library__usage"><b>Đang dùng</b>{item.usage.slice(0, 3).map((usage) => <span key={usage}>{usage}</span>)}</div> : <span className="admin-media-library__free">Chưa tham chiếu</span>}
               </div>
               <div className="admin-media-library__actions"><a href={item.url} target="_blank" rel="noreferrer">Mở ảnh</a><button type="button" disabled={Boolean(item.usage?.length)} onClick={() => remove(item)}>Xóa</button></div>

@@ -26,22 +26,22 @@
     Arial,
     sans-serif
   );
-  --admin-navy-950: #0b1f1c;
-  --admin-navy-900: #102a26;
-  --admin-navy-800: #183d37;
-  --admin-navy-700: #24544c;
-  --admin-accent: #e8783c;
-  --admin-accent-dark: #cb5d27;
-  --admin-accent-soft: #fff3eb;
-  --admin-bg: #f3f6f4;
+  --admin-navy-950: #21191a;
+  --admin-navy-900: #2d2224;
+  --admin-navy-800: #49373a;
+  --admin-navy-700: #684b50;
+  --admin-accent: var(--mandora-red-700, #ad2f43);
+  --admin-accent-dark: var(--mandora-red-800, #8f2436);
+  --admin-accent-soft: var(--mandora-red-100, #fbe9eb);
+  --admin-bg: var(--mandora-surface, #f8f3e9);
   --admin-surface: #ffffff;
   --admin-surface-soft: #f8faf8;
-  --admin-text: #172521;
-  --admin-muted: #667a73;
-  --admin-subtle: #8a9b95;
-  --admin-line: #dfe7e2;
-  --admin-line-strong: #cbd8d1;
-  --admin-success: #23845e;
+  --admin-text: var(--mandora-ink, #202321);
+  --admin-muted: var(--mandora-muted, #646b67);
+  --admin-subtle: #8e827c;
+  --admin-line: var(--mandora-line, #e8dfd2);
+  --admin-line-strong: #d8cbbd;
+  --admin-success: var(--mandora-jade-700, #24685e);
   --admin-danger: #c84343;
   --admin-danger-soft: #fff0f0;
   --admin-warning: #9b6715;
@@ -84,7 +84,7 @@
 
 .admin-shell :focus-visible,
 .admin-login :focus-visible {
-  outline: 3px solid rgba(232, 120, 60, 0.26);
+  outline: 3px solid rgba(173, 47, 67, 0.26);
   outline-offset: 2px;
 }
 

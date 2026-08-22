@@ -128,7 +128,7 @@ export default function SocialChatDock() {
           <div className="public-chat-panel__messages" aria-live="polite">
             {!messages.length && (
               <div className="public-chat-panel__welcome">
-                <strong>Xin chào 👋</strong>
+                <strong>Xin chào</strong>
                 <p>{settings.welcomeMessage || 'Bạn cần SPG hỗ trợ nội dung gì?'}</p>
               </div>
             )}
@@ -168,7 +168,7 @@ export default function SocialChatDock() {
         {zaloUrl && <a className="is-zalo" href={zaloUrl} target="_blank" rel="noreferrer" aria-label="Zalo">Z</a>}
         {chatEnabled && (
           <button className="is-chat" type="button" onClick={() => setOpen((current) => !current)} aria-label="Chat ngay">
-            <span aria-hidden="true">✦</span>
+            <span aria-hidden="true">*</span>
           </button>
         )}
       </div>

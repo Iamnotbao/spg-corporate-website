@@ -5,8 +5,8 @@ import { AdminAlert, AdminSkeletonRows } from './AdminFeedback.jsx';
 const STAT_ITEMS = [
   {
     key: 'posts',
-    label: 'Bài viết',
-    helper: 'Nội dung tin tức',
+    label: 'Blog',
+    helper: 'Bài viết đang quản lý',
     icon: 'posts',
   },
   {
@@ -57,11 +57,11 @@ export default function OverviewPanel({ onNavigate, onUnauthorized }) {
 
       <section className="admin-welcome-card">
         <div>
-          <p className="admin-eyebrow">SPG Content Studio</p>
+          <p className="admin-eyebrow">Mandora Content Studio</p>
           <h2>Quản lý nội dung trong một nơi.</h2>
           <p>
-            Cập nhật tin tức, cơ hội nghề nghiệp và theo dõi hồ sơ ứng viên nhanh chóng
-            trên mọi thiết bị.
+            Quản lý Blog, thư viện media và các nội dung hiện có trong một không gian làm
+            việc thống nhất.
           </p>
         </div>
         <div className="admin-welcome-card__actions">
@@ -71,7 +71,7 @@ export default function OverviewPanel({ onNavigate, onUnauthorized }) {
             type="button"
           >
             <AdminIcon name="plus" size={18} />
-            Quản lý bài viết
+            Quản lý Blog
           </button>
           <button
             className="admin-button admin-button--secondary"

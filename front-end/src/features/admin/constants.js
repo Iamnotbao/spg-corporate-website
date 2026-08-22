@@ -1,19 +1,19 @@
 export const ADMIN_SECTIONS = [
   { key: 'overview', label: 'Tổng quan', icon: 'overview' },
-  { key: 'site-profile', label: 'Trang chủ & đối tác', icon: 'overview', permission: 'settings.read' },
+  { key: 'site-profile', label: 'Cấu hình trang cũ', icon: 'overview', permission: 'settings.read' },
   { key: 'media', label: 'Thư viện ảnh', icon: 'posts', permission: 'media.read' },
-  { key: 'posts', label: 'Bài viết', icon: 'posts', permission: 'posts.read' },
-  { key: 'categories', label: 'Category', icon: 'posts', permission: 'categories.read' },
-  { key: 'jobs', label: 'Tuyển dụng', icon: 'jobs', permission: 'jobs.read' },
+  { key: 'posts', label: 'Blog', icon: 'posts', permission: 'posts.read' },
+  { key: 'categories', label: 'Chuyên mục Blog', icon: 'posts', permission: 'categories.read' },
+  { key: 'jobs', label: 'Tuyển dụng (cũ)', icon: 'jobs', permission: 'jobs.read' },
   { key: 'communications', label: 'Thông báo & sự kiện', icon: 'communications', permission: 'communications.read' },
   { key: 'chat', label: 'Chat & liên hệ', icon: 'chat', permission: 'chat.read' },
   { key: 'languages', label: 'Ngôn ngữ', icon: 'languages', permission: 'languages.read' },
-  { key: 'applications', label: 'Hồ sơ ứng tuyển', icon: 'applications', permission: 'applications.read' },
+  { key: 'applications', label: 'Hồ sơ ứng tuyển (cũ)', icon: 'applications', permission: 'applications.read' },
   { key: 'users', label: 'Người dùng', icon: 'users', permission: 'users.read' },
 ];
 
 export const CONTENT_LABELS = {
-  posts: { singular: 'bài viết', plural: 'Bài viết', description: 'Quản lý tin tức và nội dung đang hiển thị trên website.' },
+  posts: { singular: 'bài viết', plural: 'Blog', description: 'Quản lý bài viết trong hệ thống nội dung hiện có.' },
   jobs: { singular: 'tin tuyển dụng', plural: 'Tuyển dụng', description: 'Quản lý cơ hội nghề nghiệp và thông tin tuyển dụng.' },
 };
 

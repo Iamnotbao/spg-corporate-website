@@ -14,7 +14,7 @@ export default function SafeImage({ alt, className = '', eager = false, src }) {
         role="img"
         aria-label={alt ? `${alt} - chưa có ảnh` : 'Chưa có ảnh'}
       >
-        <span aria-hidden="true">SPG</span>
+        <span aria-hidden="true">M</span>
       </div>
     );
   }

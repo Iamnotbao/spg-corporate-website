@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { createAdminContent, updateAdminContent } from '../../services/adminService.js';
+import AdminLayout from '../../layouts/AdminLayout.jsx';
 import '../../styles/admin.css';
 import '../../styles/content-import.css';
 import './styles/users.css';
@@ -9,7 +10,6 @@ import './styles/languages.css';
 import './styles/chat.css';
 import './styles/site-profile.css';
 import ApplicationsPanel from './components/ApplicationsPanel.jsx';
-import AdminLayout from './components/AdminLayout.jsx';
 import AdminLogin from './components/AdminLogin.jsx';
 import CategoriesPanel from './components/CategoriesPanel.jsx';
 import ChatPanel from './components/ChatPanel.jsx';

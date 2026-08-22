@@ -7,7 +7,7 @@ export default function ThemeToggle({ compact = false }) {
 
   return (
     <button
-      className={`spg-theme-toggle${compact ? ' is-compact' : ''}`}
+      className={`theme-toggle${compact ? ' is-compact' : ''}`}
       type="button"
       onClick={toggleTheme}
       aria-label={dark ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối'}

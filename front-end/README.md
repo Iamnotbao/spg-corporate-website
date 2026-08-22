@@ -1,6 +1,7 @@
-# SPG Frontend
+# Mandora Frontend
 
-Ứng dụng React gồm website công khai và dashboard quản trị nội dung.
+Ứng dụng React cho nền tảng học tiếng Trung Mandora. Phase 1 gồm nền tảng website
+công khai, điểm vào đăng nhập học viên và dashboard quản trị hiện có.
 
 ## Chạy local
 
@@ -30,12 +31,18 @@ npm run format:check # Kiểm tra format trong CI
 
 ```text
 src/
-├── app/                  Router cấp ứng dụng
+├── app/                  Router cấp ứng dụng và khai báo route
+├── components/           Thành phần giao diện dùng chung
+├── constants/            Điều hướng và hằng số giao diện
 ├── features/
-│   ├── admin/            Dashboard, hooks và component quản trị
-│   └── public/           Trang công khai, detail và component website
+│   ├── admin/            Dashboard, hooks và component quản trị hiện có
+│   ├── auth/             Điểm vào xác thực học viên
+│   ├── blog/             Trang Blog
+│   └── public/           Trang và component website công khai
+├── hooks/                Hook dùng chung
+├── layouts/              Public, Auth và Admin layouts
 ├── services/             HTTP client và API theo từng miền nghiệp vụ
-├── styles/               Global, public và admin styles
+├── styles/               Design tokens, public và admin styles
 └── main.jsx              Entry point
 ```
 
@@ -47,6 +54,7 @@ Component chỉ xử lý trình bày và tương tác. Mọi lời gọi backend
 Xem `.env.example`. Không commit `.env.local`.
 
 - `VITE_API_URL`: backend API.
-- `VITE_LOGO_URL`: logo công khai, có thể để trống để dùng wordmark SPG.
+- `VITE_GOOGLE_MAPS_EMBED_KEY`: khóa bản đồ chỉ dùng cho module cấu hình trang cũ
+  trong dashboard hiện có; có thể để trống.
 - Ảnh từ editor admin được gửi qua API đã xác thực; khóa Cloudinary chỉ nằm ở
   back-end.
