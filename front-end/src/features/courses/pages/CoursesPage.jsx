@@ -6,6 +6,7 @@ import {
   LoadingState,
 } from '../../../components/ui/ContentState.jsx';
 import PageHeader from '../../../components/ui/PageHeader.jsx';
+import PublicPagination from '../../../components/ui/PublicPagination.jsx';
 import { usePageTitle } from '../../../hooks/usePageTitle.js';
 import { usePublicCollection } from '../../public/hooks/usePublicContent.js';
 import CourseCard from '../components/CourseCard.jsx';
@@ -13,11 +14,13 @@ import { listPublicCourses } from '../services/courseCatalogService.js';
 import '../styles/courses.css';
 
 const ALL_LEVELS = 'Tất cả';
+const PAGE_SIZE = 9;
 
 export default function CoursesPage() {
   usePageTitle('Khóa học');
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState(searchParams.get('q') || '');
+  const [page, setPage] = useState(1);
   const level = searchParams.get('level') || ALL_LEVELS;
   const loadCourses = useCallback(() => listPublicCourses(), []);
   const courses = usePublicCollection(loadCourses);
@@ -32,6 +35,10 @@ export default function CoursesPage() {
       return matchesLevel && matchesSearch;
     });
   }, [courses.data, level, search]);
+  const pagedCourses = useMemo(
+    () => visibleCourses.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [page, visibleCourses],
+  );
   const levels = useMemo(
     () => [
       ALL_LEVELS,
@@ -40,11 +47,17 @@ export default function CoursesPage() {
     [courses.data],
   );
 
+  function updateSearch(value) {
+    setSearch(value);
+    setPage(1);
+  }
+
   function selectLevel(nextLevel) {
     const params = new URLSearchParams(searchParams);
     if (nextLevel === ALL_LEVELS) params.delete('level');
     else params.set('level', nextLevel);
     setSearchParams(params);
+    setPage(1);
   }
 
   return (
@@ -61,7 +74,7 @@ export default function CoursesPage() {
               <span className="visually-hidden">Tìm khóa học</span>
               <span aria-hidden="true">⌕</span>
               <input
-                onChange={(event) => setSearch(event.target.value)}
+                onChange={(event) => updateSearch(event.target.value)}
                 placeholder="Tìm theo tên hoặc nội dung…"
                 type="search"
                 value={search}
@@ -98,11 +111,19 @@ export default function CoursesPage() {
             />
           )}
           {courses.status === 'ready' && visibleCourses.length > 0 && (
-            <div className="course-grid">
-              {visibleCourses.map((course) => (
-                <CourseCard course={course} key={course.slug} />
-              ))}
-            </div>
+            <>
+              <div className="course-grid">
+                {pagedCourses.map((course) => (
+                  <CourseCard course={course} key={course.slug} />
+                ))}
+              </div>
+              <PublicPagination
+                onPageChange={setPage}
+                page={page}
+                pageSize={PAGE_SIZE}
+                total={visibleCourses.length}
+              />
+            </>
           )}
         </div>
       </section>
