@@ -97,7 +97,7 @@ export default function UsersPanel({ currentUser, onNotify, onUnauthorized }) {
 
   return (
     <section className="admin-panel admin-users-panel">
-      <div className="admin-panel__heading"><div><h2>Quản lý người dùng</h2><p>Phân quyền theo từng mã thao tác, có tìm kiếm và phân trang.</p></div><button className="admin-button admin-button--secondary" disabled={loading} onClick={() => load()} type="button"><AdminIcon name="refresh" size={17} /> Làm mới</button></div>
+      <div className="admin-panel__heading"><div><h2>Tài khoản CMS</h2><p>Quản lý tài khoản quản trị admin/employee hiện có. Đây không phải danh sách học viên.</p></div><button className="admin-button admin-button--secondary" disabled={loading} onClick={() => load()} type="button"><AdminIcon name="refresh" size={17} /> Làm mới</button></div>
       {error && <AdminAlert>{error}</AdminAlert>}
 
       <div className="admin-users-toolbar"><label><AdminIcon name="search" size={17} /><input onChange={(event) => setFilters((current) => ({ ...current, search: event.target.value }))} placeholder="Tìm tên đăng nhập hoặc tên hiển thị…" value={filters.search} /></label><select onChange={(event) => setFilters((current) => ({ ...current, role: event.target.value }))} value={filters.role}><option value="">Tất cả quyền</option><option value="admin">Admin</option><option value="employee">Employee</option></select><select aria-label="Số người dùng mỗi trang" onChange={(event) => setPagination((current) => ({ ...current, pageSize: Number(event.target.value), page: 1 }))} value={pagination.pageSize}>{[5, 10, 20, 50].map((size) => <option key={size} value={size}>{size}/trang</option>)}</select></div>

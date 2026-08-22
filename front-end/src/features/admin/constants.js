@@ -40,8 +40,8 @@ export const ADMIN_SECTIONS = [
 export const CONTENT_LABELS = {
   posts: {
     singular: 'bài viết',
-    plural: 'Blog',
-    description: 'Quản lý bài viết trong hệ thống nội dung hiện có.',
+    plural: 'Quản lý Blog',
+    description: 'Tạo, biên tập và kiểm soát trạng thái xuất bản nội dung Mandora.',
   },
   jobs: {
     singular: 'tin tuyển dụng',
@@ -53,6 +53,7 @@ export const CONTENT_LABELS = {
 export const DEFAULT_FILTERS = {
   search: '',
   published: '',
+  category: 'hoc-tieng-trung',
   jobType: '',
   location: '',
   pageSize: 10,

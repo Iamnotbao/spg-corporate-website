@@ -1,4 +1,9 @@
-import { CONTENT_LABELS, JOB_TYPES, PAGE_SIZE_OPTIONS } from '../constants.js';
+import {
+  CONTENT_LABELS,
+  JOB_TYPES,
+  NEWS_CATEGORIES,
+  PAGE_SIZE_OPTIONS,
+} from '../constants.js';
 import AdminIcon from './AdminIcon.jsx';
 
 export default function ContentToolbar({
@@ -81,6 +86,22 @@ export default function ContentToolbar({
             <option value="false">Đang ẩn</option>
           </select>
         </label>
+
+        {type === 'posts' && (
+          <label className="admin-filter-field">
+            <span>Chuyên mục</span>
+            <select
+              onChange={(event) => onFilterChange('category', event.target.value)}
+              value={filters.category}
+            >
+              {NEWS_CATEGORIES.map((category) => (
+                <option key={category.value} value={category.value}>
+                  {category.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
 
         {type === 'jobs' && (
           <>

@@ -4,6 +4,11 @@
 khai cho Home, Courses, Course Detail, Lesson, HSK, Vocabulary, Characters, Practice và
 Blog; cùng điểm vào đăng nhập học viên và dashboard quản trị hiện có.
 
+Mandora Admin có điều hướng theo URL, sidebar responsive và các khu vực Dashboard,
+Learning, Content, Users và System. Blog, Media, Chuyên mục Blog và tài khoản CMS tiếp tục
+dùng API hiện có. Các trang quản trị học tập, Học viên, Tiến độ và Cài đặt chỉ là UI
+foundation được gắn nhãn rõ ràng, chưa gửi yêu cầu lưu dữ liệu.
+
 Các miền học tập chưa có API. Dữ liệu dùng để dựng giao diện nằm trong những module
 `demo*` riêng và được gắn nhãn minh họa trên trang. Blog sử dụng Posts API hiện có nhưng
 chỉ hiển thị bài thuộc các chuyên mục Mandora được cho phép.

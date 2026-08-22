@@ -1,107 +1,194 @@
 import { useCallback, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { createAdminContent, updateAdminContent } from '../../services/adminService.js';
 import AdminLayout from '../../layouts/AdminLayout.jsx';
 import '../../styles/admin.css';
 import '../../styles/content-import.css';
 import './styles/users.css';
-import './styles/communications.css';
 import './styles/categories.css';
-import './styles/languages.css';
-import './styles/chat.css';
-import './styles/site-profile.css';
-import ApplicationsPanel from './components/ApplicationsPanel.jsx';
+import './styles/admin-phase-three.css';
+import AdminFoundationPage from './components/AdminFoundationPage.jsx';
 import AdminLogin from './components/AdminLogin.jsx';
+import AdminRouteState from './components/AdminRouteState.jsx';
 import CategoriesPanel from './components/CategoriesPanel.jsx';
-import ChatPanel from './components/ChatPanel.jsx';
-import CommunicationsPanel from './components/CommunicationsPanel.jsx';
 import ContentDetailModal from './components/ContentDetailModal.jsx';
 import ContentEditor from './components/ContentEditor.jsx';
 import ContentWorkspace from './components/ContentWorkspace.jsx';
-import LanguagesPanel from './components/LanguagesPanel.jsx';
 import MediaLibraryPanel from './components/MediaLibraryPanel.jsx';
 import OverviewPanel from './components/OverviewPanel.jsx';
-import SiteProfilePanel from './components/SiteProfilePanel.jsx';
 import UsersPanel from './components/UsersPanel.jsx';
 import { AdminToast } from './components/AdminFeedback.jsx';
-import { ADMIN_SECTIONS, CONTENT_LABELS } from './constants.js';
+import { CONTENT_LABELS } from './constants.js';
+import {
+  canAccessAdminSection,
+  findAdminSectionByKey,
+  findAdminSectionByPath,
+} from './navigation.js';
 import { useAdminAuth } from './hooks/useAdminAuth.js';
 
-function hasPermission(user, permission) {
-  if (!permission || user?.role === 'admin') return true;
-  const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
-  return permissions.includes('*') || permissions.includes(permission);
-}
+const FOUNDATION_SECTIONS = new Set([
+  'courses',
+  'units',
+  'lessons',
+  'vocabulary',
+  'grammar',
+  'characters',
+  'quizzes',
+  'students',
+  'progress',
+  'settings',
+]);
 
 export default function AdminApp() {
   const auth = useAdminAuth();
-  const [section, setSection] = useState('overview');
+  const location = useLocation();
+  const routerNavigate = useNavigate();
+  const activeRoute = findAdminSectionByPath(location.pathname);
+  const section = activeRoute?.key || '';
   const [editor, setEditor] = useState(null);
   const [detail, setDetail] = useState(null);
   const [toast, setToast] = useState({ message: '', variant: 'success' });
 
-  const notify = useCallback((message, variant = 'success') => setToast({ message, variant }), []);
-  const closeToast = useCallback(() => setToast((current) => ({ ...current, message: '' })), []);
+  const notify = useCallback(
+    (message, variant = 'success') => setToast({ message, variant }),
+    [],
+  );
+  const closeToast = useCallback(
+    () => setToast((current) => ({ ...current, message: '' })),
+    [],
+  );
 
-  const canAccess = useCallback((nextSection) => {
-    const item = ADMIN_SECTIONS.find((entry) => entry.key === nextSection);
-    return !item || hasPermission(auth.user, item.permission);
-  }, [auth.user]);
+  const navigate = useCallback(
+    (nextSection) => {
+      const item = findAdminSectionByKey(nextSection);
+      if (!item) return;
+      if (!canAccessAdminSection(auth.user, item)) {
+        notify('Tài khoản không có quyền truy cập mục này.', 'error');
+        return;
+      }
+      setDetail(null);
+      setEditor(null);
+      routerNavigate(item.path);
+    },
+    [auth.user, notify, routerNavigate],
+  );
 
-  const navigate = useCallback((nextSection) => {
-    if (!canAccess(nextSection)) { notify('Tài khoản không có quyền truy cập mục này.', 'error'); return; }
-    setDetail(null); setEditor(null); setSection(nextSection);
-  }, [canAccess, notify]);
+  const openCreatePost = useCallback(() => {
+    setEditor({ type: 'posts', item: null });
+    setDetail(null);
+  }, []);
+  const openEditPost = useCallback((item) => {
+    setEditor({ type: 'posts', item });
+    setDetail(null);
+  }, []);
 
-  const openCreate = useCallback((type) => { setEditor({ type, item: null }); setDetail(null); }, []);
-  const openEdit = useCallback((item, type = section) => { setEditor({ type, item }); setDetail(null); }, [section]);
-
-  const handleSave = useCallback(async (payload) => {
-    if (!editor) return;
-    if (editor.item) {
-      const id = editor.item._id?.$oid || editor.item._id || editor.item.id;
-      await updateAdminContent(editor.type, id, payload);
-      notify(`Đã cập nhật ${CONTENT_LABELS[editor.type].singular}.`);
-    } else {
-      await createAdminContent(editor.type, payload);
-      notify(`Đã tạo ${CONTENT_LABELS[editor.type].singular}.`);
-    }
-    setEditor(null);
-  }, [editor, notify]);
+  const handleSave = useCallback(
+    async (payload) => {
+      if (!editor) return;
+      if (editor.item) {
+        const id = editor.item._id?.$oid || editor.item._id || editor.item.id;
+        await updateAdminContent(editor.type, id, payload);
+        notify(`Đã cập nhật ${CONTENT_LABELS[editor.type].singular}.`);
+      } else {
+        await createAdminContent(editor.type, payload);
+        notify(`Đã tạo ${CONTENT_LABELS[editor.type].singular}.`);
+      }
+      setEditor(null);
+    },
+    [editor, notify],
+  );
 
   const headerTitle = useMemo(() => {
-    if (editor) return `${editor.item ? 'Chỉnh sửa' : 'Tạo'} ${CONTENT_LABELS[editor.type].singular}`;
-    return ADMIN_SECTIONS.find((item) => item.key === section)?.label || 'Quản trị';
-  }, [editor, section]);
+    if (editor) {
+      return `${editor.item ? 'Chỉnh sửa' : 'Tạo'} ${CONTENT_LABELS[editor.type].singular}`;
+    }
+    return activeRoute?.label || 'Không tìm thấy';
+  }, [activeRoute, editor]);
 
-  if (auth.status !== 'signedIn') return <AdminLogin checking={auth.status === 'checking'} error={auth.error} onSubmit={auth.login} submitting={auth.submitting} />;
+  if (auth.status !== 'signedIn') {
+    return (
+      <AdminLogin
+        checking={auth.status === 'checking'}
+        error={auth.error}
+        onSubmit={auth.login}
+        submitting={auth.submitting}
+      />
+    );
+  }
+
+  const canAccessRoute = activeRoute && canAccessAdminSection(auth.user, activeRoute);
+
+  let page;
+  if (!activeRoute) {
+    page = <AdminRouteState onDashboard={() => navigate('dashboard')} />;
+  } else if (!canAccessRoute) {
+    page = <AdminRouteState accessDenied onDashboard={() => navigate('dashboard')} />;
+  } else if (editor) {
+    page = (
+      <ContentEditor
+        item={editor.item}
+        key={`posts-${editor.item?._id?.$oid || editor.item?._id || 'new'}`}
+        onBack={() => setEditor(null)}
+        onSave={handleSave}
+        onUnauthorized={auth.handleUnauthorized}
+        type="posts"
+      />
+    );
+  } else if (section === 'dashboard') {
+    page = (
+      <OverviewPanel
+        onCreatePost={openCreatePost}
+        onNavigate={navigate}
+        onUnauthorized={auth.handleUnauthorized}
+      />
+    );
+  } else if (FOUNDATION_SECTIONS.has(section)) {
+    page = <AdminFoundationPage section={section} />;
+  } else if (section === 'blog') {
+    page = (
+      <ContentWorkspace
+        key="posts"
+        onCreate={openCreatePost}
+        onEdit={openEditPost}
+        onNotify={notify}
+        onUnauthorized={auth.handleUnauthorized}
+        onView={(item) => setDetail({ item, type: 'posts' })}
+        type="posts"
+      />
+    );
+  } else if (section === 'media') {
+    page = (
+      <MediaLibraryPanel onNotify={notify} onUnauthorized={auth.handleUnauthorized} />
+    );
+  } else if (section === 'categories') {
+    page = <CategoriesPanel onNotify={notify} onUnauthorized={auth.handleUnauthorized} />;
+  } else {
+    page = (
+      <UsersPanel
+        currentUser={auth.user}
+        onNotify={notify}
+        onUnauthorized={auth.handleUnauthorized}
+      />
+    );
+  }
 
   return (
-    <AdminLayout activeSection={editor?.type || section} currentUser={auth.user} headerTitle={headerTitle} onLogout={auth.logout} onNavigate={navigate}>
-      {editor ? (
-        <ContentEditor item={editor.item} key={`${editor.type}-${editor.item?._id?.$oid || editor.item?._id || 'new'}`} onBack={() => setEditor(null)} onSave={handleSave} onUnauthorized={auth.handleUnauthorized} type={editor.type} />
-      ) : section === 'overview' ? (
-        <OverviewPanel onNavigate={navigate} onUnauthorized={auth.handleUnauthorized} />
-      ) : section === 'site-profile' ? (
-        <SiteProfilePanel onNotify={notify} onUnauthorized={auth.handleUnauthorized} />
-      ) : section === 'media' ? (
-        <MediaLibraryPanel onNotify={notify} onUnauthorized={auth.handleUnauthorized} />
-      ) : section === 'posts' || section === 'jobs' ? (
-        <ContentWorkspace key={section} onCreate={() => openCreate(section)} onEdit={(item) => openEdit(item, section)} onNotify={notify} onUnauthorized={auth.handleUnauthorized} onView={(item) => setDetail({ item, type: section })} type={section} />
-      ) : section === 'categories' ? (
-        <CategoriesPanel onNotify={notify} onUnauthorized={auth.handleUnauthorized} />
-      ) : section === 'communications' ? (
-        <CommunicationsPanel onNotify={notify} onUnauthorized={auth.handleUnauthorized} />
-      ) : section === 'chat' ? (
-        <ChatPanel onNotify={notify} onUnauthorized={auth.handleUnauthorized} />
-      ) : section === 'languages' ? (
-        <LanguagesPanel onNotify={notify} onUnauthorized={auth.handleUnauthorized} />
-      ) : section === 'users' ? (
-        <UsersPanel currentUser={auth.user} onNotify={notify} onUnauthorized={auth.handleUnauthorized} />
-      ) : (
-        <ApplicationsPanel onNotify={notify} onUnauthorized={auth.handleUnauthorized} />
+    <AdminLayout
+      activeSection={editor ? 'blog' : section}
+      currentUser={auth.user}
+      headerTitle={headerTitle}
+      onLogout={auth.logout}
+      onNavigate={navigate}
+    >
+      {page}
+      {detail && (
+        <ContentDetailModal
+          item={detail.item}
+          onClose={() => setDetail(null)}
+          onEdit={openEditPost}
+          type="posts"
+        />
       )}
-
-      {detail && <ContentDetailModal item={detail.item} onClose={() => setDetail(null)} onEdit={(item) => openEdit(item, detail.type)} type={detail.type} />}
       <AdminToast message={toast.message} onClose={closeToast} variant={toast.variant} />
     </AdminLayout>
   );

@@ -36,6 +36,37 @@ frontend as follows:
 This update does not supersede the unresolved product, data, authentication, deployment,
 or SEO decisions documented later in this file.
 
+### Admin frontend Phase 3 update
+
+The Mandora Admin frontend now uses URL-addressable destinations under `/admin`, a
+responsive grouped sidebar, a compact desktop mode, and a mobile drawer. The active
+navigation covers Dashboard; UI foundations for Courses, Units, Lessons, Vocabulary,
+Grammar, Characters, Quizzes, Students, Progress, and Settings; and the working Blog,
+Media, Blog Categories, and CMS-account modules.
+
+Phase 3 intentionally keeps these boundaries explicit:
+
+- Blog CRUD continues to use the existing Posts API and its current publish, structured
+  content, import, and image workflows;
+- Media and CMS-account management continue to use their existing APIs and backend
+  permission checks;
+- Dashboard shows the real Posts total and recent Posts, but does not fabricate learning,
+  student, or progress metrics;
+- learning, Students, Progress, and Mandora Settings pages are labelled UI foundations
+  and make no persistence requests;
+- the existing `users` collection remains a legacy `admin`/`employee` CMS-account domain
+  and is not displayed as Mandora student data;
+- legacy Jobs, Applications, visitor Chat, Communications, Languages, and corporate site
+  settings remain in source for preservation/audit purposes but are not exposed by the
+  Mandora Admin navigation.
+
+Phase 4 still needs backend contracts and server-enforced authorization for all learning,
+student, progress, and Mandora-settings domains. It must also resolve the legacy
+`admin`/`employee` role model, unrestricted Posts payloads/public projections, the lack of
+an explicit permission on image upload, and the Cloudinary upload/media implementation
+that currently accepts and lists only the legacy `spg/` namespace. Frontend menu hiding
+in Phase 3 is not a substitute for those backend controls.
+
 ## Executive audit
 
 The repository is a small two-package JavaScript application with a functioning corporate

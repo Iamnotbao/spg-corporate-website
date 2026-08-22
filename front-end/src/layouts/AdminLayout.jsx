@@ -1,16 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import AdminIcon from '../features/admin/components/AdminIcon.jsx';
 import AdminQuickSearch from '../features/admin/components/AdminQuickSearch.jsx';
-import { ADMIN_SECTIONS } from '../features/admin/constants.js';
+import { ADMIN_NAV_GROUPS, canAccessAdminSection } from '../features/admin/navigation.js';
 import ThemeToggle from '../features/shared/ThemeToggle.jsx';
-
-function can(currentUser, permission) {
-  if (!permission || currentUser?.role === 'admin') return true;
-  const permissions = Array.isArray(currentUser?.permissions)
-    ? currentUser.permissions
-    : [];
-  return permissions.includes('*') || permissions.includes(permission);
-}
 
 export default function AdminLayout({
   activeSection,
@@ -21,8 +13,17 @@ export default function AdminLayout({
   onNavigate,
 }) {
   const role = currentUser?.role || 'employee';
-  const sections = ADMIN_SECTIONS.filter((item) => can(currentUser, item.permission));
   const [searchOpen, setSearchOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const navigationGroups = useMemo(
+    () =>
+      ADMIN_NAV_GROUPS.map((group) => ({
+        ...group,
+        items: group.items.filter((item) => canAccessAdminSection(currentUser, item)),
+      })).filter((group) => group.items.length),
+    [currentUser],
+  );
 
   useEffect(() => {
     const shortcut = (event) => {
@@ -30,53 +31,110 @@ export default function AdminLayout({
         event.preventDefault();
         setSearchOpen((open) => !open);
       }
+      if (event.key === 'Escape') setDrawerOpen(false);
     };
     window.addEventListener('keydown', shortcut);
     return () => window.removeEventListener('keydown', shortcut);
   }, []);
 
+  function navigate(section) {
+    setDrawerOpen(false);
+    onNavigate(section);
+  }
+
   return (
-    <div className="admin-shell">
-      <aside className="admin-sidebar">
+    <div
+      className={`admin-shell admin-shell--phase-three${sidebarCollapsed ? ' is-sidebar-collapsed' : ''}${drawerOpen ? ' is-drawer-open' : ''}`}
+    >
+      <button
+        aria-label="Đóng trình đơn quản trị"
+        className="admin-drawer-scrim"
+        onClick={() => setDrawerOpen(false)}
+        type="button"
+      />
+      <aside className="admin-sidebar" id="admin-sidebar">
         <div className="admin-sidebar__top">
           <button
-            aria-label="Về trang tổng quan Mandora"
+            aria-label="Về Dashboard Mandora"
             className="admin-brand"
-            onClick={() => onNavigate('overview')}
+            onClick={() => navigate('dashboard')}
             type="button"
           >
-            Mandora<span>.</span>
+            <span className="admin-brand__mark" aria-hidden="true">
+              文
+            </span>
+            <span className="admin-brand__name">Mandora</span>
           </button>
-          <p className="admin-sidebar__label">Quản trị nội dung</p>
+          <button
+            aria-label={sidebarCollapsed ? 'Mở rộng thanh bên' : 'Thu gọn thanh bên'}
+            className="admin-sidebar__collapse"
+            onClick={() => setSidebarCollapsed((collapsed) => !collapsed)}
+            type="button"
+          >
+            <AdminIcon name="collapse" size={17} />
+          </button>
         </div>
+
         <nav className="admin-nav" aria-label="Điều hướng quản trị">
-          {sections.map((item) => (
-            <button
-              aria-current={activeSection === item.key ? 'page' : undefined}
-              className={`admin-nav__item${activeSection === item.key ? ' is-active' : ''}`}
-              key={item.key}
-              onClick={() => onNavigate(item.key)}
-              type="button"
-            >
-              <AdminIcon name={item.icon} />
-              <span>{item.label}</span>
-            </button>
+          {navigationGroups.map((group) => (
+            <div className="admin-nav__group" key={group.label || 'dashboard'}>
+              {group.label && <p className="admin-nav__group-label">{group.label}</p>}
+              {group.items.map((item) => (
+                <button
+                  aria-current={activeSection === item.key ? 'page' : undefined}
+                  aria-label={sidebarCollapsed ? item.label : undefined}
+                  className={`admin-nav__item${activeSection === item.key ? ' is-active' : ''}`}
+                  key={item.key}
+                  onClick={() => navigate(item.key)}
+                  title={sidebarCollapsed ? item.label : undefined}
+                  type="button"
+                >
+                  <AdminIcon name={item.icon} />
+                  <span>{item.label}</span>
+                </button>
+              ))}
+            </div>
           ))}
         </nav>
-        <button className="admin-sidebar__logout" onClick={onLogout} type="button">
-          <AdminIcon name="logout" />
-          <span>Đăng xuất</span>
-        </button>
+
+        <div className="admin-sidebar__footer">
+          <div className="admin-sidebar__account">
+            <span>
+              {String(currentUser?.displayName || currentUser?.username || 'M')
+                .charAt(0)
+                .toUpperCase()}
+            </span>
+            <div>
+              <strong>
+                {currentUser?.displayName || currentUser?.username || 'Mandora User'}
+              </strong>
+              <small>{role === 'admin' ? 'Administrator' : 'CMS staff'}</small>
+            </div>
+          </div>
+          <button className="admin-sidebar__logout" onClick={onLogout} type="button">
+            <AdminIcon name="logout" />
+            <span>Đăng xuất</span>
+          </button>
+        </div>
       </aside>
 
       <div className="admin-workspace">
         <header className="admin-header">
-          <div>
-            <p className="admin-eyebrow">
-              {role === 'admin' ? 'Admin' : 'Employee'} /{' '}
-              {activeSection === 'overview' ? 'Dashboard' : activeSection}
-            </p>
-            <h1>{headerTitle}</h1>
+          <div className="admin-header__identity">
+            <button
+              aria-controls="admin-sidebar"
+              aria-expanded={drawerOpen}
+              aria-label="Mở trình đơn quản trị"
+              className="admin-mobile-menu"
+              onClick={() => setDrawerOpen(true)}
+              type="button"
+            >
+              <AdminIcon name="menu" />
+            </button>
+            <div>
+              <p className="admin-eyebrow">Mandora CMS</p>
+              <h1>{headerTitle}</h1>
+            </div>
           </div>
           <div className="admin-header__actions">
             <button
@@ -84,12 +142,17 @@ export default function AdminLayout({
               onClick={() => setSearchOpen(true)}
               type="button"
             >
-              <span>⌕</span>
+              <AdminIcon name="search" size={17} />
               <strong>Tìm nhanh</strong>
               <kbd>Ctrl K</kbd>
             </button>
             <ThemeToggle compact />
             <div className="admin-account-chip">
+              <span>
+                {String(currentUser?.displayName || currentUser?.username || 'M')
+                  .charAt(0)
+                  .toUpperCase()}
+              </span>
               <div>
                 <strong>
                   {currentUser?.displayName || currentUser?.username || 'Mandora User'}
@@ -97,9 +160,6 @@ export default function AdminLayout({
                 <small>{role}</small>
               </div>
             </div>
-            <span className="admin-connection-status">
-              <i /> Đã kết nối
-            </span>
             <button
               aria-label="Đăng xuất"
               className="admin-header__logout"
@@ -115,7 +175,7 @@ export default function AdminLayout({
       <AdminQuickSearch
         currentUser={currentUser}
         onClose={() => setSearchOpen(false)}
-        onNavigate={onNavigate}
+        onNavigate={navigate}
         open={searchOpen}
       />
     </div>

@@ -27,16 +27,19 @@ export function useAdminContent(type, onUnauthorized) {
       pageSize: filters.pageSize,
       search: debouncedSearch.trim(),
       published: filters.published,
+      category: type === 'posts' ? filters.category : '',
       jobType: filters.jobType,
       location: filters.location.trim(),
     }),
     [
       debouncedSearch,
+      filters.category,
       filters.jobType,
       filters.location,
       filters.pageSize,
       filters.published,
       page,
+      type,
     ],
   );
 

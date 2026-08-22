@@ -141,6 +141,7 @@ export async function listAdminContent(type, options = {}) {
   if (options.published !== '' && options.published != null) {
     params.set('published', String(options.published));
   }
+  if (type === 'posts' && options.category) params.set('category', options.category);
   if (type === 'jobs' && options.jobType) params.set('type', options.jobType);
   if (type === 'jobs' && options.location) {
     params.set('location', options.location);

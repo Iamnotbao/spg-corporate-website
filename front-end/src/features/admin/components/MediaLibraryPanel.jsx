@@ -67,7 +67,7 @@ export default function MediaLibraryPanel({ onNotify, onUnauthorized }) {
 
   return (
     <section className="admin-panel admin-media-library">
-      <div className="admin-panel__heading"><div><h2>Thư viện ảnh</h2><p>Quản lý ảnh Cloudinary dùng cho bài viết, tuyển dụng, sự kiện và đối tác.</p></div></div>
+      <div className="admin-panel__heading"><div><h2>Thư viện Media</h2><p>Quản lý ảnh Cloudinary đang được hệ thống nội dung hiện có tham chiếu.</p></div></div>
       {error && <AdminAlert>{error}</AdminAlert>}
       <div className="admin-media-toolbar">
         <input placeholder="Tìm theo tên file / thư mục / nơi đang dùng…" value={search} onChange={(event) => setSearch(event.target.value)} />
