@@ -19,12 +19,28 @@ import AdminPageHeader from './AdminPageHeader.jsx';
 import AdminPagination from './AdminPagination.jsx';
 
 const PAGE_SIZE = 10;
+const EDITABLE_FIELDS = [
+  'simplified',
+  'traditional',
+  'pinyin',
+  'meaningVietnamese',
+  'meaningEnglish',
+  'hskLevel',
+  'lessonId',
+  'status',
+  'audioUrl',
+  'exampleChinese',
+  'examplePinyin',
+  'exampleVietnamese',
+];
 const EMPTY_FORM = {
   id: '', simplified: '', traditional: '', pinyin: '', meaningVietnamese: '', meaningEnglish: '', hskLevel: 'HSK 1', lessonId: '', status: 'draft', audioUrl: '', exampleChinese: '', examplePinyin: '', exampleVietnamese: '',
 };
 
 function payloadFrom(form) {
-  return Object.fromEntries(Object.entries(form).filter(([key]) => key !== 'id' && key !== '__row').map(([key, value]) => [key, String(value || '').trim()]));
+  return Object.fromEntries(
+    EDITABLE_FIELDS.map((key) => [key, String(form?.[key] || '').trim()]),
+  );
 }
 
 function importedPayload(row) {
@@ -82,7 +98,13 @@ export default function AdminVocabularyPanel({ onNotify, onUnauthorized }) {
 
   function changeFilter(kind, value) { if (kind === 'search') setSearch(value); if (kind === 'level') setLevel(value); setPage(1); }
   function beginCreate() { setForm({ ...EMPTY_FORM, lessonId: lessons[0]?.id || '' }); }
-  function beginEdit(item) { setForm({ ...EMPTY_FORM, ...Object.fromEntries(Object.entries(item).map(([key, value]) => [key, value == null ? '' : String(value)])), id: item.id }); }
+  function beginEdit(item) {
+    setForm({
+      ...EMPTY_FORM,
+      ...Object.fromEntries(EDITABLE_FIELDS.map((key) => [key, item?.[key] == null ? '' : String(item[key])])),
+      id: item.id,
+    });
+  }
 
   async function submit(event) {
     event.preventDefault(); setSaving(true); setError('');
