@@ -9,6 +9,7 @@ import './styles/categories.css';
 import './styles/admin-phase-three.css';
 import './styles/learning.css';
 import './styles/chat.css';
+import './styles/communications.css';
 import AdminLogin from './components/AdminLogin.jsx';
 import AdminLearningPanel from './components/AdminLearningPanel.jsx';
 import AdminQuizPanel from './components/AdminQuizPanel.jsx';
@@ -17,6 +18,7 @@ import AdminRouteState from './components/AdminRouteState.jsx';
 import AdminVocabularyPanel from './components/AdminVocabularyPanel.jsx';
 import CategoriesPanel from './components/CategoriesPanel.jsx';
 import ChatPanel from './components/ChatPanel.jsx';
+import CommunicationsPanel from './components/CommunicationsPanel.jsx';
 import ContentDetailModal from './components/ContentDetailModal.jsx';
 import ContentEditor from './components/ContentEditor.jsx';
 import ContentWorkspace from './components/ContentWorkspace.jsx';
@@ -169,6 +171,10 @@ export default function AdminApp() {
   } else if (section === 'media') {
     page = (
       <MediaLibraryPanel onNotify={notify} onUnauthorized={auth.handleUnauthorized} />
+    );
+  } else if (section === 'communications') {
+    page = (
+      <CommunicationsPanel onNotify={notify} onUnauthorized={auth.handleUnauthorized} />
     );
   } else if (section === 'chat') {
     page = <ChatPanel onNotify={notify} onUnauthorized={auth.handleUnauthorized} />;
