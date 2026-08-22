@@ -8,13 +8,14 @@ import './styles/users.css';
 import './styles/categories.css';
 import './styles/admin-phase-three.css';
 import './styles/learning.css';
-import AdminFoundationPage from './components/AdminFoundationPage.jsx';
 import AdminLogin from './components/AdminLogin.jsx';
 import AdminLearningPanel from './components/AdminLearningPanel.jsx';
 import AdminQuizPanel from './components/AdminQuizPanel.jsx';
 import AdminProgressPanel from './components/AdminProgressPanel.jsx';
 import AdminRouteState from './components/AdminRouteState.jsx';
+import AdminVocabularyPanel from './components/AdminVocabularyPanel.jsx';
 import CategoriesPanel from './components/CategoriesPanel.jsx';
+import ChatPanel from './components/ChatPanel.jsx';
 import ContentDetailModal from './components/ContentDetailModal.jsx';
 import ContentEditor from './components/ContentEditor.jsx';
 import ContentWorkspace from './components/ContentWorkspace.jsx';
@@ -29,14 +30,6 @@ import {
   findAdminSectionByPath,
 } from './navigation.js';
 import { useAdminAuth } from './hooks/useAdminAuth.js';
-
-const FOUNDATION_SECTIONS = new Set([
-  'vocabulary',
-  'grammar',
-  'characters',
-  'students',
-  'settings',
-]);
 
 export default function AdminApp() {
   const auth = useAdminAuth();
@@ -149,12 +142,24 @@ export default function AdminApp() {
         section={section}
       />
     );
+  } else if (section === 'vocabulary') {
+    page = (
+      <AdminVocabularyPanel onNotify={notify} onUnauthorized={auth.handleUnauthorized} />
+    );
   } else if (section === 'quizzes') {
     page = <AdminQuizPanel onNotify={notify} onUnauthorized={auth.handleUnauthorized} />;
   } else if (section === 'progress') {
     page = <AdminProgressPanel onUnauthorized={auth.handleUnauthorized} />;
-  } else if (FOUNDATION_SECTIONS.has(section)) {
-    page = <AdminFoundationPage section={section} />;
+  } else if (section === 'students') {
+    page = (
+      <UsersPanel
+        currentUser={auth.user}
+        defaultRole="student"
+        onNotify={notify}
+        onUnauthorized={auth.handleUnauthorized}
+        studentOnly
+      />
+    );
   } else if (section === 'blog') {
     page = (
       <ContentWorkspace
@@ -171,6 +176,8 @@ export default function AdminApp() {
     page = (
       <MediaLibraryPanel onNotify={notify} onUnauthorized={auth.handleUnauthorized} />
     );
+  } else if (section === 'chat') {
+    page = <ChatPanel onNotify={notify} onUnauthorized={auth.handleUnauthorized} />;
   } else if (section === 'categories') {
     page = <CategoriesPanel onNotify={notify} onUnauthorized={auth.handleUnauthorized} />;
   } else {
