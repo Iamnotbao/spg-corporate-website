@@ -6,6 +6,8 @@ import {
   LoadingState,
 } from '../../../components/ui/ContentState.jsx';
 import PageHeader from '../../../components/ui/PageHeader.jsx';
+import PublicPagination from '../../../components/ui/PublicPagination.jsx';
+import PublicToast from '../../../components/ui/PublicToast.jsx';
 import { usePageTitle } from '../../../hooks/usePageTitle.js';
 import { useStudentAuth } from '../../auth/StudentAuthContext.jsx';
 import VocabularyCard from '../components/VocabularyCard.jsx';
@@ -17,6 +19,8 @@ import {
 } from '../services/vocabularyService.js';
 import '../styles/learning.css';
 
+const PAGE_SIZE = 12;
+
 export default function VocabularyPage() {
   usePageTitle('Từ vựng');
   const auth = useStudentAuth();
@@ -24,9 +28,11 @@ export default function VocabularyPage() {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [level, setLevel] = useState('Tất cả');
+  const [page, setPage] = useState(1);
   const [state, setState] = useState({ status: 'loading', data: [], error: '' });
   const [savedIds, setSavedIds] = useState(new Set());
   const [busyId, setBusyId] = useState('');
+  const [notice, setNotice] = useState({ message: '', variant: 'success' });
   const load = useCallback(() => {
     setState((current) => ({ ...current, status: 'loading' }));
     listPublicVocabulary()
@@ -45,7 +51,7 @@ export default function VocabularyPage() {
   }, [auth.status]);
 
   const levels = useMemo(
-    () => ['Tất cả', ...new Set(state.data.map((item) => item.hskLevel))],
+    () => ['Tất cả', ...new Set(state.data.map((item) => item.hskLevel).filter(Boolean))],
     [state.data],
   );
   const items = useMemo(() => {
@@ -59,6 +65,20 @@ export default function VocabularyPage() {
             .includes(normalized)),
     );
   }, [level, query, state.data]);
+  const pagedItems = useMemo(
+    () => items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [items, page],
+  );
+
+  function updateQuery(value) {
+    setQuery(value);
+    setPage(1);
+  }
+
+  function updateLevel(value) {
+    setLevel(value);
+    setPage(1);
+  }
 
   async function toggleSave(item) {
     if (auth.status !== 'signed-in') {
@@ -67,7 +87,8 @@ export default function VocabularyPage() {
     }
     setBusyId(item.id);
     try {
-      if (savedIds.has(item.id)) await unsaveVocabulary(item.id);
+      const wasSaved = savedIds.has(item.id);
+      if (wasSaved) await unsaveVocabulary(item.id);
       else await saveVocabulary(item.id);
       setSavedIds((current) => {
         const next = new Set(current);
@@ -75,6 +96,12 @@ export default function VocabularyPage() {
         else next.add(item.id);
         return next;
       });
+      setNotice({
+        message: wasSaved ? `Đã bỏ lưu “${item.simplified}”.` : `Đã lưu “${item.simplified}” vào từ vựng của bạn.`,
+        variant: 'success',
+      });
+    } catch (caught) {
+      setNotice({ message: caught.message || 'Không thể cập nhật từ đã lưu.', variant: 'error' });
     } finally {
       setBusyId('');
     }
@@ -94,7 +121,7 @@ export default function VocabularyPage() {
               <span aria-hidden="true">⌕</span>
               <span className="visually-hidden">Tìm từ vựng</span>
               <input
-                onChange={(event) => setQuery(event.target.value)}
+                onChange={(event) => updateQuery(event.target.value)}
                 placeholder="Tìm chữ, Pinyin hoặc nghĩa…"
                 type="search"
                 value={query}
@@ -106,7 +133,7 @@ export default function VocabularyPage() {
                   aria-pressed={level === item}
                   className={level === item ? 'is-active' : undefined}
                   key={item}
-                  onClick={() => setLevel(item)}
+                  onClick={() => updateLevel(item)}
                   type="button"
                 >
                   {item}
@@ -114,23 +141,31 @@ export default function VocabularyPage() {
               ))}
             </div>
           </div>
-          {state.status === 'loading' && <LoadingState label="Đang tải từ vựng" />}
+          {state.status === 'loading' && <LoadingState count={6} label="Đang tải từ vựng" />}
           {state.status === 'error' && (
             <ErrorState message={state.error} onRetry={load} />
           )}
           {state.status === 'ready' &&
             (items.length ? (
-              <div className="vocabulary-grid">
-                {items.map((item) => (
-                  <VocabularyCard
-                    busy={busyId === item.id}
-                    item={item}
-                    key={item.id}
-                    onToggleSave={toggleSave}
-                    saved={savedIds.has(item.id)}
-                  />
-                ))}
-              </div>
+              <>
+                <div className="vocabulary-grid">
+                  {pagedItems.map((item) => (
+                    <VocabularyCard
+                      busy={busyId === item.id}
+                      item={item}
+                      key={item.id}
+                      onToggleSave={toggleSave}
+                      saved={savedIds.has(item.id)}
+                    />
+                  ))}
+                </div>
+                <PublicPagination
+                  onPageChange={setPage}
+                  page={page}
+                  pageSize={PAGE_SIZE}
+                  total={items.length}
+                />
+              </>
             ) : (
               <EmptyState
                 description="Hãy thử từ khóa hoặc cấp độ khác."
@@ -140,6 +175,11 @@ export default function VocabularyPage() {
             ))}
         </div>
       </section>
+      <PublicToast
+        message={notice.message}
+        onClose={() => setNotice((current) => ({ ...current, message: '' }))}
+        variant={notice.variant}
+      />
     </>
   );
 }
