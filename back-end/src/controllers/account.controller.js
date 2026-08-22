@@ -10,6 +10,7 @@ import {
   LEGACY_CMS_ROLE,
   MANDORA_ROLES,
 } from "../utils/roles.js";
+import { countUserLearningHistory } from "../features/progress/progress.repository.js";
 
 const FILTERABLE_ROLES = AUTHENTICATED_ROLES;
 const ASSIGNABLE_ROLES = new Set(MANDORA_ROLES);
@@ -257,8 +258,15 @@ export async function deleteUser(req, res) {
   }
 
   const collection = await getCollection("users");
+  const existing = await collection.findOne({ _id: id });
+  if (!existing) return res.status(404).json({ error: "User not found" });
+  if (await countUserLearningHistory(id)) {
+    return res.status(409).json({
+      error:
+        "User with learning history cannot be deleted; disable the account instead",
+    });
+  }
   const result = await collection.deleteOne({ _id: id });
-  if (!result.deletedCount)
-    return res.status(404).json({ error: "User not found" });
+  if (!result.deletedCount) return res.status(404).json({ error: "User not found" });
   return res.json({ ok: true });
 }

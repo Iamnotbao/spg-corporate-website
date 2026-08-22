@@ -120,6 +120,27 @@ export function deleteAdminLearning(type, id) {
   });
 }
 
+export function getAdminLearningSummary(options = {}) {
+  return apiRequest('/admin/reports/learning-summary', {
+    auth: true,
+    signal: options.signal,
+  });
+}
+
+export function listAdminProgress(options = {}) {
+  const params = new URLSearchParams({
+    page: String(options.page || 1),
+    pageSize: String(options.pageSize || 10),
+  });
+  if (options.search) params.set('search', options.search);
+  if (options.courseId) params.set('courseId', options.courseId);
+  if (options.status) params.set('status', options.status);
+  return apiRequest(`/admin/reports/progress?${params.toString()}`, {
+    auth: true,
+    signal: options.signal,
+  });
+}
+
 export async function getAdminBanner(options = {}) {
   return apiRequest('/admin/communications/banner', {
     method: 'GET',

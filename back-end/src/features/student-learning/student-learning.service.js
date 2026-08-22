@@ -27,6 +27,12 @@ function validateEnrollmentInput(input = {}) {
   return courseId;
 }
 
+function validateCourseId(value) {
+  const courseId = String(value || "").trim();
+  if (!courseId) throw new StudentLearningError(400, "courseId is required");
+  return courseId;
+}
+
 function serializeCourse(course) {
   return {
     id: String(course._id),
@@ -214,6 +220,25 @@ export function createStudentLearningService(
           progress,
         ),
       );
+    },
+
+    async archiveEnrollment(user, courseIdentifier) {
+      const userId = requireStudent(user);
+      const courseId = validateCourseId(courseIdentifier);
+      if (!repository.toObjectId(courseId)) {
+        throw new StudentLearningError(400, "courseId must be a valid id");
+      }
+      const existing = await repository.findEnrollmentRecord(userId, courseId);
+      if (!existing) throw new StudentLearningError(404, "Enrollment not found");
+      if (existing.status === "archived") {
+        return { enrollment: serializeEnrollment(existing), archived: true };
+      }
+      const enrollment = await repository.archiveEnrollment(
+        userId,
+        courseId,
+        new Date(),
+      );
+      return { enrollment: serializeEnrollment(enrollment), archived: true };
     },
 
     async completeLesson(user, lessonIdentifier) {

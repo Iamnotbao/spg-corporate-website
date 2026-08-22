@@ -172,6 +172,49 @@
   color: var(--admin-danger);
 }
 
+.admin-progress-page .admin-stat-grid {
+  margin-bottom: 22px;
+}
+
+.admin-progress-report {
+  padding: 0;
+  overflow: hidden;
+}
+
+.admin-progress-toolbar {
+  padding: 18px;
+  border-bottom: 1px solid var(--admin-line);
+}
+
+.admin-progress-toolbar select {
+  min-height: 42px;
+  padding: 0 34px 0 12px;
+  border: 1px solid var(--admin-line);
+  border-radius: 9px;
+  background: var(--admin-surface-soft);
+  color: var(--admin-text);
+}
+
+.admin-progress-table td strong,
+.admin-progress-table td small {
+  display: block;
+}
+
+.admin-progress-table td small {
+  margin-top: 4px;
+  color: var(--admin-muted);
+}
+
+.admin-progress-table progress {
+  width: 110px;
+  accent-color: var(--admin-accent);
+}
+
+.admin-learning-badge.is-archived {
+  background: var(--admin-bg);
+  color: var(--admin-muted);
+}
+
 @media (max-width: 640px) {
   .admin-learning-field--full {
     grid-column: auto;

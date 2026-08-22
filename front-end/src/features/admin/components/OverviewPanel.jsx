@@ -6,7 +6,7 @@ import AdminPageHeader from './AdminPageHeader.jsx';
 import AdminStatCard from './AdminStatCard.jsx';
 
 export default function OverviewPanel({ onCreatePost, onNavigate, onUnauthorized }) {
-  const { postCount, recentPosts, loading, error, refresh } =
+  const { postCount, recentPosts, learning, loading, error, refresh } =
     useAdminOverview(onUnauthorized);
 
   return (
@@ -38,25 +38,39 @@ export default function OverviewPanel({ onCreatePost, onNavigate, onUnauthorized
           value={loading ? null : postCount}
         />
         <AdminStatCard
-          helper="Chờ Course API ở Phase 4"
+          helper="Tất cả trạng thái nội dung"
           icon="courses"
           label="Khóa học"
           onClick={() => onNavigate('courses')}
-          value={null}
+          value={loading ? null : learning?.courses}
         />
         <AdminStatCard
-          helper="Chưa có Student API"
+          helper="Tài khoản vai trò student"
           icon="users"
           label="Học viên"
           onClick={() => onNavigate('students')}
-          value={null}
+          value={loading ? null : learning?.students}
         />
         <AdminStatCard
-          helper="Chưa có Progress API"
+          helper="Enrollment đang hoạt động"
           icon="progress"
-          label="Tiến độ"
+          label="Đang học"
           onClick={() => onNavigate('progress')}
-          value={null}
+          value={loading ? null : learning?.activeEnrollments}
+        />
+        <AdminStatCard
+          helper="Bản ghi LessonProgress hoàn thành"
+          icon="progress"
+          label="Bài hoàn thành"
+          onClick={() => onNavigate('progress')}
+          value={loading ? null : learning?.completedLessons}
+        />
+        <AdminStatCard
+          helper="Tổng lượt nộp bài"
+          icon="quizzes"
+          label="Lượt Quiz"
+          onClick={() => onNavigate('quizzes')}
+          value={loading ? null : learning?.quizAttempts}
         />
       </section>
 
@@ -133,7 +147,7 @@ export default function OverviewPanel({ onCreatePost, onNavigate, onUnauthorized
               <AdminIcon name="courses" />
               <span>
                 <strong>Khóa học</strong>
-                <small>UI foundation</small>
+                <small>Quản lý nội dung học</small>
               </span>
             </button>
           </div>

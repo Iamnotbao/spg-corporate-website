@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
-import { listAdminContent } from '../../../services/adminService.js';
+import {
+  getAdminLearningSummary,
+  listAdminContent,
+} from '../../../services/adminService.js';
 import { BLOG_CATEGORIES } from '../../blog/constants.js';
 import { getErrorMessage } from '../utils.js';
 
-const EMPTY_DATA = { postCount: 0, recentPosts: [] };
+const EMPTY_DATA = { postCount: 0, recentPosts: [], learning: null };
 
 export function useAdminOverview(onUnauthorized) {
   const [data, setData] = useState(EMPTY_DATA);
@@ -16,17 +19,20 @@ export function useAdminOverview(onUnauthorized) {
     setLoading(true);
     setError('');
 
-    Promise.all(
-      BLOG_CATEGORIES.map((category) =>
-        listAdminContent('posts', {
-          category: category.slug,
-          page: 1,
-          pageSize: 5,
-          signal: controller.signal,
-        }),
+    Promise.all([
+      Promise.all(
+        BLOG_CATEGORIES.map((category) =>
+          listAdminContent('posts', {
+            category: category.slug,
+            page: 1,
+            pageSize: 5,
+            signal: controller.signal,
+          }),
+        ),
       ),
-    )
-      .then((responses) => {
+      getAdminLearningSummary({ signal: controller.signal }),
+    ])
+      .then(([responses, learningResponse]) => {
         const recentPosts = responses
           .flatMap((response) => (Array.isArray(response?.data) ? response.data : []))
           .filter(
@@ -50,6 +56,7 @@ export function useAdminOverview(onUnauthorized) {
             0,
           ),
           recentPosts,
+          learning: learningResponse.data,
         });
       })
       .catch((requestError) => {

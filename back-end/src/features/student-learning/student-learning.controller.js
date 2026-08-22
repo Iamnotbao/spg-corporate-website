@@ -5,6 +5,15 @@ export async function enroll(req, res) {
   return res.status(result.created ? 201 : 200).json({ data: result });
 }
 
+export async function archiveEnrollment(req, res) {
+  return res.json({
+    data: await studentLearningService.archiveEnrollment(
+      req.user,
+      req.params.courseId,
+    ),
+  });
+}
+
 export async function listMyCourses(req, res) {
   return res.json({
     data: await studentLearningService.listMyCourses(req.user),

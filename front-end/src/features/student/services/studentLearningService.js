@@ -12,6 +12,17 @@ export function listMyCourses() {
   return apiRequest('/student/courses', { auth: 'student' });
 }
 
+export function getStudentProgress() {
+  return apiRequest('/student/progress', { auth: 'student' });
+}
+
+export function archiveEnrollment(courseId) {
+  return apiRequest(`/student/enrollments/${encodeURIComponent(courseId)}`, {
+    auth: 'student',
+    method: 'DELETE',
+  });
+}
+
 export function getStudentCourseState(identifier) {
   return apiRequest(`/student/courses/${encodeURIComponent(identifier)}`, {
     auth: 'student',

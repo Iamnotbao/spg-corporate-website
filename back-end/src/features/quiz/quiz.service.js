@@ -337,10 +337,28 @@ export function createQuizService(
       if (!current) throw new QuizServiceError(404, "Quiz not found");
       const validated = validateQuiz(input, { partial: true });
       if (validated.lessonId) {
+        if (
+          String(validated.lessonId) !== String(current.lessonId) &&
+          (await repository.countAttempts(current._id))
+        ) {
+          throw new QuizServiceError(
+            409,
+            "Quiz with attempts cannot be moved to another lesson",
+          );
+        }
         const lesson = await requireQuizLesson(validated.lessonId);
         validated.lessonId = lesson._id;
       }
       const nextStatus = validated.status || current.status;
+      if (current.status === "published" && validated.status === "draft") {
+        const lesson = await repository.findLesson(current.lessonId);
+        if (lesson?.status === "published") {
+          throw new QuizServiceError(
+            409,
+            "Unpublish the quiz lesson before unpublishing its quiz",
+          );
+        }
+      }
       if (nextStatus === "published") {
         validatePublishable(
           await repository.listQuestions({ quizId: current._id }),
@@ -362,6 +380,11 @@ export function createQuizService(
 
     async deleteQuiz(id) {
       requireId(repository, id);
+      const quiz = await repository.findQuiz(id);
+      if (!quiz) throw new QuizServiceError(404, "Quiz not found");
+      if (quiz.status === "published") {
+        throw new QuizServiceError(409, "Unpublish the quiz before deleting it");
+      }
       if (await repository.countAttempts(id)) {
         throw new QuizServiceError(409, "Quiz with attempts cannot be deleted");
       }
@@ -372,8 +395,7 @@ export function createQuizService(
         );
       }
       const result = await repository.deleteQuiz(id);
-      if (!result.deletedCount)
-        throw new QuizServiceError(404, "Quiz not found");
+      if (!result.deletedCount) throw new QuizServiceError(404, "Quiz not found");
     },
 
     async createQuestion(quizId, input) {

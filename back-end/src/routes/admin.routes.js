@@ -20,6 +20,7 @@ import { importContent } from "../controllers/contentImport.controller.js";
 import * as learningController from "../features/learning/learning.controller.js";
 import * as vocabularyController from "../features/vocabulary/vocabulary.controller.js";
 import * as quizController from "../features/quiz/quiz.controller.js";
+import * as progressController from "../features/progress/progress.controller.js";
 
 const router = Router();
 const loginLimiter = rateLimit({
@@ -175,6 +176,17 @@ router.delete(
   "/quiz-questions/:id",
   requireAdmin,
   asyncHandler(quizController.deleteQuestion),
+);
+
+router.get(
+  "/reports/learning-summary",
+  requireAdmin,
+  asyncHandler(progressController.getAdminSummary),
+);
+router.get(
+  "/reports/progress",
+  requireAdmin,
+  asyncHandler(progressController.listAdminProgress),
 );
 
 router.get(

@@ -1,4 +1,5 @@
 import { learningRepository } from "./learning.repository.js";
+import { learningIntegrityRepository } from "./learning-integrity.repository.js";
 import {
   LearningValidationError,
   validateCourse,
@@ -78,7 +79,10 @@ function requireId(repository, value, field = "id") {
   return id;
 }
 
-export function createLearningService(repository = learningRepository) {
+export function createLearningService(
+  repository = learningRepository,
+  integrity = learningIntegrityRepository,
+) {
   async function requireCourse(id) {
     requireId(repository, id, "courseId");
     const course = await repository.findCourse(id);
@@ -91,6 +95,35 @@ export function createLearningService(repository = learningRepository) {
     const unit = await repository.findUnit(id);
     if (!unit) throw new LearningServiceError(404, "Unit not found");
     return unit;
+  }
+
+  async function requirePublishableCourse(courseId) {
+    const state = await integrity.getCoursePublishState(courseId);
+    if (!state.publishedLessons) {
+      throw new LearningServiceError(
+        409,
+        "A published course requires at least one published lesson",
+      );
+    }
+    if (state.incompleteQuizLessons) {
+      throw new LearningServiceError(
+        409,
+        "Every published quiz lesson requires a published quiz",
+      );
+    }
+  }
+
+  async function requirePublishableLesson(lesson) {
+    if (lesson.type === "quiz" && !(await integrity.hasPublishedQuiz(lesson._id))) {
+      throw new LearningServiceError(
+        409,
+        "A published quiz lesson requires a published quiz",
+      );
+    }
+  }
+
+  function hasDependencies(dependencies) {
+    return Object.values(dependencies).some(Boolean);
   }
 
   return {
@@ -162,8 +195,15 @@ export function createLearningService(repository = learningRepository) {
     },
 
     async createCourse(input) {
+      const validated = validateCourse(input);
+      if (validated.status === "published") {
+        throw new LearningServiceError(
+          409,
+          "Create the course as draft and publish it after adding lessons",
+        );
+      }
       const document = {
-        ...validateCourse(input),
+        ...validated,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -176,10 +216,15 @@ export function createLearningService(repository = learningRepository) {
 
     async updateCourse(id, input) {
       requireId(repository, id);
+      const current = await repository.findCourse(id);
+      if (!current) throw new LearningServiceError(404, "Course not found");
       const update = {
         ...validateCourse(input, { partial: true }),
         updatedAt: new Date(),
       };
+      if (update.status === "published" && current.status !== "published") {
+        await requirePublishableCourse(current._id);
+      }
       try {
         const course = await repository.updateCourse(id, update);
         if (!course) throw new LearningServiceError(404, "Course not found");
@@ -191,10 +236,21 @@ export function createLearningService(repository = learningRepository) {
 
     async deleteCourse(id) {
       const courseId = requireId(repository, id);
+      const course = await repository.findCourse(id);
+      if (!course) throw new LearningServiceError(404, "Course not found");
+      if (course.status === "published") {
+        throw new LearningServiceError(409, "Unpublish the course before deleting it");
+      }
       if (await repository.countUnits({ courseId })) {
         throw new LearningServiceError(
           409,
           "Delete the course units before deleting the course",
+        );
+      }
+      if (await integrity.countCourseHistory(courseId)) {
+        throw new LearningServiceError(
+          409,
+          "Course with enrollment history cannot be deleted; keep it as draft",
         );
       }
       const result = await repository.deleteCourse(id);
@@ -229,10 +285,21 @@ export function createLearningService(repository = learningRepository) {
     },
 
     async updateUnit(id, input) {
-      requireId(repository, id);
+      const unitId = requireId(repository, id);
+      const current = await repository.findUnit(id);
+      if (!current) throw new LearningServiceError(404, "Unit not found");
       const validated = validateUnit(input, { partial: true });
       if (validated.courseId) {
         await requireCourse(validated.courseId);
+        if (
+          String(validated.courseId) !== String(current.courseId) &&
+          (await repository.countLessons({ unitId }))
+        ) {
+          throw new LearningServiceError(
+            409,
+            "Unit with lessons cannot be moved to another course",
+          );
+        }
         validated.courseId = repository.toObjectId(validated.courseId);
       }
       const unit = await repository.updateUnit(id, {
@@ -273,6 +340,12 @@ export function createLearningService(repository = learningRepository) {
     async createLesson(input) {
       const validated = validateLesson(input);
       await requireUnit(validated.unitId);
+      if (validated.status === "published" && validated.type === "quiz") {
+        throw new LearningServiceError(
+          409,
+          "Create the quiz lesson as draft and publish it after its quiz",
+        );
+      }
       const document = {
         ...validated,
         unitId: repository.toObjectId(validated.unitId),
@@ -288,10 +361,39 @@ export function createLearningService(repository = learningRepository) {
 
     async updateLesson(id, input) {
       requireId(repository, id);
+      const current = await repository.findLesson(id);
+      if (!current) throw new LearningServiceError(404, "Lesson not found");
       const validated = validateLesson(input, { partial: true });
+      const dependencies =
+        validated.unitId || validated.type
+          ? await integrity.getLessonDependencies(current._id)
+          : { progress: 0, vocabulary: 0, quizzes: 0 };
       if (validated.unitId) {
         await requireUnit(validated.unitId);
+        if (
+          String(validated.unitId) !== String(current.unitId) &&
+          hasDependencies(dependencies)
+        ) {
+          throw new LearningServiceError(
+            409,
+            "Lesson with content or learning history cannot be moved",
+          );
+        }
         validated.unitId = repository.toObjectId(validated.unitId);
+      }
+      if (
+        validated.type &&
+        validated.type !== current.type &&
+        dependencies.quizzes
+      ) {
+        throw new LearningServiceError(
+          409,
+          "Lesson type cannot change while a quiz is attached",
+        );
+      }
+      const nextLesson = { ...current, ...validated };
+      if (nextLesson.status === "published") {
+        await requirePublishableLesson(nextLesson);
       }
       try {
         const lesson = await repository.updateLesson(id, {
@@ -306,7 +408,19 @@ export function createLearningService(repository = learningRepository) {
     },
 
     async deleteLesson(id) {
-      requireId(repository, id);
+      const lessonId = requireId(repository, id);
+      const lesson = await repository.findLesson(id);
+      if (!lesson) throw new LearningServiceError(404, "Lesson not found");
+      if (lesson.status === "published") {
+        throw new LearningServiceError(409, "Unpublish the lesson before deleting it");
+      }
+      const dependencies = await integrity.getLessonDependencies(lessonId);
+      if (hasDependencies(dependencies)) {
+        throw new LearningServiceError(
+          409,
+          "Lesson with content or learning history cannot be deleted; keep it as draft",
+        );
+      }
       const result = await repository.deleteLesson(id);
       if (!result.deletedCount)
         throw new LearningServiceError(404, "Lesson not found");

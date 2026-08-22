@@ -45,6 +45,9 @@ export default function SiteHeader() {
               <NavLink onClick={closeMenu} to="/my-courses">
                 Khóa học của tôi
               </NavLink>
+              <NavLink onClick={closeMenu} to="/progress">
+                Tiến độ
+              </NavLink>
               <button
                 className="public-nav__login"
                 onClick={() => {

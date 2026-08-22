@@ -17,6 +17,7 @@ export async function ensureStudentLearningIndexes() {
         Promise.all([
           collection.createIndex({ userId: 1, courseId: 1 }, { unique: true }),
           collection.createIndex({ userId: 1, status: 1, enrolledAt: -1 }),
+          collection.createIndex({ courseId: 1, status: 1, updatedAt: -1 }),
         ]),
       ),
       getCollection(STUDENT_COLLECTIONS.lessonProgress).then((collection) =>
@@ -94,6 +95,12 @@ export const studentLearningRepository = {
       status: "active",
     });
   },
+  async findEnrollmentRecord(userId, courseId) {
+    return (await collection(STUDENT_COLLECTIONS.enrollments)).findOne({
+      userId: toObjectId(userId),
+      courseId: toObjectId(courseId),
+    });
+  },
   async enroll(userId, courseId, now) {
     const filter = {
       userId: toObjectId(userId),
@@ -106,11 +113,10 @@ export const studentLearningRepository = {
       {
         $setOnInsert: {
           ...filter,
-          status: "active",
-          enrolledAt: now,
           createdAt: now,
         },
-        $set: { updatedAt: now },
+        $set: { status: "active", enrolledAt: now, updatedAt: now },
+        $unset: { archivedAt: "" },
       },
       { upsert: true },
     );
@@ -126,6 +132,21 @@ export const studentLearningRepository = {
       .find({ userId: toObjectId(userId), status: "active" })
       .sort({ enrolledAt: -1 })
       .toArray();
+  },
+  async archiveEnrollment(userId, courseId, now) {
+    const filter = {
+      userId: toObjectId(userId),
+      courseId: toObjectId(courseId),
+    };
+    return (
+      await collection(STUDENT_COLLECTIONS.enrollments)
+    ).findOneAndUpdate(
+      filter,
+      {
+        $set: { status: "archived", archivedAt: now, updatedAt: now },
+      },
+      { returnDocument: "after" },
+    );
   },
   async listCompletedProgress(userId, lessonIds) {
     if (!lessonIds.length) return [];

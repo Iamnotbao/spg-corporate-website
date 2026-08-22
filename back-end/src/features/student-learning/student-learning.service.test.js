@@ -60,6 +60,9 @@ function repository(overrides = {}) {
     enrolledAt: new Date(),
   };
   return {
+    toObjectId(value) {
+      return ObjectId.isValid(value) ? new ObjectId(value) : null;
+    },
     async findPublishedCourse(identifier) {
       return String(identifier) === String(ids.draftCourse) ? null : course;
     },
@@ -253,4 +256,62 @@ test("repeated passing completions keep one logical LessonProgress record", asyn
   await service.completeQuizLesson(user, "lesson-2");
   await service.completeQuizLesson(user, "lesson-2");
   assert.equal(progressKeys.size, 1);
+});
+
+test("unenroll archives the Enrollment without deleting learning history", async () => {
+  let archivedOwner;
+  let archivedCourse;
+  const existing = {
+    _id: ids.enrollment,
+    userId: ids.studentA,
+    courseId: ids.course,
+    status: "active",
+  };
+  const service = createStudentLearningService(
+    repository({
+      async findEnrollmentRecord(userId, courseId) {
+        return String(userId) === String(ids.studentA) &&
+          String(courseId) === String(ids.course)
+          ? existing
+          : null;
+      },
+      async archiveEnrollment(userId, courseId) {
+        archivedOwner = userId;
+        archivedCourse = courseId;
+        return { ...existing, status: "archived", archivedAt: new Date() };
+      },
+    }),
+  );
+  const result = await service.archiveEnrollment(
+    { _id: ids.studentA, role: "student" },
+    String(ids.course),
+  );
+  assert.equal(result.enrollment.status, "archived");
+  assert.equal(String(archivedOwner), String(ids.studentA));
+  assert.equal(String(archivedCourse), String(ids.course));
+});
+
+test("repeated unenroll is idempotent and does not write again", async () => {
+  let writes = 0;
+  const service = createStudentLearningService(
+    repository({
+      async findEnrollmentRecord() {
+        return {
+          _id: ids.enrollment,
+          courseId: ids.course,
+          status: "archived",
+          archivedAt: new Date(),
+        };
+      },
+      async archiveEnrollment() {
+        writes += 1;
+      },
+    }),
+  );
+  const result = await service.archiveEnrollment(
+    { _id: ids.studentA, role: "student" },
+    String(ids.course),
+  );
+  assert.equal(result.archived, true);
+  assert.equal(writes, 0);
 });

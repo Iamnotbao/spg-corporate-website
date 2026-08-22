@@ -118,9 +118,20 @@ export function createVocabularyService(repository = vocabularyRepository) {
     },
     async update(id, input) {
       requireId(repository, id);
+      const current = await repository.find(id);
+      if (!current) throw new VocabularyServiceError(404, "Vocabulary not found");
       const validated = validateVocabulary(input, { partial: true });
       if (validated.lessonId) {
         await requireLesson(validated.lessonId);
+        if (
+          String(validated.lessonId) !== String(current.lessonId) &&
+          (await repository.countProgress(id))
+        ) {
+          throw new VocabularyServiceError(
+            409,
+            "Saved vocabulary cannot be moved to another lesson",
+          );
+        }
         validated.lessonId = repository.toObjectId(validated.lessonId);
       }
       const item = await repository.update(id, {
@@ -132,6 +143,14 @@ export function createVocabularyService(repository = vocabularyRepository) {
     },
     async delete(id) {
       requireId(repository, id);
+      const item = await repository.find(id);
+      if (!item) throw new VocabularyServiceError(404, "Vocabulary not found");
+      if (item.status === "published") {
+        throw new VocabularyServiceError(
+          409,
+          "Unpublish vocabulary before deleting it",
+        );
+      }
       if (await repository.countProgress(id)) {
         throw new VocabularyServiceError(
           409,

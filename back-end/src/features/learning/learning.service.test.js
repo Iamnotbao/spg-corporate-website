@@ -247,3 +247,104 @@ test("updates cannot clear required learning fields", async () => {
     { status: 400, message: "title is required" },
   );
 });
+
+test("publishing requires real published lessons and complete Quiz children", async () => {
+  const repository = fakeRepository({
+    async updateCourse(_id, update) {
+      return { _id: ids.draftCourse, title: "Draft", slug: "draft-course", ...update };
+    },
+  });
+  const noLessons = createLearningService(repository, {
+    async getCoursePublishState() {
+      return { publishedLessons: 0, incompleteQuizLessons: 0 };
+    },
+  });
+  await assert.rejects(
+    () => noLessons.updateCourse(String(ids.draftCourse), { status: "published" }),
+    { status: 409, message: "A published course requires at least one published lesson" },
+  );
+  const incompleteQuiz = createLearningService(repository, {
+    async getCoursePublishState() {
+      return { publishedLessons: 1, incompleteQuizLessons: 1 };
+    },
+  });
+  await assert.rejects(
+    () => incompleteQuiz.updateCourse(String(ids.draftCourse), { status: "published" }),
+    { status: 409, message: "Every published quiz lesson requires a published quiz" },
+  );
+});
+
+test("Course and Lesson deletion preserve referenced learning history", async () => {
+  const repository = fakeRepository({
+    async countUnits() {
+      return 0;
+    },
+    async deleteCourse() {
+      return { deletedCount: 1 };
+    },
+    async deleteLesson() {
+      return { deletedCount: 1 };
+    },
+  });
+  const protectedService = createLearningService(repository, {
+    async countCourseHistory() {
+      return 1;
+    },
+    async getLessonDependencies() {
+      return { progress: 1, vocabulary: 0, quizzes: 0 };
+    },
+  });
+  await assert.rejects(() => protectedService.deleteCourse(String(ids.draftCourse)), {
+    status: 409,
+  });
+  await assert.rejects(() => protectedService.deleteLesson(String(ids.draftLesson)), {
+    status: 409,
+  });
+
+  const safeService = createLearningService(repository, {
+    async countCourseHistory() {
+      return 0;
+    },
+    async getLessonDependencies() {
+      return { progress: 0, vocabulary: 0, quizzes: 0 };
+    },
+  });
+  await safeService.deleteCourse(String(ids.draftCourse));
+  await safeService.deleteLesson(String(ids.draftLesson));
+});
+
+test("published Quiz lessons require a published Quiz", async () => {
+  const service = createLearningService(
+    fakeRepository({
+      async findLesson(id) {
+        return String(id) === String(ids.draftLesson)
+          ? {
+              _id: ids.draftLesson,
+              unitId: ids.unit,
+              type: "quiz",
+              status: "draft",
+            }
+          : null;
+      },
+      async updateLesson(_id, update) {
+        return { _id: ids.draftLesson, ...update };
+      },
+    }),
+    {
+      async hasPublishedQuiz() {
+        return false;
+      },
+      async getLessonDependencies() {
+        return { progress: 0, vocabulary: 0, quizzes: 1 };
+      },
+    },
+  );
+  await assert.rejects(
+    () =>
+      service.updateLesson(String(ids.draftLesson), {
+        type: "quiz",
+        status: "published",
+      }),
+    { status: 409 },
+  );
+});

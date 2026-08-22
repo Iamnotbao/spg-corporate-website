@@ -82,6 +82,8 @@ test("student enrollment and owned learning routes require authentication", asyn
     ["/api/student/lessons/lesson-1/complete", "PUT"],
     ["/api/student/vocabulary", "GET"],
     ["/api/student/quizzes/507f1f77bcf86cd799439011/attempts", "POST"],
+    ["/api/student/progress", "GET"],
+    ["/api/student/enrollments/507f1f77bcf86cd799439011", "DELETE"],
   ]) {
     const response = await fetch(`${baseUrl}${path}`, { method });
     assert.equal(response.status, 401);
@@ -93,6 +95,17 @@ test("Quiz administration routes require authentication", async () => {
   const response = await fetch(`${baseUrl}/api/admin/quizzes`);
   assert.equal(response.status, 401);
   assert.deepEqual(await response.json(), { error: "Missing access token" });
+});
+
+test("learning reporting routes require admin authentication", async () => {
+  for (const path of [
+    "/api/admin/reports/learning-summary",
+    "/api/admin/reports/progress",
+  ]) {
+    const response = await fetch(`${baseUrl}${path}`);
+    assert.equal(response.status, 401);
+    assert.deepEqual(await response.json(), { error: "Missing access token" });
+  }
 });
 
 test("public registration cannot supply an admin role", async () => {
