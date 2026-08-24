@@ -94,6 +94,20 @@ export function listAdminLearning(type, options = {}) {
   });
 }
 
+export function listAdminLessonOptions(options = {}) {
+  const params = new URLSearchParams({
+    page: String(options.page || 1),
+    pageSize: String(options.pageSize || 8),
+  });
+  if (options.search) params.set('search', options.search);
+  if (options.unitId) params.set('unitId', options.unitId);
+  return apiRequest(`/admin/lesson-options?${params.toString()}`, {
+    method: 'GET',
+    auth: true,
+    signal: options.signal,
+  });
+}
+
 export function createAdminLearning(type, payload) {
   assertLearningType(type);
   return apiRequest(`/admin/${type}`, {
@@ -280,7 +294,6 @@ export async function listAdminApplications(options = {}) {
   if (options.search) params.set('search', options.search);
 
   return apiRequest(`/admin/applications?${params.toString()}`, {
-    method: 'GET',
     auth: true,
     signal: options.signal,
   });

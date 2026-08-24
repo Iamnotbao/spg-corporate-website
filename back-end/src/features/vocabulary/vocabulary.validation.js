@@ -1,4 +1,7 @@
 const STATUSES = ["draft", "published"];
+const DUPLICATE_MODES = ["skip", "allow"];
+
+export const MAX_VOCABULARY_IMPORT_ROWS = 500;
 
 export class VocabularyValidationError extends Error {
   constructor(message) {
@@ -84,4 +87,49 @@ export function validateVocabulary(input = {}, { partial = false } = {}) {
     );
   }
   return result;
+}
+
+export function validateVocabularyImport(input = {}) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    throw new VocabularyValidationError("Import payload must be an object");
+  }
+
+  const fields = ["lessonId", "status", "duplicateMode", "rows"];
+  const unknown = Object.keys(input).filter((key) => !fields.includes(key));
+  if (unknown.length) {
+    throw new VocabularyValidationError(
+      `Unknown import fields: ${unknown.join(", ")}`,
+    );
+  }
+
+  const lessonId = text(input.lessonId, "lessonId", { required: true, max: 24 });
+  const status = text(input.status, "status", { required: true, max: 20 });
+  const duplicateMode = text(input.duplicateMode, "duplicateMode", {
+    required: true,
+    max: 20,
+  });
+
+  if (!/^[a-f\d]{24}$/i.test(lessonId)) {
+    throw new VocabularyValidationError("lessonId must be a valid id");
+  }
+  if (!STATUSES.includes(status)) {
+    throw new VocabularyValidationError(
+      `status must be one of: ${STATUSES.join(", ")}`,
+    );
+  }
+  if (!DUPLICATE_MODES.includes(duplicateMode)) {
+    throw new VocabularyValidationError(
+      `duplicateMode must be one of: ${DUPLICATE_MODES.join(", ")}`,
+    );
+  }
+  if (!Array.isArray(input.rows) || !input.rows.length) {
+    throw new VocabularyValidationError("rows must be a non-empty array");
+  }
+  if (input.rows.length > MAX_VOCABULARY_IMPORT_ROWS) {
+    throw new VocabularyValidationError(
+      `rows must contain at most ${MAX_VOCABULARY_IMPORT_ROWS} items`,
+    );
+  }
+
+  return { lessonId, status, duplicateMode, rows: input.rows };
 }

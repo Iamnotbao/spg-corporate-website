@@ -38,9 +38,12 @@ function seoPlugin(siteOrigin) {
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
-  const siteOrigin = normalizeOrigin(env.VITE_SITE_URL);
-  if (!siteOrigin && process.env.CF_PAGES) {
-    throw new Error('VITE_SITE_URL is required for Cloudflare Pages production builds.');
+  const siteOrigin = normalizeOrigin(
+    env.VITE_SITE_URL || process.env.VITE_SITE_URL || process.env.CF_PAGES_URL,
+  );
+
+  if (process.env.CF_PAGES && !env.VITE_SITE_URL && process.env.CF_PAGES_URL) {
+    console.warn('[seo] VITE_SITE_URL is not configured; using CF_PAGES_URL for this Cloudflare Pages build.');
   }
 
   return {

@@ -66,6 +66,37 @@ export const vocabularyRepository = {
     ).insertOne(document);
     return { ...document, _id: result.insertedId };
   },
+  async insertMany(documents) {
+    if (!documents.length) return { insertedCount: 0, failures: [] };
+    try {
+      const result = await (
+        await collection(VOCABULARY_COLLECTIONS.vocabulary)
+      ).insertMany(documents, { ordered: false });
+      return { insertedCount: result.insertedCount, failures: [] };
+    } catch (error) {
+      const writeErrors = Array.isArray(error?.writeErrors)
+        ? error.writeErrors
+        : [];
+      if (!writeErrors.length) throw error;
+      return {
+        insertedCount:
+          error?.result?.insertedCount ??
+          Math.max(0, documents.length - writeErrors.length),
+        failures: writeErrors.map((writeError) => ({
+          index: writeError.index,
+          message: "Unable to insert this vocabulary row",
+        })),
+      };
+    }
+  },
+  async listLessonIdentities(lessonId) {
+    return (await collection(VOCABULARY_COLLECTIONS.vocabulary))
+      .find(
+        { lessonId: toObjectId(lessonId) },
+        { projection: { simplified: 1, pinyin: 1 } },
+      )
+      .toArray();
+  },
   async update(id, update) {
     return (
       await collection(VOCABULARY_COLLECTIONS.vocabulary)

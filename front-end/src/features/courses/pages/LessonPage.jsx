@@ -2,8 +2,16 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import LearningProgress from '../../../components/ui/LearningProgress.jsx';
 import { ErrorState, LoadingState } from '../../../components/ui/ContentState.jsx';
+import PublicToast from '../../../components/ui/PublicToast.jsx';
 import { usePageTitle } from '../../../hooks/usePageTitle.js';
 import { useStudentAuth } from '../../auth/StudentAuthContext.jsx';
+import VocabularyCard from '../../learning/components/VocabularyCard.jsx';
+import {
+  listPublicVocabulary,
+  listSavedVocabulary,
+  saveVocabulary,
+  unsaveVocabulary,
+} from '../../learning/services/vocabularyService.js';
 import NotFoundPage from '../../public/pages/NotFoundPage.jsx';
 import { usePublicDetail } from '../../public/hooks/usePublicContent.js';
 import {
@@ -14,6 +22,7 @@ import CourseOutline from '../components/CourseOutline.jsx';
 import LessonNavigation from '../components/LessonNavigation.jsx';
 import { getPublicCourse, getPublicLesson } from '../services/courseCatalogService.js';
 import '../styles/courses.css';
+import '../styles/lesson-vocabulary.css';
 
 const TYPE_LABELS = {
   character: 'Hán tự',
@@ -40,6 +49,13 @@ export default function LessonPage() {
   const [studentState, setStudentState] = useState(null);
   const [completionError, setCompletionError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [lessonVocabulary, setLessonVocabulary] = useState([]);
+  const [vocabularyStatus, setVocabularyStatus] = useState('idle');
+  const [visibleVocabularyCount, setVisibleVocabularyCount] = useState(6);
+  const [savedIds, setSavedIds] = useState(new Set());
+  const [busyVocabularyId, setBusyVocabularyId] = useState('');
+  const [notice, setNotice] = useState({ message: '', variant: 'success' });
+
   const lessons = useMemo(
     () =>
       (course.data?.units || []).flatMap((unit) =>
@@ -61,16 +77,76 @@ export default function LessonPage() {
       .catch((error) => setCompletionError(error.message));
   }, [auth.status, courseSlug]);
 
+  useEffect(() => {
+    if (lesson.data?.type !== 'vocabulary' || !lesson.data?.id) {
+      setLessonVocabulary([]);
+      setVocabularyStatus('idle');
+      setVisibleVocabularyCount(6);
+      return;
+    }
+    setVocabularyStatus('loading');
+    setVisibleVocabularyCount(6);
+    listPublicVocabulary({ lessonId: lesson.data.id })
+      .then((result) => {
+        setLessonVocabulary(result.data || []);
+        setVocabularyStatus('ready');
+      })
+      .catch(() => {
+        setLessonVocabulary([]);
+        setVocabularyStatus('error');
+      });
+  }, [lesson.data?.id, lesson.data?.type]);
+
+  useEffect(() => {
+    if (auth.status !== 'signed-in') {
+      setSavedIds(new Set());
+      return;
+    }
+    listSavedVocabulary()
+      .then((result) => setSavedIds(new Set((result.data || []).map((item) => item.id))))
+      .catch(() => setSavedIds(new Set()));
+  }, [auth.status]);
+
   async function markComplete() {
     setSubmitting(true);
     setCompletionError('');
     try {
       const result = await completeLesson(lessonSlug);
       setStudentState(result.data.courseState);
+      setNotice({ message: 'Đã lưu tiến độ bài học.', variant: 'success' });
     } catch (error) {
       setCompletionError(error.message);
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function toggleSaveVocabulary(item) {
+    if (auth.status !== 'signed-in') return;
+    setBusyVocabularyId(item.id);
+    try {
+      const wasSaved = savedIds.has(item.id);
+      if (wasSaved) await unsaveVocabulary(item.id);
+      else await saveVocabulary(item.id);
+      setSavedIds((current) => {
+        const next = new Set(current);
+        if (wasSaved) next.delete(item.id);
+        else next.add(item.id);
+        return next;
+      });
+      setNotice({
+        message: wasSaved
+          ? `Đã bỏ lưu “${item.simplified}”.`
+          : `Đã lưu “${item.simplified}” để ôn lại.`,
+        variant: 'success',
+      });
+    } catch (error) {
+      setNotice({
+        message: error.message || 'Không thể cập nhật từ đã lưu.',
+        variant: 'error',
+      });
+    } finally {
+      setBusyVocabularyId('');
     }
   }
 
@@ -138,6 +214,55 @@ export default function LessonPage() {
                 ),
               )}
           </div>
+
+          {lesson.data.type === 'vocabulary' && (
+            <section className="lesson-vocabulary-section">
+              <div className="lesson-vocabulary-section__heading">
+                <div>
+                  <span>Từ vựng trong bài</span>
+                  <h2>Học từ ngay trong Lesson</h2>
+                </div>
+                <Link to="/vocabulary">Xem toàn bộ từ vựng →</Link>
+              </div>
+              {vocabularyStatus === 'loading' && (
+                <LoadingState count={3} label="Đang tải từ vựng" />
+              )}
+              {vocabularyStatus === 'error' && (
+                <p className="lesson-vocabulary-empty">
+                  Không thể tải từ vựng của bài học này.
+                </p>
+              )}
+              {vocabularyStatus === 'ready' && lessonVocabulary.length === 0 && (
+                <p className="lesson-vocabulary-empty">
+                  Bài học này chưa có từ vựng được xuất bản.
+                </p>
+              )}
+              {vocabularyStatus === 'ready' && lessonVocabulary.length > 0 && (
+                <div className="lesson-vocabulary-grid">
+                  {lessonVocabulary.slice(0, visibleVocabularyCount).map((item) => (
+                    <VocabularyCard
+                      busy={busyVocabularyId === item.id}
+                      item={item}
+                      key={item.id}
+                      onToggleSave={toggleSaveVocabulary}
+                      saved={savedIds.has(item.id)}
+                    />
+                  ))}
+                </div>
+              )}
+              {vocabularyStatus === 'ready' &&
+                lessonVocabulary.length > visibleVocabularyCount && (
+                  <button
+                    className="button button--secondary lesson-vocabulary-load-more"
+                    onClick={() => setVisibleVocabularyCount((count) => count + 6)}
+                    type="button"
+                  >
+                    Xem thêm 6 từ
+                  </button>
+                )}
+            </section>
+          )}
+
           <div className="lesson-completion-foundation">
             <div>
               <span aria-hidden="true">{isComplete ? '✓' : '○'}</span>
@@ -196,6 +321,11 @@ export default function LessonPage() {
           />
         </article>
       </div>
+      <PublicToast
+        message={notice.message}
+        onClose={() => setNotice((current) => ({ ...current, message: '' }))}
+        variant={notice.variant}
+      />
     </section>
   );
 }

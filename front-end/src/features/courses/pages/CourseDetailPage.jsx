@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import LearningProgress from '../../../components/ui/LearningProgress.jsx';
 import { ErrorState, LoadingState } from '../../../components/ui/ContentState.jsx';
+import PublicToast from '../../../components/ui/PublicToast.jsx';
 import { usePageTitle } from '../../../hooks/usePageTitle.js';
 import { useStudentAuth } from '../../auth/StudentAuthContext.jsx';
 import NotFoundPage from '../../public/pages/NotFoundPage.jsx';
@@ -23,6 +24,7 @@ export default function CourseDetailPage() {
   const [studentState, setStudentState] = useState(null);
   const [studentError, setStudentError] = useState('');
   const [enrolling, setEnrolling] = useState(false);
+  const [notice, setNotice] = useState({ message: '', variant: 'success' });
   usePageTitle(course.data?.title || 'Chi tiết khóa học');
 
   useEffect(() => {
@@ -41,8 +43,16 @@ export default function CourseDetailPage() {
     try {
       const result = await enrollInCourse(course.data.id);
       setStudentState(result.data);
+      setNotice({
+        message: 'Đã đăng ký khóa học. Bạn có thể bắt đầu học ngay.',
+        variant: 'success',
+      });
     } catch (error) {
       setStudentError(error.message);
+      setNotice({
+        message: error.message || 'Không thể đăng ký khóa học.',
+        variant: 'error',
+      });
     } finally {
       setEnrolling(false);
     }
@@ -96,6 +106,8 @@ export default function CourseDetailPage() {
       </button>
     );
 
+  const progressValue = Number(studentState?.progressPercentage) || 0;
+
   return (
     <>
       <section className="course-detail-hero">
@@ -135,17 +147,57 @@ export default function CourseDetailPage() {
             )}
           </div>
           <aside className="course-enrollment-card">
-            <span aria-hidden="true">学</span>
-            <h2>Thông tin khóa học</h2>
-            <p>Cấp độ: {course.data.level}</p>
-            {studentState?.enrolled && (
-              <LearningProgress value={studentState.progressPercentage} />
+            <div className="course-enrollment-card__topline">
+              <span aria-hidden="true">学</span>
+              <div>
+                <small>{studentState?.enrolled ? 'Đang học' : 'Khóa học'}</small>
+                <strong>{course.data.level}</strong>
+              </div>
+            </div>
+            <h2>{studentState?.enrolled ? 'Tiến độ của bạn' : 'Bắt đầu lộ trình'}</h2>
+            {studentState?.enrolled ? (
+              <>
+                <div className="course-progress-summary">
+                  <div
+                    aria-label={`Tiến độ ${progressValue}%`}
+                    className="course-progress-ring"
+                    style={{ '--course-progress': `${progressValue * 3.6}deg` }}
+                  >
+                    <span>{progressValue}%</span>
+                  </div>
+                  <div className="course-progress-summary__copy">
+                    <strong>
+                      {studentState.completedLessons}/{studentState.totalLessons} bài học
+                    </strong>
+                    <span>
+                      {studentState.completed
+                        ? 'Bạn đã hoàn thành toàn bộ khóa học.'
+                        : 'Hoàn thành từng bài để mở rộng tiến độ.'}
+                    </span>
+                  </div>
+                </div>
+                <LearningProgress label="Hoàn thành khóa học" value={progressValue} />
+              </>
+            ) : (
+              <p>
+                Tham gia khóa học để lưu tiến độ, tiếp tục từ bài gần nhất và theo dõi kết
+                quả.
+              </p>
             )}
-            {studentError && <p role="alert">{studentError}</p>}
+            {studentError && (
+              <p className="course-enrollment-card__error" role="alert">
+                {studentError}
+              </p>
+            )}
             {action}
           </aside>
         </div>
       </section>
+      <PublicToast
+        message={notice.message}
+        onClose={() => setNotice((current) => ({ ...current, message: '' }))}
+        variant={notice.variant}
+      />
     </>
   );
 }

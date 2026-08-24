@@ -951,6 +951,13 @@
   font-size: 0.75rem;
 }
 
+.admin-bulk-bar__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 /* Tables */
 .admin-table-wrap {
   position: relative;
@@ -2077,6 +2084,11 @@
 
   .admin-bulk-bar .admin-button {
     width: 100%;
+  }
+
+  .admin-bulk-bar__actions {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .admin-table-wrap {

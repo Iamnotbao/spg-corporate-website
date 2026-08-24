@@ -39,6 +39,25 @@ changed the current frontend as follows:
 This update does not supersede the unresolved product, data, authentication, deployment,
 or SEO decisions documented later in this file.
 
+### Phase 6.6 implementation update
+
+Vocabulary administration now imports up to 500 selected CSV/XLSX rows through one
+admin-only `POST /api/admin/vocabulary/import` request. The backend validates the chosen
+Lesson and target status, applies the existing Vocabulary field allowlist to every
+submitted row, detects duplicates by Lesson plus trimmed simplified Chinese plus
+trimmed/case-normalized Pinyin, and writes accepted documents with one unordered MongoDB
+`insertMany()` operation. Duplicate skipping remains an explicit request policy, so no
+unique index prevents the separate allow-duplicates option. The response reports inserted,
+duplicate, invalid, and write-failure counts with bounded row-level details.
+
+The admin import dialog performs backend-paged Lesson search, parses CSV/XLSX locally for
+a no-write preview, marks ready/duplicate/invalid rows, supports page selection and a
+target draft/published state, prevents repeat submission, and shows real processing stages.
+Courses, Units, Lessons, Vocabulary, Quizzes, and Blog now expose page selection and safe
+bulk controls where their lifecycle supports publish/delete behavior; each operation still
+passes through the existing resource service or controller guards. Vocabulary Lessons show
+six cards initially and reveal six more per click in a responsive three/two/one-column grid.
+
 ### Admin frontend Phase 3 update
 
 The Mandora Admin frontend now uses URL-addressable destinations under `/admin`, a

@@ -61,3 +61,69 @@ export function AdminToast({ message, onClose, variant = 'success' }) {
     </div>
   );
 }
+
+export function AdminConfirmDialog({
+  cancelLabel = 'Hủy',
+  confirmLabel = 'Xác nhận',
+  description,
+  loading = false,
+  onCancel,
+  onConfirm,
+  open,
+  title,
+  variant = 'danger',
+}) {
+  useEffect(() => {
+    if (!open) return undefined;
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape' && !loading) onCancel();
+    };
+    window.addEventListener('keydown', closeOnEscape);
+    return () => window.removeEventListener('keydown', closeOnEscape);
+  }, [loading, onCancel, open]);
+
+  if (!open) return null;
+
+  return (
+    <div
+      className="admin-confirm-backdrop"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget && !loading) onCancel();
+      }}
+      role="presentation"
+    >
+      <section
+        aria-labelledby="admin-confirm-title"
+        aria-modal="true"
+        className="admin-confirm-dialog"
+        role="dialog"
+      >
+        <div className={`admin-confirm-dialog__icon is-${variant}`}>
+          <AdminIcon name={variant === 'danger' ? 'trash' : 'check'} size={24} />
+        </div>
+        <div className="admin-confirm-dialog__copy">
+          <h2 id="admin-confirm-title">{title}</h2>
+          {description && <p>{description}</p>}
+        </div>
+        <div className="admin-confirm-dialog__actions">
+          <button
+            className="admin-button admin-button--secondary"
+            disabled={loading}
+            onClick={onCancel}
+            type="button"
+          >
+            {cancelLabel}
+          </button>
+          <button
+            className={`admin-button ${variant === 'danger' ? 'admin-button--danger' : 'admin-button--primary'}`}
+            disabled={loading}
+            onClick={onConfirm}
+            type="button"
+          >
+            {loading ? 'Đang xử lý…' : confirmLabel}
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}

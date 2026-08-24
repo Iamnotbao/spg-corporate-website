@@ -14,6 +14,11 @@ export async function create(req, res) {
     .status(201)
     .json({ data: await vocabularyService.create(req.body) });
 }
+export async function importBatch(req, res) {
+  return res.status(201).json({
+    data: await vocabularyService.importBatch(req.body),
+  });
+}
 export async function update(req, res) {
   return res.json({
     data: await vocabularyService.update(req.params.id, req.body),

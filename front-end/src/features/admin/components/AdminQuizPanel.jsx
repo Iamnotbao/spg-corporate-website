@@ -10,12 +10,19 @@ import {
   updateAdminQuestion,
   updateAdminQuiz,
 } from '../../quizzes/services/adminQuizService.js';
-import { AdminAlert, AdminEmpty, AdminSkeletonRows } from './AdminFeedback.jsx';
+import {
+  AdminAlert,
+  AdminConfirmDialog,
+  AdminEmpty,
+  AdminSkeletonRows,
+} from './AdminFeedback.jsx';
 import AdminIcon from './AdminIcon.jsx';
 import AdminPageHeader from './AdminPageHeader.jsx';
+import AdminPagination from './AdminPagination.jsx';
 import AdminQuestionEditor from './AdminQuestionEditor.jsx';
 import AdminQuizForm from './AdminQuizForm.jsx';
 
+const PAGE_SIZE = 10;
 const EMPTY_QUIZ = {
   lessonId: '',
   title: '',
@@ -26,7 +33,7 @@ const EMPTY_QUIZ = {
 
 export default function AdminQuizPanel({ onNotify, onUnauthorized }) {
   const [quizzes, setQuizzes] = useState([]);
-  const [lessons, setLessons] = useState([]);
+  const [allLessons, setAllLessons] = useState([]);
   const [selected, setSelected] = useState(null);
   const [quizForm, setQuizForm] = useState(null);
   const [questionForm, setQuestionForm] = useState(null);
@@ -34,6 +41,11 @@ export default function AdminQuizPanel({ onNotify, onUnauthorized }) {
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [page, setPage] = useState(1);
+  const [selectedIds, setSelectedIds] = useState(() => new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(null);
 
   const load = useCallback(async () => {
     setStatus('loading');
@@ -44,7 +56,7 @@ export default function AdminQuizPanel({ onNotify, onUnauthorized }) {
         listAdminLearning('lessons'),
       ]);
       setQuizzes(quizResponse.data || []);
-      setLessons((lessonResponse.data || []).filter((lesson) => lesson.type === 'quiz'));
+      setAllLessons(lessonResponse.data || []);
       setStatus('ready');
     } catch (caught) {
       if (caught.status === 401) onUnauthorized();
@@ -57,12 +69,46 @@ export default function AdminQuizPanel({ onNotify, onUnauthorized }) {
     load();
   }, [load]);
 
+  const lessons = useMemo(
+    () => allLessons.filter((lesson) => lesson.type === 'quiz'),
+    [allLessons],
+  );
+  const lessonNames = useMemo(
+    () => new Map(allLessons.map((lesson) => [lesson.id, lesson.title])),
+    [allLessons],
+  );
   const visible = useMemo(() => {
     const normalized = search.trim().toLocaleLowerCase('vi');
-    return quizzes.filter(
-      (quiz) => !normalized || quiz.title.toLocaleLowerCase('vi').includes(normalized),
-    );
-  }, [quizzes, search]);
+    return quizzes.filter((quiz) => {
+      const lessonTitle = lessonNames.get(quiz.lessonId) || '';
+      const haystack =
+        `${quiz.title || ''} ${quiz.description || ''} ${lessonTitle} ${quiz.passingScore ?? ''} ${quiz.status || ''}`.toLocaleLowerCase(
+          'vi',
+        );
+      const matchesSearch = !normalized || haystack.includes(normalized);
+      const matchesStatus = !statusFilter || quiz.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [quizzes, search, statusFilter, lessonNames]);
+  const totalPages = Math.max(1, Math.ceil(visible.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pagedQuizzes = visible.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const selectedQuizzes = useMemo(
+    () => quizzes.filter((quiz) => selectedIds.has(quiz.id)),
+    [quizzes, selectedIds],
+  );
+  const selectedDrafts = selectedQuizzes.filter((quiz) => quiz.status !== 'published');
+  const allPageSelected =
+    pagedQuizzes.length > 0 && pagedQuizzes.every((quiz) => selectedIds.has(quiz.id));
+
+  function updateSearch(value) {
+    setSearch(value);
+    setPage(1);
+  }
+  function updateStatusFilter(value) {
+    setStatusFilter(value);
+    setPage(1);
+  }
 
   async function openQuiz(id) {
     setError('');
@@ -103,17 +149,85 @@ export default function AdminQuizPanel({ onNotify, onUnauthorized }) {
     }
   }
 
-  async function removeQuiz(quiz) {
-    if (!window.confirm(`Xóa Quiz “${quiz.title}”?`)) return;
-    try {
-      await deleteAdminQuiz(quiz.id);
-      onNotify('Đã xóa Quiz.');
-      setSelected(null);
-      setQuizForm(null);
-      await load();
-    } catch (caught) {
-      if (caught.status === 401) onUnauthorized();
-      setError(caught.message);
+  function toggleSelected(id) {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleCurrentPage() {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (allPageSelected) pagedQuizzes.forEach((quiz) => next.delete(quiz.id));
+      else pagedQuizzes.forEach((quiz) => next.add(quiz.id));
+      return next;
+    });
+  }
+
+  async function publishSelected() {
+    if (!selectedDrafts.length || bulkBusy) return;
+    setBulkBusy(true);
+    const failures = [];
+    let success = 0;
+    for (const quiz of selectedDrafts) {
+      try {
+        await updateAdminQuiz(quiz.id, { status: 'published' });
+        success += 1;
+      } catch (caught) {
+        if (caught.status === 401 && onUnauthorized(caught)) {
+          setBulkBusy(false);
+          return;
+        }
+        failures.push({ quiz, message: caught.message });
+      }
+    }
+    await load();
+    setSelectedIds(new Set(failures.map(({ quiz }) => quiz.id)));
+    setBulkBusy(false);
+    if (success) onNotify(`Đã xuất bản ${success} Quiz.`);
+    if (failures.length) {
+      onNotify(
+        `${failures.length} Quiz chưa thể xuất bản. ${failures[0].quiz.title}: ${failures[0].message}`,
+        'error',
+      );
+    }
+  }
+
+  async function confirmQuizDeletion() {
+    if (!confirmDelete?.length || bulkBusy) return;
+    setBulkBusy(true);
+    const failures = [];
+    let success = 0;
+    for (const quiz of confirmDelete) {
+      try {
+        await deleteAdminQuiz(quiz.id);
+        success += 1;
+        if (selected?.id === quiz.id) {
+          setSelected(null);
+          setQuizForm(null);
+        }
+      } catch (caught) {
+        if (caught.status === 401 && onUnauthorized(caught)) {
+          setBulkBusy(false);
+          setConfirmDelete(null);
+          return;
+        }
+        failures.push({ quiz, message: caught.message });
+      }
+    }
+    await load();
+    setSelectedIds(new Set(failures.map(({ quiz }) => quiz.id)));
+    setConfirmDelete(null);
+    setBulkBusy(false);
+    if (success) onNotify(`Đã xóa ${success} Quiz.`);
+    if (failures.length) {
+      onNotify(
+        `${failures.length} Quiz chưa thể xóa. ${failures[0].quiz.title}: ${failures[0].message}`,
+        'error',
+      );
     }
   }
 
@@ -148,27 +262,40 @@ export default function AdminQuizPanel({ onNotify, onUnauthorized }) {
     }
   }
 
+  const beginCreate = () => {
+    setSelected(null);
+    setQuestionForm(null);
+    setQuizForm({ ...EMPTY_QUIZ, lessonId: lessons[0]?.id || '' });
+  };
+
   return (
     <div className="admin-learning-page admin-quiz-page">
       <AdminPageHeader
         action={
           <button
             className="admin-button admin-button--primary"
-            onClick={() => {
-              setSelected(null);
-              setQuestionForm(null);
-              setQuizForm({ ...EMPTY_QUIZ, lessonId: lessons[0]?.id || '' });
-            }}
+            disabled={!lessons.length}
+            onClick={beginCreate}
             type="button"
           >
-            <AdminIcon name="plus" size={17} />
-            Tạo Quiz
+            <AdminIcon name="plus" size={17} /> Tạo Quiz
           </button>
         }
-        description="Tạo Quiz theo bài học, xây câu hỏi và kiểm tra cấu trúc trước khi xuất bản."
+        description="Tạo Quiz theo bài học loại Quiz, xây câu hỏi và kiểm tra cấu trúc trước khi xuất bản."
         eyebrow="Learning content"
         title="Quiz"
       />
+      {status === 'ready' && allLessons.length > 0 && !lessons.length && (
+        <AdminAlert>
+          Bạn đã có bài học nhưng chưa có bài nào mang loại “Quiz”. Vào Bài học, sửa một
+          bài và chọn Loại bài học = Quiz; sau đó quay lại đây để tạo Quiz cho bài đó.
+        </AdminAlert>
+      )}
+      {status === 'ready' && !allLessons.length && (
+        <AdminAlert>
+          Bạn cần tạo Course → Unit → Lesson trước, sau đó đặt Lesson đó thành loại Quiz.
+        </AdminAlert>
+      )}
       {error && (
         <AdminAlert onRetry={status === 'error' ? load : undefined}>{error}</AdminAlert>
       )}
@@ -206,8 +333,7 @@ export default function AdminQuizPanel({ onNotify, onUnauthorized }) {
               onClick={() => setQuestionForm({})}
               type="button"
             >
-              <AdminIcon name="plus" size={15} />
-              Thêm câu hỏi
+              <AdminIcon name="plus" size={15} /> Thêm câu hỏi
             </button>
           </header>
           {questionForm && (
@@ -262,75 +388,161 @@ export default function AdminQuizPanel({ onNotify, onUnauthorized }) {
             <AdminIcon name="search" size={18} />
             <span className="admin-sr-only">Tìm Quiz</span>
             <input
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Tìm Quiz…"
+              onChange={(event) => updateSearch(event.target.value)}
+              placeholder="Tìm tiêu đề, mô tả, bài học, điểm đạt…"
               type="search"
               value={search}
             />
           </label>
+          <select
+            aria-label="Lọc trạng thái Quiz"
+            onChange={(event) => updateStatusFilter(event.target.value)}
+            value={statusFilter}
+          >
+            <option value="">Tất cả trạng thái</option>
+            <option value="draft">Bản nháp</option>
+            <option value="published">Đã xuất bản</option>
+          </select>
         </div>
+        {selectedQuizzes.length > 0 && (
+          <div className="admin-learning-selection-bar">
+            <div>
+              <strong>{selectedQuizzes.length} Quiz đã chọn</strong>
+              <span>{selectedDrafts.length} bản nháp có thể xuất bản</span>
+            </div>
+            <div>
+              <button
+                className="admin-button admin-button--primary"
+                disabled={!selectedDrafts.length || bulkBusy}
+                onClick={publishSelected}
+                type="button"
+              >
+                {bulkBusy ? 'Đang xử lý…' : `Xuất bản đã chọn (${selectedDrafts.length})`}
+              </button>
+              <button
+                className="admin-button admin-button--danger"
+                disabled={bulkBusy}
+                onClick={() => setConfirmDelete(selectedQuizzes)}
+                type="button"
+              >
+                Xóa đã chọn
+              </button>
+              <button
+                className="admin-button admin-button--secondary"
+                disabled={bulkBusy}
+                onClick={() => setSelectedIds(new Set())}
+                type="button"
+              >
+                Bỏ chọn
+              </button>
+            </div>
+          </div>
+        )}
         {status === 'loading' ? (
           <AdminSkeletonRows count={4} />
         ) : visible.length ? (
-          <div className="admin-table-wrap">
-            <table className="admin-table admin-learning-table">
-              <thead>
-                <tr>
-                  <th>Quiz</th>
-                  <th>Câu hỏi</th>
-                  <th>Điểm đạt</th>
-                  <th>Trạng thái</th>
-                  <th>
-                    <span className="admin-sr-only">Thao tác</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {visible.map((quiz) => (
-                  <tr key={quiz.id}>
-                    <td>
-                      <strong>{quiz.title}</strong>
-                      <small>
-                        {lessons.find((lesson) => lesson.id === quiz.lessonId)?.title ||
-                          'Bài học Quiz'}
-                      </small>
-                    </td>
-                    <td>{quiz.questionCount}</td>
-                    <td>{quiz.passingScore}%</td>
-                    <td>
-                      <span className={`admin-learning-badge is-${quiz.status}`}>
-                        {quiz.status === 'published' ? 'Đã xuất bản' : 'Bản nháp'}
-                      </span>
-                    </td>
-                    <td className="admin-learning-actions">
-                      <button
-                        className="admin-icon-button"
-                        aria-label={`Sửa ${quiz.title}`}
-                        onClick={() => openQuiz(quiz.id)}
-                        type="button"
-                      >
-                        <AdminIcon name="edit" size={16} />
-                      </button>
-                      <button
-                        className="admin-icon-button admin-icon-button--danger"
-                        aria-label={`Xóa ${quiz.title}`}
-                        onClick={() => removeQuiz(quiz)}
-                        type="button"
-                      >
-                        <AdminIcon name="trash" size={16} />
-                      </button>
-                    </td>
+          <>
+            <div className="admin-table-wrap">
+              <table className="admin-table admin-learning-table">
+                <thead>
+                  <tr>
+                    <th className="admin-learning-select-cell">
+                      <input
+                        aria-label="Chọn tất cả Quiz trên trang hiện tại"
+                        checked={allPageSelected}
+                        onChange={toggleCurrentPage}
+                        type="checkbox"
+                      />
+                    </th>
+                    <th>Quiz</th>
+                    <th>Câu hỏi</th>
+                    <th>Điểm đạt</th>
+                    <th>Trạng thái</th>
+                    <th>
+                      <span className="admin-sr-only">Thao tác</span>
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {pagedQuizzes.map((quiz) => (
+                    <tr
+                      className={selectedIds.has(quiz.id) ? 'is-selected' : ''}
+                      key={quiz.id}
+                    >
+                      <td className="admin-learning-select-cell">
+                        <input
+                          aria-label={`Chọn ${quiz.title}`}
+                          checked={selectedIds.has(quiz.id)}
+                          onChange={() => toggleSelected(quiz.id)}
+                          type="checkbox"
+                        />
+                      </td>
+                      <td>
+                        <strong>{quiz.title}</strong>
+                        <small>{lessonNames.get(quiz.lessonId) || 'Bài học Quiz'}</small>
+                      </td>
+                      <td>{quiz.questionCount}</td>
+                      <td>{quiz.passingScore}%</td>
+                      <td>
+                        <span className={`admin-learning-badge is-${quiz.status}`}>
+                          {quiz.status === 'published' ? 'Đã xuất bản' : 'Bản nháp'}
+                        </span>
+                      </td>
+                      <td className="admin-learning-actions">
+                        <button
+                          className="admin-icon-button"
+                          aria-label={`Sửa ${quiz.title}`}
+                          onClick={() => openQuiz(quiz.id)}
+                          type="button"
+                        >
+                          <AdminIcon name="edit" size={16} />
+                        </button>
+                        <button
+                          className="admin-icon-button admin-icon-button--danger"
+                          aria-label={`Xóa ${quiz.title}`}
+                          disabled={bulkBusy}
+                          onClick={() => setConfirmDelete([quiz])}
+                          type="button"
+                        >
+                          <AdminIcon name="trash" size={16} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <AdminPagination
+              onPageChange={setPage}
+              pagination={{
+                page: safePage,
+                pageSize: PAGE_SIZE,
+                total: visible.length,
+                totalPages,
+              }}
+            />
+          </>
         ) : (
           <AdminEmpty title="Chưa có Quiz">
             Tạo Quiz nháp cho một bài học loại Quiz để bắt đầu.
           </AdminEmpty>
         )}
       </section>
+      <AdminConfirmDialog
+        confirmLabel={
+          confirmDelete?.length > 1 ? `Xóa ${confirmDelete.length} Quiz` : 'Xóa Quiz'
+        }
+        description={
+          confirmDelete?.length > 1
+            ? 'Quiz đã xuất bản, còn câu hỏi hoặc có lịch sử làm bài sẽ được backend bảo vệ. Các Quiz hợp lệ khác vẫn tiếp tục được xử lý.'
+            : `Bạn sắp xóa “${confirmDelete?.[0]?.title || ''}”. Backend sẽ chặn nếu Quiz đang xuất bản, còn câu hỏi hoặc có lượt làm bài.`
+        }
+        loading={bulkBusy}
+        onCancel={() => setConfirmDelete(null)}
+        onConfirm={confirmQuizDeletion}
+        open={Boolean(confirmDelete?.length)}
+        title="Xác nhận xóa Quiz?"
+      />
     </div>
   );
 }

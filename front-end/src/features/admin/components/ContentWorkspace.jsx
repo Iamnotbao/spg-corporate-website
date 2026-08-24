@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   bulkDeleteAdminContent,
   deleteAdminContent,
+  updateAdminContent,
 } from '../../../services/adminService.js';
 import { CONTENT_LABELS } from '../constants.js';
 import { useAdminContent } from '../hooks/useAdminContent.js';
@@ -11,7 +12,7 @@ import AdminPagination from './AdminPagination.jsx';
 import ContentImportModal from './ContentImportModal.jsx';
 import ContentList from './ContentList.jsx';
 import ContentToolbar from './ContentToolbar.jsx';
-import { AdminAlert } from './AdminFeedback.jsx';
+import { AdminAlert, AdminConfirmDialog } from './AdminFeedback.jsx';
 
 export default function ContentWorkspace({
   onCreate,
@@ -26,10 +27,16 @@ export default function ContentWorkspace({
   const [actionId, setActionId] = useState('');
   const [actionError, setActionError] = useState('');
   const [importOpen, setImportOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(null);
   const pageIds = useMemo(
     () => content.items.map(getItemId).filter(Boolean),
     [content.items],
   );
+  const selectedItems = useMemo(
+    () => content.items.filter((item) => selectedIds.includes(getItemId(item))),
+    [content.items, selectedIds],
+  );
+  const selectedDrafts = selectedItems.filter((item) => item.published === false);
 
   useEffect(() => {
     setSelectedIds([]);
@@ -48,46 +55,66 @@ export default function ContentWorkspace({
   }
 
   async function handleDelete(item) {
-    const id = getItemId(item);
-    const confirmed = window.confirm(
-      `Bạn có chắc muốn xóa “${item.title || CONTENT_LABELS[type].singular}”?`,
-    );
-    if (!confirmed) return;
+    setConfirmDelete([item]);
+  }
 
-    setActionId(id);
+  async function handleBulkDelete() {
+    if (!selectedIds.length) return;
+    setConfirmDelete(selectedItems);
+  }
+
+  async function confirmDeletion() {
+    if (!confirmDelete?.length || actionId) return;
+    const ids = confirmDelete.map(getItemId).filter(Boolean);
+    setActionId(ids.length > 1 ? 'bulk' : ids[0]);
     setActionError('');
     try {
-      await deleteAdminContent(type, id);
-      onNotify(`Đã xóa ${CONTENT_LABELS[type].singular}.`);
+      if (ids.length > 1) await bulkDeleteAdminContent(type, ids);
+      else await deleteAdminContent(type, ids[0]);
+      onNotify(
+        ids.length > 1
+          ? `Đã xóa ${ids.length} bài viết.`
+          : `Đã xóa ${CONTENT_LABELS[type].singular}.`,
+      );
+      setSelectedIds([]);
+      setConfirmDelete(null);
       content.refresh();
     } catch (error) {
       if (onUnauthorized(error)) return;
-      setActionError(getErrorMessage(error, 'Không thể xóa nội dung.'));
+      setActionError(getErrorMessage(error, 'Không thể xóa nội dung đã chọn.'));
     } finally {
       setActionId('');
     }
   }
 
-  async function handleBulkDelete() {
-    if (!selectedIds.length) return;
-    const confirmed = window.confirm(
-      `Bạn có chắc muốn xóa ${selectedIds.length} mục đã chọn?`,
-    );
-    if (!confirmed) return;
-
-    setActionId('bulk');
+  async function handleBulkPublish() {
+    if (!selectedDrafts.length || actionId) return;
+    setActionId('bulk-publish');
     setActionError('');
-    try {
-      await bulkDeleteAdminContent(type, selectedIds);
-      onNotify(`Đã xóa ${selectedIds.length} mục.`);
-      setSelectedIds([]);
-      content.refresh();
-    } catch (error) {
-      if (onUnauthorized(error)) return;
-      setActionError(getErrorMessage(error, 'Không thể xóa các mục đã chọn.'));
-    } finally {
-      setActionId('');
+    const failures = [];
+    let success = 0;
+    for (const item of selectedDrafts) {
+      try {
+        await updateAdminContent(type, getItemId(item), { published: true });
+        success += 1;
+      } catch (error) {
+        if (onUnauthorized(error)) {
+          setActionId('');
+          return;
+        }
+        failures.push({ item, message: getErrorMessage(error, 'Không thể xuất bản.') });
+      }
     }
+    if (success) onNotify(`Đã xuất bản ${success} bài viết.`);
+    if (failures.length) {
+      onNotify(
+        `${failures.length} bài viết chưa thể xuất bản. ${failures[0].item.title}: ${failures[0].message}`,
+        'error',
+      );
+    }
+    setSelectedIds(failures.map(({ item }) => getItemId(item)));
+    content.refresh();
+    setActionId('');
   }
 
   function handleImported(result) {
@@ -124,19 +151,42 @@ export default function ContentWorkspace({
             : `${content.pagination.total.toLocaleString('vi-VN')} mục trong hệ thống`}
         </span>
         {selectedIds.length > 0 && (
-          <button
-            className="admin-button admin-button--danger"
-            disabled={actionId === 'bulk'}
-            onClick={handleBulkDelete}
-            type="button"
-          >
-            {actionId === 'bulk' ? (
-              <span className="admin-spinner" />
-            ) : (
-              <AdminIcon name="trash" size={17} />
-            )}
-            Xóa đã chọn
-          </button>
+          <div className="admin-bulk-bar__actions">
+            <button
+              className="admin-button admin-button--primary"
+              disabled={!selectedDrafts.length || Boolean(actionId)}
+              onClick={handleBulkPublish}
+              type="button"
+            >
+              {actionId === 'bulk-publish' ? (
+                <span className="admin-spinner" />
+              ) : (
+                <AdminIcon name="check" size={17} />
+              )}
+              Xuất bản ({selectedDrafts.length})
+            </button>
+            <button
+              className="admin-button admin-button--danger"
+              disabled={Boolean(actionId)}
+              onClick={handleBulkDelete}
+              type="button"
+            >
+              {actionId === 'bulk' ? (
+                <span className="admin-spinner" />
+              ) : (
+                <AdminIcon name="trash" size={17} />
+              )}
+              Xóa đã chọn
+            </button>
+            <button
+              className="admin-button admin-button--secondary"
+              disabled={Boolean(actionId)}
+              onClick={() => setSelectedIds([])}
+              type="button"
+            >
+              Bỏ chọn
+            </button>
+          </div>
         )}
       </div>
 
@@ -163,6 +213,23 @@ export default function ContentWorkspace({
           type={type}
         />
       )}
+      <AdminConfirmDialog
+        confirmLabel={
+          confirmDelete?.length > 1
+            ? `Xóa ${confirmDelete.length} bài viết`
+            : 'Xóa bài viết'
+        }
+        description={
+          confirmDelete?.length > 1
+            ? 'Các bài viết đã chọn sẽ bị xóa vĩnh viễn cùng tham chiếu hình ảnh không còn dùng trong nội dung đó.'
+            : `Bạn sắp xóa “${confirmDelete?.[0]?.title || ''}”. Hành động này không thể hoàn tác.`
+        }
+        loading={Boolean(actionId)}
+        onCancel={() => setConfirmDelete(null)}
+        onConfirm={confirmDeletion}
+        open={Boolean(confirmDelete?.length)}
+        title="Xác nhận xóa bài viết?"
+      />
     </section>
   );
 }

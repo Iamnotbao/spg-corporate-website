@@ -1,6 +1,7 @@
 import { vocabularyRepository } from "./vocabulary.repository.js";
 import {
   validateVocabulary,
+  validateVocabularyImport,
   VocabularyValidationError,
 } from "./vocabulary.validation.js";
 
@@ -35,6 +36,19 @@ function requireId(repository, value, field = "id") {
   const id = repository.toObjectId(value);
   if (!id) throw new VocabularyValidationError(`${field} must be a valid id`);
   return id;
+}
+
+export function vocabularyDuplicateKey(item, lessonId = item?.lessonId) {
+  const simplified = String(item?.simplified ?? "").trim();
+  const pinyin = String(item?.pinyin ?? "")
+    .trim()
+    .toLocaleLowerCase("vi");
+  return `${String(lessonId)}::${simplified}::${pinyin}`;
+}
+
+function importRowNumber(row, index) {
+  const value = Number(row?.rowNumber);
+  return Number.isInteger(value) && value > 0 ? value : index + 1;
 }
 
 async function filterPublicHierarchy(repository, items) {
@@ -115,6 +129,113 @@ export function createVocabularyService(repository = vocabularyRepository) {
           updatedAt: now,
         }),
       );
+    },
+    async importBatch(input) {
+      const request = validateVocabularyImport(input);
+      const lesson = await requireLesson(request.lessonId);
+      const lessonId = repository.toObjectId(lesson._id || request.lessonId);
+      const existing = await repository.listLessonIdentities(lessonId);
+      const existingKeys = new Set(
+        existing.map((item) => vocabularyDuplicateKey(item, lessonId)),
+      );
+      const seenKeys = new Set();
+      const documents = [];
+      const documentRows = [];
+      const rowErrors = [];
+      let invalid = 0;
+      let skippedDuplicates = 0;
+      const now = new Date();
+
+      request.rows.forEach((row, index) => {
+        const rowNumber = importRowNumber(row, index);
+        if (!row || typeof row !== "object" || Array.isArray(row)) {
+          invalid += 1;
+          rowErrors.push({
+            index,
+            rowNumber,
+            type: "invalid",
+            message: "Vocabulary row must be an object",
+          });
+          return;
+        }
+        if (
+          Object.prototype.hasOwnProperty.call(row, "lessonId") ||
+          Object.prototype.hasOwnProperty.call(row, "status")
+        ) {
+          invalid += 1;
+          rowErrors.push({
+            index,
+            rowNumber,
+            type: "invalid",
+            message: "lessonId and status must be selected outside the import file",
+          });
+          return;
+        }
+
+        const { rowNumber: _rowNumber, ...rowInput } = row;
+        let validated;
+        try {
+          validated = validateVocabulary({
+            ...rowInput,
+            lessonId: String(lessonId),
+            status: request.status,
+          });
+        } catch (error) {
+          invalid += 1;
+          rowErrors.push({
+            index,
+            rowNumber,
+            type: "invalid",
+            message: error.message,
+          });
+          return;
+        }
+
+        const key = vocabularyDuplicateKey(validated, lessonId);
+        const duplicate = existingKeys.has(key) || seenKeys.has(key);
+        if (duplicate && request.duplicateMode === "skip") {
+          skippedDuplicates += 1;
+          rowErrors.push({
+            index,
+            rowNumber,
+            type: "duplicate",
+            message: "Duplicate vocabulary skipped",
+          });
+          return;
+        }
+
+        seenKeys.add(key);
+        documents.push({
+          ...validated,
+          lessonId,
+          createdAt: now,
+          updatedAt: now,
+        });
+        documentRows.push({ index, rowNumber });
+      });
+
+      const insertResult = await repository.insertMany(documents);
+      for (const failure of insertResult.failures || []) {
+        const source = documentRows[failure.index] || {
+          index: failure.index,
+          rowNumber: failure.index + 1,
+        };
+        rowErrors.push({
+          ...source,
+          type: "failure",
+          message: failure.message,
+        });
+      }
+
+      return {
+        total: request.rows.length,
+        selected: request.rows.length,
+        inserted: insertResult.insertedCount,
+        skippedDuplicates,
+        invalid,
+        failures: (insertResult.failures || []).length,
+        rowErrors,
+      };
     },
     async update(id, input) {
       requireId(repository, id);
