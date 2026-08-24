@@ -1,0 +1,306 @@
+.global-search {
+  position: fixed;
+  inset: 0;
+  z-index: 220;
+  display: grid;
+  place-items: start center;
+  padding: clamp(70px, 9vh, 110px) 18px 24px;
+}
+
+.global-search__scrim {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(25, 18, 18, 0.52);
+  backdrop-filter: blur(8px);
+}
+
+.global-search__panel {
+  position: relative;
+  z-index: 1;
+  width: min(860px, 100%);
+  max-height: min(78vh, 820px);
+  overflow: auto;
+  padding: clamp(20px, 3vw, 30px);
+  border: 1px solid var(--mandora-line);
+  border-radius: 26px;
+  background: var(--mandora-paper);
+  box-shadow: 0 34px 90px rgba(43, 30, 28, 0.26);
+}
+
+.global-search__header,
+.global-search__bar,
+.global-search__group > div > button,
+.global-search__handwriting-actions > div,
+.global-search__candidates button {
+  display: flex;
+  align-items: center;
+}
+
+.global-search__header {
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.global-search__header span,
+.global-search__handwriting > div:first-child > span {
+  color: var(--mandora-red-700);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+}
+
+.global-search__header h2,
+.global-search__handwriting h3 {
+  margin: 4px 0 0;
+}
+
+.global-search__header > button {
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--mandora-line);
+  border-radius: 12px;
+  background: transparent;
+  font-size: 1.35rem;
+}
+
+.global-search__bar {
+  gap: 10px;
+  padding: 8px 10px 8px 16px;
+  border: 1px solid var(--mandora-line);
+  border-radius: 16px;
+  background: var(--mandora-surface);
+}
+
+.global-search__bar > span {
+  color: var(--mandora-muted);
+  font-size: 1.35rem;
+}
+
+.global-search__bar input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  outline: 0;
+  color: var(--mandora-ink);
+  background: transparent;
+  font: inherit;
+}
+
+.global-search__bar button,
+.global-search__handwriting-actions button {
+  min-height: 40px;
+  padding: 9px 13px;
+  border: 1px solid var(--mandora-line);
+  border-radius: 11px;
+  color: var(--mandora-ink);
+  background: var(--mandora-paper);
+  font-weight: 750;
+}
+
+.global-search__bar button.is-active,
+.global-search__handwriting-actions > button {
+  border-color: var(--mandora-red-700);
+  color: #fff;
+  background: var(--mandora-red-700);
+}
+
+.global-search__results {
+  display: grid;
+  gap: 20px;
+  margin-top: 22px;
+}
+
+.global-search__group {
+  display: grid;
+  gap: 8px;
+}
+
+.global-search__group h3 {
+  margin: 0;
+  color: var(--mandora-muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.global-search__group > div {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid var(--mandora-line);
+  border-radius: 14px;
+}
+
+.global-search__group > div > button {
+  width: 100%;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 13px 15px;
+  border: 0;
+  border-bottom: 1px solid var(--mandora-line);
+  color: inherit;
+  background: transparent;
+  text-align: left;
+}
+
+.global-search__group > div > button:last-child {
+  border-bottom: 0;
+}
+
+.global-search__group > div > button:hover {
+  background: var(--mandora-surface);
+}
+
+.global-search__group button span {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.global-search__group small {
+  overflow: hidden;
+  color: var(--mandora-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.global-search__group i {
+  color: var(--mandora-red-700);
+  font-style: normal;
+}
+
+.global-search__hint {
+  padding: 18px;
+  border-radius: 14px;
+  color: var(--mandora-muted);
+  background: var(--mandora-surface);
+}
+
+.global-search__hint.is-error {
+  color: var(--mandora-red-700);
+}
+
+.global-search__handwriting {
+  display: grid;
+  gap: 18px;
+  margin-top: 22px;
+  padding-top: 22px;
+  border-top: 1px solid var(--mandora-line);
+}
+
+.global-search__handwriting p {
+  margin: 7px 0 0;
+  color: var(--mandora-muted);
+  line-height: 1.55;
+}
+
+.global-search__handwriting-grid {
+  display: grid;
+  grid-template-columns: minmax(230px, 320px) minmax(0, 1fr);
+  align-items: start;
+  gap: 22px;
+}
+
+.global-search__handwriting-actions {
+  display: grid;
+  gap: 12px;
+}
+
+.global-search__handwriting-actions > div {
+  gap: 8px;
+}
+
+.global-search__handwriting-actions > button:disabled {
+  opacity: 0.55;
+}
+
+.global-search__candidates {
+  display: grid;
+  gap: 7px;
+}
+
+.global-search__candidates button {
+  width: 100%;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--mandora-line);
+  border-radius: 12px;
+  color: inherit;
+  background: var(--mandora-surface);
+  text-align: left;
+}
+
+.global-search__candidates strong {
+  width: 38px;
+  font-family: var(--font-chinese);
+  font-size: 1.7rem;
+}
+
+.global-search__candidates span {
+  color: var(--mandora-jade-700);
+  font-weight: 800;
+}
+
+.global-search__candidates small {
+  min-width: 0;
+  flex: 1;
+  color: var(--mandora-muted);
+}
+
+.global-search__candidates i {
+  color: var(--mandora-red-700);
+  font-style: normal;
+  font-weight: 850;
+}
+
+.public-global-search-button {
+  display: inline-grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border: 1px solid var(--mandora-line);
+  border-radius: 13px;
+  color: var(--mandora-ink);
+  background: var(--mandora-paper);
+  font-size: 1.1rem;
+}
+
+@media (max-width: 700px) {
+  .global-search {
+    padding: 66px 10px 10px;
+  }
+
+  .global-search__panel {
+    max-height: calc(100vh - 76px);
+    padding: 16px;
+    border-radius: 20px;
+  }
+
+  .global-search__bar {
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+
+  .global-search__bar input {
+    flex-basis: calc(100% - 34px);
+  }
+
+  .global-search__bar button {
+    width: 100%;
+  }
+
+  .global-search__handwriting-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .global-search *,
+  .global-search *::before,
+  .global-search *::after {
+    scroll-behavior: auto !important;
+    transition: none !important;
+  }
+}
