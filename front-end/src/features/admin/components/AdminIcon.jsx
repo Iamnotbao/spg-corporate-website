@@ -143,7 +143,7 @@ const PATHS = {
       <circle cx="12" cy="12" r="2.5" />
     </>
   ),
-  arrowLeft: <path d="m15 18-6-6 6-6" />,
+  arrowLeft: <path d="m15 18-6-6 6-6M20 18l-6-6 6-6" />,
   arrowRight: <path d="m9 18 6-6-6-6" />,
   logout: (
     <>
@@ -159,6 +159,11 @@ const PATHS = {
   download: (
     <>
       <path d="M12 3v12M7 10l5 5 5-5M5 21h14" />
+    </>
+  ),
+  upload: (
+    <>
+      <path d="M12 21V9M7 14l5-5 5 5M5 3h14" />
     </>
   ),
   close: <path d="m6 6 12 12M18 6 6 18" />,
