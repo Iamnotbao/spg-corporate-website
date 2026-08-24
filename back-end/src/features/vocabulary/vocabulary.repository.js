@@ -1,5 +1,9 @@
 import { getCollection } from "../../config/db.js";
 import { toObjectId } from "../../utils/objectId.js";
+import {
+  CHARACTER_COLLECTIONS,
+  ensureCharacterIndexes,
+} from "../character/character.repository.js";
 import { LEARNING_COLLECTIONS } from "../learning/learning.constants.js";
 import { ensureLearningIndexes } from "../learning/learning.repository.js";
 
@@ -17,6 +21,7 @@ export async function ensureVocabularyIndexes() {
         Promise.all([
           collection.createIndex({ lessonId: 1, status: 1 }),
           collection.createIndex({ status: 1, hskLevel: 1 }),
+          collection.createIndex({ characterIds: 1 }),
         ]),
       ),
       getCollection(VOCABULARY_COLLECTIONS.progress).then((collection) =>
@@ -29,6 +34,7 @@ export async function ensureVocabularyIndexes() {
         ]),
       ),
       ensureLearningIndexes(),
+      ensureCharacterIndexes(),
     ]).catch((error) => {
       indexPromise = undefined;
       throw error;
@@ -135,6 +141,28 @@ export const vocabularyRepository = {
     return (await collection(LEARNING_COLLECTIONS.courses))
       .find({ _id: { $in: ids }, status: "published" })
       .toArray();
+  },
+  async listCharactersBySimplified(values, filter = {}) {
+    const simplified = [...new Set(values.map((value) => String(value).trim()))].filter(
+      Boolean,
+    );
+    if (!simplified.length) return [];
+    return (await collection(CHARACTER_COLLECTIONS.characters))
+      .find({ simplified: { $in: simplified }, ...filter })
+      .toArray();
+  },
+  async insertCharacters(documents) {
+    if (!documents.length) return;
+    try {
+      await (await collection(CHARACTER_COLLECTIONS.characters)).insertMany(documents, {
+        ordered: false,
+      });
+    } catch (error) {
+      const writeErrors = Array.isArray(error?.writeErrors) ? error.writeErrors : [];
+      const duplicateOnly =
+        writeErrors.length > 0 && writeErrors.every((item) => item?.code === 11000);
+      if (!duplicateOnly) throw error;
+    }
   },
   async save(userId, vocabularyId, now) {
     const filter = {

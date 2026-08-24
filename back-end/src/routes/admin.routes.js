@@ -21,6 +21,7 @@ import * as learningController from "../features/learning/learning.controller.js
 import * as vocabularyController from "../features/vocabulary/vocabulary.controller.js";
 import * as quizController from "../features/quiz/quiz.controller.js";
 import * as progressController from "../features/progress/progress.controller.js";
+import * as characterController from "../features/character/character.controller.js";
 
 const router = Router();
 const loginLimiter = rateLimit({
@@ -158,6 +159,14 @@ router.delete(
   requireAdmin,
   asyncHandler(vocabularyController.remove),
 );
+
+router.get("/characters", requireAdmin, asyncHandler(characterController.listAdmin));
+router.post("/characters/bulk-status", requireAdmin, asyncHandler(characterController.bulkStatus));
+router.post("/characters/bulk-delete", requireAdmin, asyncHandler(characterController.bulkDelete));
+router.get("/characters/:id", requireAdmin, asyncHandler(characterController.getAdmin));
+router.post("/characters", requireAdmin, asyncHandler(characterController.create));
+router.put("/characters/:id", requireAdmin, asyncHandler(characterController.update));
+router.delete("/characters/:id", requireAdmin, asyncHandler(characterController.remove));
 
 router.get("/quizzes", requireAdmin, asyncHandler(quizController.listAdmin));
 router.get("/quizzes/:id", requireAdmin, asyncHandler(quizController.getAdmin));

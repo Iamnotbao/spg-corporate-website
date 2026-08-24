@@ -3,6 +3,7 @@ import * as studentLearningController from "../features/student-learning/student
 import * as vocabularyController from "../features/vocabulary/vocabulary.controller.js";
 import * as quizController from "../features/quiz/quiz.controller.js";
 import * as progressController from "../features/progress/progress.controller.js";
+import * as characterController from "../features/character/character.controller.js";
 import {
   dismissStudentNotification,
   listStudentNotifications,
@@ -49,5 +50,8 @@ router.get(
   "/quizzes/:quizId/attempts",
   asyncHandler(quizController.listOwnAttempts),
 );
+router.post("/characters/:characterId/attempts", asyncHandler(characterController.submitAttempt));
+router.get("/characters/:characterId/attempts/summary", asyncHandler(characterController.getAttemptSummary));
+router.get("/character-attempts/:attemptId", asyncHandler(characterController.getOwnAttempt));
 
 export default router;

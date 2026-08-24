@@ -19,6 +19,7 @@ import * as learningController from "../features/learning/learning.controller.js
 import * as studentAuthController from "../features/student-auth/student-auth.controller.js";
 import * as vocabularyController from "../features/vocabulary/vocabulary.controller.js";
 import * as quizController from "../features/quiz/quiz.controller.js";
+import * as characterController from "../features/character/character.controller.js";
 import { auth, requireRole } from "../middleware/auth.js";
 
 const router = Router();
@@ -78,6 +79,19 @@ router.get(
   asyncHandler(learningController.getPublishedLesson),
 );
 router.get("/vocabulary", asyncHandler(vocabularyController.listPublic));
+router.get("/characters", asyncHandler(characterController.listPublic));
+router.get(
+  "/characters/:identifier/strokes",
+  asyncHandler(characterController.getStrokeData),
+);
+router.post(
+  "/characters/:identifier/compare",
+  asyncHandler(characterController.compare),
+);
+router.get(
+  "/characters/:identifier",
+  asyncHandler(characterController.getPublic),
+);
 router.get(
   "/lessons/:identifier/quiz",
   asyncHandler(quizController.getPublicByLesson),

@@ -24,8 +24,8 @@ changed the current frontend as follows:
 - reusable public UI lives under `src/components/ui/`, while Courses, learning discovery,
   and Blog presentation are organized by feature;
 - Course, Unit, Lesson, Enrollment, LessonProgress, Vocabulary, saved-Vocabulary, Quiz,
-  Question, and QuizAttempt persistence now exists. Character, HSK, and non-Quiz Practice
-  composition remains illustrative;
+  Question, QuizAttempt, Character, and CharacterPracticeAttempt persistence now exists.
+  HSK and non-Quiz/non-Character Practice composition remains illustrative;
 - Blog list/detail pages reuse the existing Posts API, but expose only records assigned to
   the approved Mandora Blog category allowlist; legacy corporate Posts are not silently
   published as Mandora content;
@@ -58,13 +58,58 @@ bulk controls where their lifecycle supports publish/delete behavior; each opera
 passes through the existing resource service or controller guards. Vocabulary Lessons show
 six cards initially and reveal six more per click in a responsive three/two/one-column grid.
 
+### Phase 7 Character and handwriting implementation
+
+Phase 7 adds a separate `character` feature boundary without reusing or duplicating
+Vocabulary documents. `characters` stores one unique simplified glyph plus optional
+traditional form, Pinyin, Vietnamese/English meanings, radical, declared stroke count,
+HSK level, examples, `strokeDataKey`, optional `character`-type Lesson reference,
+draft/published status, and timestamps. Public list/detail/stroke/compare endpoints expose
+published records only; admin CRUD, search, HSK/status filters, pagination, safe bulk
+status, and lifecycle-aware deletion remain protected by `requireAdmin`.
+
+Animated stroke order uses the exact frontend dependency `hanzi-writer@3.7.3` (MIT).
+Stroke paths and medians come from the separately licensed open
+`hanzi-writer-data@2.0.1` package through a pinned jsDelivr URL loaded and bounded-cached by
+the backend. The browser receives that data from Mandora's API via Hanzi Writer's
+`charDataLoader`, so it does not call a third-party CDN directly. Publishing loads the
+source data and rejects a declared stroke-count mismatch. Source unavailability returns a
+safe 503; absence for a glyph returns 422. No proprietary site is scraped and no Mandora
+production character fixtures are fabricated.
+
+The public `/characters` catalog is backend-paginated and searchable by Chinese glyph,
+Pinyin, Vietnamese meaning, or radical, with HSK filtering. Each card links to
+`/characters/:character/practice`. The practice page sequences character context, a
+Hanzi Writer player, a responsive Pointer Events canvas with a toggleable 米 grid,
+server comparison, feedback/result, and optional owned statistics. The canvas uses
+`touch-action: none` while drawing, supports mouse/touch/pen, and offers undo, clear, and
+restart. Result entrance motion is disabled by `prefers-reduced-motion`.
+
+The backend normalizes Hanzi median coordinates and resamples each submitted stroke to 24
+points. Final score weights stroke-count agreement at 25% and indexed stroke similarity at
+75%. Each comparable stroke weights trajectory 45%, start/end points 25%, relative
+length/shape 15%, and center placement 15%. A materially better match against another
+target index yields order feedback. Missing/extra/empty submissions and per-stroke
+endpoint, trajectory, shape, and placement issues produce bounded Vietnamese feedback.
+This deterministic heuristic is guidance, not pronunciation, AI, or expert calligraphy
+assessment.
+
+`character_practice_attempts` is append-only and indexed by authenticated user,
+Character, and creation time. Services derive `userId` only from `req.user`, return latest,
+best, and count within that owner scope, and deny cross-user attempt lookups. Stored fields
+are Character ID, owner ID, score, submitted stroke count, summary, and timestamp; raw
+handwriting points are scored transiently and are not persisted. Character practice never
+calls Lesson completion and therefore cannot inflate Course progress. A linked published
+Character can appear as a practice link in its `character` Lesson.
+
 ### Admin frontend Phase 3 update
 
 The Mandora Admin frontend now uses URL-addressable destinations under `/admin`, a
 responsive grouped sidebar, a compact desktop mode, and a mobile drawer. The active
-navigation covers Dashboard; working Courses, Units, Lessons, and Quiz management; UI
-foundations for Vocabulary, Grammar, Characters, Students, Progress, and Settings; and the
-working Blog, Media, Blog Categories, and CMS-account modules.
+navigation covers Dashboard; working Courses, Units, Lessons, Vocabulary, Characters,
+Quiz, Students, and Progress management; and the working Blog, Media, Blog Categories,
+and CMS-account modules. Unrouted Grammar and Settings placeholders remain historical
+foundation code only.
 
 Phase 3 intentionally keeps these boundaries explicit:
 
@@ -74,8 +119,7 @@ Phase 3 intentionally keeps these boundaries explicit:
   permission checks;
 - Dashboard shows the real Posts total and recent Posts, but does not fabricate learning,
   student, or progress metrics;
-- Vocabulary administration, Grammar, Characters, Students, aggregate Progress, and
-  Mandora Settings pages remain UI foundations and make no persistence requests;
+- Grammar and Mandora Settings do not yet have approved persistence domains;
 - the shared `users` collection now contains backend-enforced student accounts alongside
   compatible legacy CMS accounts, but the Admin Students foundation does not list them;
 - legacy Jobs, Applications, visitor Chat, Communications, Languages, and corporate site

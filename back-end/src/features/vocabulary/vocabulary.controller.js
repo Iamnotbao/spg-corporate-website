@@ -1,7 +1,7 @@
 import { vocabularyService } from "./vocabulary.service.js";
 
 export async function listPublic(req, res) {
-  return res.json({ data: await vocabularyService.listPublic(req.query) });
+  return res.json(await vocabularyService.listPublic(req.query));
 }
 export async function listAdmin(_req, res) {
   return res.json({ data: await vocabularyService.listAdmin() });

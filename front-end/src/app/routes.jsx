@@ -10,6 +10,7 @@ import CourseDetailPage from '../features/courses/pages/CourseDetailPage.jsx';
 import CoursesPage from '../features/courses/pages/CoursesPage.jsx';
 import LessonPage from '../features/courses/pages/LessonPage.jsx';
 import CharactersPage from '../features/learning/pages/CharactersPage.jsx';
+import CharacterPracticePage from '../features/learning/pages/CharacterPracticePage.jsx';
 import HskPage from '../features/learning/pages/HskPage.jsx';
 import PracticeModePage from '../features/learning/pages/PracticeModePage.jsx';
 import PracticePage from '../features/learning/pages/PracticePage.jsx';
@@ -46,6 +47,10 @@ export default function AppRoutes() {
         <Route path="/hsk" element={<HskPage />} />
         <Route path="/vocabulary" element={<VocabularyPage />} />
         <Route path="/characters" element={<CharactersPage />} />
+        <Route
+          path="/characters/:character/practice"
+          element={<CharacterPracticePage />}
+        />
         <Route path="/practice" element={<PracticePage />} />
         <Route path="/practice/:mode" element={<PracticeModePage />} />
         <Route path="/blog" element={<BlogPage />} />

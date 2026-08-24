@@ -40,13 +40,6 @@ const FOUNDATIONS = {
     createLabel: 'Tạo nội dung',
     filterLabel: 'Cấp độ',
   },
-  characters: {
-    eyebrow: 'Learning content',
-    title: 'Hán tự',
-    description: 'Nền tảng quản trị Hán tự; chưa có mô hình lưu trữ hoặc API.',
-    createLabel: 'Tạo Hán tự',
-    filterLabel: 'Cấp độ',
-  },
   students: {
     eyebrow: 'Users',
     title: 'Học viên',

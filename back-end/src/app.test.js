@@ -108,6 +108,33 @@ test("Quiz administration routes require authentication", async () => {
   assert.deepEqual(await response.json(), { error: "Missing access token" });
 });
 
+test("Character administration routes require authentication", async () => {
+  for (const [path, method] of [
+    ["/api/admin/characters", "GET"],
+    ["/api/admin/characters", "POST"],
+    ["/api/admin/characters/bulk-status", "POST"],
+  ]) {
+    const response = await fetch(`${baseUrl}${path}`, { method });
+    assert.equal(response.status, 401);
+    assert.deepEqual(await response.json(), { error: "Missing access token" });
+  }
+});
+
+test("student Character attempt routes require authentication", async () => {
+  for (const [path, method] of [
+    ["/api/student/characters/507f1f77bcf86cd799439011/attempts", "POST"],
+    [
+      "/api/student/characters/507f1f77bcf86cd799439011/attempts/summary",
+      "GET",
+    ],
+    ["/api/student/character-attempts/507f1f77bcf86cd799439012", "GET"],
+  ]) {
+    const response = await fetch(`${baseUrl}${path}`, { method });
+    assert.equal(response.status, 401);
+    assert.deepEqual(await response.json(), { error: "Missing access token" });
+  }
+});
+
 test("learning reporting routes require admin authentication", async () => {
   for (const path of [
     "/api/admin/reports/learning-summary",

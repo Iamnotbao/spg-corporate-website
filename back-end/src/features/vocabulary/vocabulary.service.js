@@ -1,3 +1,4 @@
+import { loadCharacterData } from "../character/character-data.service.js";
 import { vocabularyRepository } from "./vocabulary.repository.js";
 import {
   validateVocabulary,
@@ -26,6 +27,7 @@ function serialize(item) {
     exampleVietnamese: item.exampleVietnamese,
     hskLevel: item.hskLevel,
     lessonId: String(item.lessonId),
+    characterIds: (item.characterIds || []).map(String),
     status: item.status,
     createdAt: item.createdAt,
     updatedAt: item.updatedAt,
@@ -44,6 +46,10 @@ export function vocabularyDuplicateKey(item, lessonId = item?.lessonId) {
     .trim()
     .toLocaleLowerCase("vi");
   return `${String(lessonId)}::${simplified}::${pinyin}`;
+}
+
+export function extractHanCharacters(value) {
+  return [...new Set(Array.from(String(value || "")).filter((char) => /^\p{Script=Han}$/u.test(char)))];
 }
 
 function importRowNumber(row, index) {
@@ -81,7 +87,20 @@ async function filterPublicHierarchy(repository, items) {
   return items.filter((item) => publicLessonIds.has(String(item.lessonId)));
 }
 
-export function createVocabularyService(repository = vocabularyRepository) {
+function publicListOptions(filters = {}) {
+  const page = Math.max(1, Number.parseInt(filters.page, 10) || 1);
+  const pageSize = Math.min(50, Math.max(1, Number.parseInt(filters.pageSize, 10) || 12));
+  return {
+    page,
+    pageSize,
+    search: String(filters.search || "").trim().toLocaleLowerCase("vi"),
+  };
+}
+
+export function createVocabularyService(
+  repository = vocabularyRepository,
+  characterDataLoader = loadCharacterData,
+) {
   async function requireLesson(lessonId) {
     requireId(repository, lessonId, "lessonId");
     const lesson = await repository.findLesson(lessonId);
@@ -99,14 +118,87 @@ export function createVocabularyService(repository = vocabularyRepository) {
     return item;
   }
 
+  async function linkCharacters(documents) {
+    const charactersByDocument = documents.map((item) => extractHanCharacters(item.simplified));
+    const allCharacters = [...new Set(charactersByDocument.flat())];
+    if (!allCharacters.length) {
+      documents.forEach((item) => {
+        item.characterIds = [];
+      });
+      return;
+    }
+
+    let existing = await repository.listCharactersBySimplified(allCharacters);
+    const existingSet = new Set(existing.map((item) => item.simplified));
+    const missing = allCharacters.filter((character) => !existingSet.has(character));
+    const now = new Date();
+    const generated = (
+      await Promise.all(
+        missing.map(async (character) => {
+          try {
+            const data = await characterDataLoader(character);
+            return {
+              simplified: character,
+              traditional: "",
+              pinyin: "",
+              meaningVietnamese: "",
+              meaningEnglish: "",
+              radical: "",
+              strokeCount: data.strokes.length,
+              hskLevel: "Ngoài HSK",
+              examples: [],
+              strokeDataKey: character,
+              lessonId: null,
+              status: "draft",
+              generatedFromVocabulary: true,
+              createdAt: now,
+              updatedAt: now,
+            };
+          } catch {
+            return null;
+          }
+        }),
+      )
+    ).filter(Boolean);
+
+    if (generated.length) {
+      await repository.insertCharacters(generated);
+      existing = await repository.listCharactersBySimplified(allCharacters);
+    }
+    const idByCharacter = new Map(existing.map((item) => [item.simplified, item._id]));
+    documents.forEach((item, index) => {
+      item.characterIds = charactersByDocument[index]
+        .map((character) => idByCharacter.get(character))
+        .filter(Boolean);
+    });
+  }
+
   return {
     async listPublic(filters = {}) {
       const query = { status: "published" };
       if (filters.hskLevel) query.hskLevel = String(filters.hskLevel).trim();
       if (filters.lessonId)
         query.lessonId = requireId(repository, filters.lessonId, "lessonId");
-      const items = await repository.list(query);
-      return (await filterPublicHierarchy(repository, items)).map(serialize);
+      let items = await filterPublicHierarchy(repository, await repository.list(query));
+      const options = publicListOptions(filters);
+      if (options.search) {
+        items = items.filter((item) =>
+          `${item.simplified} ${item.traditional || ""} ${item.pinyin} ${item.meaningVietnamese} ${item.meaningEnglish || ""}`
+            .toLocaleLowerCase("vi")
+            .includes(options.search),
+        );
+      }
+      const total = items.length;
+      const start = (options.page - 1) * options.pageSize;
+      return {
+        data: items.slice(start, start + options.pageSize).map(serialize),
+        pagination: {
+          page: options.page,
+          pageSize: options.pageSize,
+          total,
+          totalPages: Math.max(1, Math.ceil(total / options.pageSize)),
+        },
+      };
     },
     async listAdmin() {
       return (await repository.list()).map(serialize);
@@ -121,14 +213,14 @@ export function createVocabularyService(repository = vocabularyRepository) {
       const validated = validateVocabulary(input);
       await requireLesson(validated.lessonId);
       const now = new Date();
-      return serialize(
-        await repository.create({
-          ...validated,
-          lessonId: repository.toObjectId(validated.lessonId),
-          createdAt: now,
-          updatedAt: now,
-        }),
-      );
+      const document = {
+        ...validated,
+        lessonId: repository.toObjectId(validated.lessonId),
+        createdAt: now,
+        updatedAt: now,
+      };
+      await linkCharacters([document]);
+      return serialize(await repository.create(document));
     },
     async importBatch(input) {
       const request = validateVocabularyImport(input);
@@ -214,6 +306,7 @@ export function createVocabularyService(repository = vocabularyRepository) {
         documentRows.push({ index, rowNumber });
       });
 
+      await linkCharacters(documents);
       const insertResult = await repository.insertMany(documents);
       for (const failure of insertResult.failures || []) {
         const source = documentRows[failure.index] || {
@@ -254,6 +347,11 @@ export function createVocabularyService(repository = vocabularyRepository) {
           );
         }
         validated.lessonId = repository.toObjectId(validated.lessonId);
+      }
+      if (validated.simplified && validated.simplified !== current.simplified) {
+        const candidate = { ...current, ...validated };
+        await linkCharacters([candidate]);
+        validated.characterIds = candidate.characterIds;
       }
       const item = await repository.update(id, {
         ...validated,
