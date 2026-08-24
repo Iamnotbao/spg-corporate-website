@@ -13,19 +13,43 @@ export const VOCABULARY_CSV_HEADERS = [
   'exampleVietnamese',
 ];
 
+export const VOCABULARY_IMPORT_HEADERS = [
+  'simplified',
+  'traditional',
+  'pinyin',
+  'meaningVietnamese',
+  'meaningEnglish',
+  'hskLevel',
+  'audioUrl',
+  'exampleChinese',
+  'examplePinyin',
+  'exampleVietnamese',
+];
+
+const REQUIRED_IMPORT_HEADERS = [
+  'simplified',
+  'pinyin',
+  'meaningVietnamese',
+  'hskLevel',
+];
+
 function quoteCsv(value) {
   const text = String(value ?? '');
   return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
-export function vocabularyToCsv(items = []) {
+function rowsToCsv(headers, items = []) {
   const rows = items.map((item) =>
-    VOCABULARY_CSV_HEADERS.map((header) => quoteCsv(item?.[header])).join(','),
+    headers.map((header) => quoteCsv(item?.[header])).join(','),
   );
-  return `\uFEFF${VOCABULARY_CSV_HEADERS.join(',')}\r\n${rows.join('\r\n')}`;
+  return `\uFEFF${headers.join(',')}\r\n${rows.join('\r\n')}`;
 }
 
-export function vocabularyTemplateCsv(defaultLessonId = '') {
+export function vocabularyToCsv(items = []) {
+  return rowsToCsv(VOCABULARY_CSV_HEADERS, items);
+}
+
+export function vocabularyTemplateCsv() {
   const example = {
     simplified: '学习',
     traditional: '學習',
@@ -33,14 +57,12 @@ export function vocabularyTemplateCsv(defaultLessonId = '') {
     meaningVietnamese: 'học tập',
     meaningEnglish: 'to study',
     hskLevel: 'HSK 1',
-    lessonId: defaultLessonId,
-    status: 'draft',
     audioUrl: '',
     exampleChinese: '我学习中文。',
     examplePinyin: 'Wǒ xuéxí Zhōngwén.',
     exampleVietnamese: 'Tôi học tiếng Trung.',
   };
-  return vocabularyToCsv([example]);
+  return rowsToCsv(VOCABULARY_IMPORT_HEADERS, [example]);
 }
 
 export function downloadCsv(filename, csv) {
@@ -94,8 +116,8 @@ export function parseCsv(text) {
   if (!rows.length) return [];
 
   const headers = rows.shift().map((header) => header.trim());
-  const missing = VOCABULARY_CSV_HEADERS.filter((header) => !headers.includes(header));
-  if (missing.length) throw new Error(`CSV thiếu cột: ${missing.join(', ')}`);
+  const missing = REQUIRED_IMPORT_HEADERS.filter((header) => !headers.includes(header));
+  if (missing.length) throw new Error(`CSV thiếu cột bắt buộc: ${missing.join(', ')}`);
 
   return rows.map((values, rowIndex) => {
     const record = Object.fromEntries(headers.map((header, index) => [header, values[index] ?? '']));
