@@ -1,3 +1,4 @@
+import { recognizePublishedCharacter } from "./character-recognition.service.js";
 import { characterService } from "./character.service.js";
 
 export async function listPublic(req, res) {
@@ -20,6 +21,10 @@ export async function compare(req, res) {
   return res.json({
     data: await characterService.compare(req.params.identifier, req.body),
   });
+}
+
+export async function recognize(req, res) {
+  return res.json({ data: await recognizePublishedCharacter(req.body) });
 }
 
 export async function listAdmin(req, res) {
