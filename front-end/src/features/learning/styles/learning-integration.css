@@ -1,0 +1,328 @@
+.vocabulary-card__characters {
+  display: grid;
+  gap: 9px;
+  padding-top: 4px;
+  border-top: 1px solid var(--mandora-line);
+}
+
+.vocabulary-card__characters > span {
+  color: var(--mandora-muted);
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.vocabulary-card__characters > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.vocabulary-card__characters button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  border: 1px solid var(--mandora-line);
+  border-radius: 12px;
+  background: var(--mandora-surface);
+  color: var(--mandora-ink);
+  cursor: pointer;
+  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+
+.vocabulary-card__characters button:hover,
+.vocabulary-card__characters button:focus-visible {
+  border-color: var(--mandora-red-700);
+  background: var(--mandora-red-100);
+  transform: translateY(-2px);
+}
+
+.vocabulary-card__characters strong {
+  color: var(--mandora-red-700);
+  font-family: var(--font-chinese);
+  font-size: 1.15rem;
+  font-weight: 500;
+}
+
+.vocabulary-card__characters small {
+  color: var(--mandora-muted);
+  font-size: 0.7rem;
+  font-weight: 750;
+}
+
+.vocabulary-featured {
+  display: grid;
+  gap: 22px;
+}
+
+.vocabulary-featured__heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.vocabulary-featured__heading span {
+  color: var(--mandora-red-700);
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.vocabulary-featured__heading h2 {
+  margin: 6px 0 0;
+  font-size: clamp(1.7rem, 3vw, 2.45rem);
+}
+
+.vocabulary-featured__heading p {
+  max-width: 430px;
+  margin: 0;
+  color: var(--mandora-muted);
+  font-size: 0.84rem;
+  line-height: 1.6;
+}
+
+.vocabulary-featured__viewport {
+  overflow: hidden;
+  padding: 8px 0 18px;
+  mask-image: linear-gradient(to right, transparent, #000 3%, #000 97%, transparent);
+}
+
+.vocabulary-featured__track {
+  display: flex;
+  width: max-content;
+  gap: 18px;
+  animation: vocabulary-featured-scroll 36s linear infinite;
+}
+
+.vocabulary-featured__viewport:hover .vocabulary-featured__track,
+.vocabulary-featured__viewport:focus-within .vocabulary-featured__track {
+  animation-play-state: paused;
+}
+
+.vocabulary-featured__track .vocabulary-card {
+  width: clamp(280px, 31vw, 370px);
+}
+
+.character-practice-modal {
+  position: fixed;
+  z-index: 1400;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(28, 21, 19, 0.55);
+  backdrop-filter: blur(8px);
+  animation: character-modal-backdrop 180ms ease-out both;
+}
+
+.character-practice-modal__dialog {
+  display: grid;
+  width: min(1120px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+  border: 1px solid var(--mandora-line);
+  border-radius: 28px 28px 28px 10px;
+  background: var(--mandora-surface);
+  box-shadow: 0 28px 90px rgba(30, 19, 16, 0.28);
+  animation: character-modal-enter 220ms ease-out both;
+}
+
+.character-practice-modal__header {
+  position: sticky;
+  z-index: 2;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--mandora-line);
+  background: color-mix(in srgb, var(--mandora-paper) 94%, transparent);
+  backdrop-filter: blur(12px);
+}
+
+.character-practice-modal__header span {
+  color: var(--mandora-red-700);
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.character-practice-modal__header h2 {
+  margin: 4px 0 0;
+  font-size: 1.8rem;
+}
+
+.character-practice-modal__header p {
+  margin: 3px 0 0;
+  color: var(--mandora-muted);
+  font-size: 0.78rem;
+}
+
+.character-practice-modal__header > button {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 1px solid var(--mandora-line);
+  border-radius: 50%;
+  background: var(--mandora-paper);
+  color: var(--mandora-ink);
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.character-practice-modal__body {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 20px;
+  padding: 24px;
+}
+
+.character-practice-modal__body .stroke-player,
+.character-practice-modal__write {
+  padding: 22px;
+  border: 1px solid var(--mandora-line);
+  border-radius: 22px 22px 22px 8px;
+  background: var(--mandora-paper);
+}
+
+.character-practice-modal__write .handwriting-canvas-wrap {
+  width: min(100%, 390px);
+}
+
+.character-practice-modal__state {
+  display: grid;
+  min-height: 300px;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.character-practice-modal__state.is-error strong {
+  font-size: 1.3rem;
+}
+
+.character-practice-modal__state p {
+  max-width: 520px;
+  margin: 0;
+  color: var(--mandora-muted);
+}
+
+.character-practice-modal__state a,
+.character-practice-modal__full-link {
+  color: var(--mandora-red-700);
+  font-weight: 800;
+}
+
+.character-practice-modal__result {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 18px;
+  align-items: center;
+  margin-top: 18px;
+  padding: 16px;
+  border-radius: 18px;
+  background: var(--mandora-red-100);
+}
+
+.character-practice-modal__result > strong {
+  color: var(--mandora-red-700);
+  font-size: 2.6rem;
+  line-height: 1;
+}
+
+.character-practice-modal__result > strong small {
+  font-size: 0.75rem;
+}
+
+.character-practice-modal__result h3,
+.character-practice-modal__result p {
+  margin: 0;
+}
+
+.character-practice-modal__result ul {
+  display: grid;
+  gap: 4px;
+  margin: 8px 0 0;
+  padding-left: 18px;
+  color: var(--mandora-muted);
+  font-size: 0.76rem;
+}
+
+.character-practice-modal__full-link {
+  display: inline-block;
+  margin-top: 16px;
+  font-size: 0.8rem;
+}
+
+@keyframes vocabulary-featured-scroll {
+  to { transform: translateX(calc(-50% - 9px)); }
+}
+
+@keyframes character-modal-backdrop {
+  from { opacity: 0; }
+}
+
+@keyframes character-modal-enter {
+  from { opacity: 0; transform: translateY(14px) scale(0.985); }
+}
+
+@media (max-width: 820px) {
+  .vocabulary-featured__heading {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .character-practice-modal {
+    padding: 10px;
+  }
+
+  .character-practice-modal__dialog {
+    max-height: calc(100vh - 20px);
+    border-radius: 22px;
+  }
+
+  .character-practice-modal__body {
+    grid-template-columns: 1fr;
+    padding: 14px;
+  }
+}
+
+@media (max-width: 560px) {
+  .vocabulary-featured__track .vocabulary-card {
+    width: min(82vw, 330px);
+  }
+
+  .character-practice-modal__header {
+    padding: 16px;
+  }
+
+  .character-practice-modal__body .stroke-player,
+  .character-practice-modal__write {
+    padding: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vocabulary-featured__track {
+    animation: none;
+  }
+
+  .character-practice-modal,
+  .character-practice-modal__dialog {
+    animation: none;
+  }
+
+  .vocabulary-card__characters button {
+    transition: none;
+  }
+}
