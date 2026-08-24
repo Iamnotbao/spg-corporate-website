@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useLocation, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import LearningProgress from '../../../components/ui/LearningProgress.jsx';
 import { ErrorState, LoadingState } from '../../../components/ui/ContentState.jsx';
 import PublicToast from '../../../components/ui/PublicToast.jsx';
 import { usePageTitle } from '../../../hooks/usePageTitle.js';
 import { useStudentAuth } from '../../auth/StudentAuthContext.jsx';
-import VocabularyCard from '../../learning/components/VocabularyCard.jsx';
 import CharacterCard from '../../learning/components/CharacterCard.jsx';
+import CharacterPracticeModal from '../../learning/components/CharacterPracticeModal.jsx';
+import VocabularyCard from '../../learning/components/VocabularyCard.jsx';
 import { listPublicCharacters } from '../../learning/services/characterService.js';
 import {
   listPublicVocabulary,
@@ -39,6 +40,7 @@ const TYPE_LABELS = {
 export default function LessonPage() {
   const { courseSlug, lessonSlug } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const auth = useStudentAuth();
   const course = usePublicDetail(
     useCallback((slug) => getPublicCourse(slug), []),
@@ -58,6 +60,7 @@ export default function LessonPage() {
   const [characterStatus, setCharacterStatus] = useState('idle');
   const [savedIds, setSavedIds] = useState(new Set());
   const [busyVocabularyId, setBusyVocabularyId] = useState('');
+  const [practiceCharacter, setPracticeCharacter] = useState('');
   const [notice, setNotice] = useState({ message: '', variant: 'success' });
 
   const lessons = useMemo(
@@ -90,7 +93,7 @@ export default function LessonPage() {
     }
     setVocabularyStatus('loading');
     setVisibleVocabularyCount(6);
-    listPublicVocabulary({ lessonId: lesson.data.id })
+    listPublicVocabulary({ lessonId: lesson.data.id, page: 1, pageSize: 50 })
       .then((result) => {
         setLessonVocabulary(result.data || []);
         setVocabularyStatus('ready');
@@ -144,7 +147,10 @@ export default function LessonPage() {
   }
 
   async function toggleSaveVocabulary(item) {
-    if (auth.status !== 'signed-in') return;
+    if (auth.status !== 'signed-in') {
+      navigate('/login', { state: { from: location.pathname } });
+      return;
+    }
     setBusyVocabularyId(item.id);
     try {
       const wasSaved = savedIds.has(item.id);
@@ -210,11 +216,7 @@ export default function LessonPage() {
           <Link className="breadcrumb-link" to={`/courses/${course.data.slug}`}>
             ← {course.data.title}
           </Link>
-          <CourseOutline
-            compact
-            course={course.data}
-            currentLessonSlug={lesson.data.slug}
-          />
+          <CourseOutline compact course={course.data} currentLessonSlug={lesson.data.slug} />
         </aside>
         <article className="lesson-content">
           <header className="lesson-header">
@@ -242,22 +244,14 @@ export default function LessonPage() {
               <div className="lesson-vocabulary-section__heading">
                 <div>
                   <span>Từ vựng trong bài</span>
-                  <h2>Học từ ngay trong Lesson</h2>
+                  <h2>Học từ và luyện viết ngay trong Lesson</h2>
                 </div>
                 <Link to="/vocabulary">Xem toàn bộ từ vựng →</Link>
               </div>
-              {vocabularyStatus === 'loading' && (
-                <LoadingState count={3} label="Đang tải từ vựng" />
-              )}
-              {vocabularyStatus === 'error' && (
-                <p className="lesson-vocabulary-empty">
-                  Không thể tải từ vựng của bài học này.
-                </p>
-              )}
+              {vocabularyStatus === 'loading' && <LoadingState count={3} label="Đang tải từ vựng" />}
+              {vocabularyStatus === 'error' && <p className="lesson-vocabulary-empty">Không thể tải từ vựng của bài học này.</p>}
               {vocabularyStatus === 'ready' && lessonVocabulary.length === 0 && (
-                <p className="lesson-vocabulary-empty">
-                  Bài học này chưa có từ vựng được xuất bản.
-                </p>
+                <p className="lesson-vocabulary-empty">Bài học này chưa có từ vựng được xuất bản.</p>
               )}
               {vocabularyStatus === 'ready' && lessonVocabulary.length > 0 && (
                 <div className="lesson-vocabulary-grid">
@@ -266,22 +260,22 @@ export default function LessonPage() {
                       busy={busyVocabularyId === item.id}
                       item={item}
                       key={item.id}
+                      onPracticeCharacter={setPracticeCharacter}
                       onToggleSave={toggleSaveVocabulary}
                       saved={savedIds.has(item.id)}
                     />
                   ))}
                 </div>
               )}
-              {vocabularyStatus === 'ready' &&
-                lessonVocabulary.length > visibleVocabularyCount && (
-                  <button
-                    className="button button--secondary lesson-vocabulary-load-more"
-                    onClick={() => setVisibleVocabularyCount((count) => count + 6)}
-                    type="button"
-                  >
-                    Xem thêm 6 từ
-                  </button>
-                )}
+              {vocabularyStatus === 'ready' && lessonVocabulary.length > visibleVocabularyCount && (
+                <button
+                  className="button button--secondary lesson-vocabulary-load-more"
+                  onClick={() => setVisibleVocabularyCount((count) => count + 6)}
+                  type="button"
+                >
+                  Xem thêm 6 từ
+                </button>
+              )}
             </section>
           )}
 
@@ -294,18 +288,10 @@ export default function LessonPage() {
                 </div>
                 <Link to="/characters">Xem toàn bộ Hán tự →</Link>
               </div>
-              {characterStatus === 'loading' && (
-                <LoadingState count={3} label="Đang tải Hán tự" />
-              )}
-              {characterStatus === 'error' && (
-                <p className="lesson-vocabulary-empty">
-                  Không thể tải Hán tự của bài học này.
-                </p>
-              )}
+              {characterStatus === 'loading' && <LoadingState count={3} label="Đang tải Hán tự" />}
+              {characterStatus === 'error' && <p className="lesson-vocabulary-empty">Không thể tải Hán tự của bài học này.</p>}
               {characterStatus === 'ready' && lessonCharacters.length === 0 && (
-                <p className="lesson-vocabulary-empty">
-                  Bài học này chưa có Hán tự được xuất bản.
-                </p>
+                <p className="lesson-vocabulary-empty">Bài học này chưa có Hán tự được xuất bản.</p>
               )}
               {characterStatus === 'ready' && lessonCharacters.length > 0 && (
                 <div className="character-catalog-grid">
@@ -328,43 +314,22 @@ export default function LessonPage() {
                       ? 'Hoàn thành bằng Quiz'
                       : 'Hoàn thành bài học'}
                 </strong>
-                {isQuizLesson && !isComplete && (
-                  <p>Đạt điểm yêu cầu của Quiz để hoàn thành bài học này.</p>
-                )}
-                {studentState?.enrolled && (
-                  <LearningProgress value={studentState.progressPercentage} />
-                )}
+                {isQuizLesson && !isComplete && <p>Đạt điểm yêu cầu của Quiz để hoàn thành bài học này.</p>}
+                {studentState?.enrolled && <LearningProgress value={studentState.progressPercentage} />}
                 {completionError && <p role="alert">{completionError}</p>}
               </div>
             </div>
             {auth.status !== 'signed-in' ? (
-              <Link
-                className="button button--primary"
-                state={{ from: isQuizLesson ? quizUrl : location.pathname }}
-                to="/login"
-              >
+              <Link className="button button--primary" state={{ from: isQuizLesson ? quizUrl : location.pathname }} to="/login">
                 Đăng nhập để lưu tiến độ
               </Link>
             ) : !studentState?.enrolled ? (
-              <Link className="button button--primary" to={`/courses/${courseSlug}`}>
-                Đăng ký khóa học
-              </Link>
+              <Link className="button button--primary" to={`/courses/${courseSlug}`}>Đăng ký khóa học</Link>
             ) : isQuizLesson ? (
-              <Link className="button button--primary" to={quizUrl}>
-                {isComplete ? 'Làm lại Quiz' : 'Bắt đầu Quiz'}
-              </Link>
+              <Link className="button button--primary" to={quizUrl}>{isComplete ? 'Làm lại Quiz' : 'Bắt đầu Quiz'}</Link>
             ) : (
-              <button
-                className="button button--primary"
-                disabled={isComplete || submitting}
-                onClick={markComplete}
-                type="button"
-              >
-                {submitting
-                  ? 'Đang lưu…'
-                  : isComplete
-                    ? 'Đã hoàn thành'
-                    : 'Đánh dấu hoàn thành'}
+              <button className="button button--primary" disabled={isComplete || submitting} onClick={markComplete} type="button">
+                {submitting ? 'Đang lưu…' : isComplete ? 'Đã hoàn thành' : 'Đánh dấu hoàn thành'}
               </button>
             )}
           </div>
@@ -375,6 +340,7 @@ export default function LessonPage() {
           />
         </article>
       </div>
+      <CharacterPracticeModal character={practiceCharacter} onClose={() => setPracticeCharacter('')} />
       <PublicToast
         message={notice.message}
         onClose={() => setNotice((current) => ({ ...current, message: '' }))}
