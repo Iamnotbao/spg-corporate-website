@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import LearningProgress from '../../../components/ui/LearningProgress.jsx';
 import { ErrorState, LoadingState } from '../../../components/ui/ContentState.jsx';
+import PublicToast from '../../../components/ui/PublicToast.jsx';
 import { usePageTitle } from '../../../hooks/usePageTitle.js';
 import { useStudentAuth } from '../../auth/StudentAuthContext.jsx';
 import NotFoundPage from '../../public/pages/NotFoundPage.jsx';
@@ -23,6 +24,7 @@ export default function CourseDetailPage() {
   const [studentState, setStudentState] = useState(null);
   const [studentError, setStudentError] = useState('');
   const [enrolling, setEnrolling] = useState(false);
+  const [notice, setNotice] = useState({ message: '', variant: 'success' });
   usePageTitle(course.data?.title || 'Chi tiết khóa học');
 
   useEffect(() => {
@@ -41,8 +43,16 @@ export default function CourseDetailPage() {
     try {
       const result = await enrollInCourse(course.data.id);
       setStudentState(result.data);
+      setNotice({
+        message: 'Đã đăng ký khóa học. Bạn có thể bắt đầu học ngay.',
+        variant: 'success',
+      });
     } catch (error) {
       setStudentError(error.message);
+      setNotice({
+        message: error.message || 'Không thể đăng ký khóa học.',
+        variant: 'error',
+      });
     } finally {
       setEnrolling(false);
     }
@@ -170,14 +180,24 @@ export default function CourseDetailPage() {
               </>
             ) : (
               <p>
-                Tham gia khóa học để lưu tiến độ, tiếp tục từ bài gần nhất và theo dõi kết quả.
+                Tham gia khóa học để lưu tiến độ, tiếp tục từ bài gần nhất và theo dõi kết
+                quả.
               </p>
             )}
-            {studentError && <p className="course-enrollment-card__error" role="alert">{studentError}</p>}
+            {studentError && (
+              <p className="course-enrollment-card__error" role="alert">
+                {studentError}
+              </p>
+            )}
             {action}
           </aside>
         </div>
       </section>
+      <PublicToast
+        message={notice.message}
+        onClose={() => setNotice((current) => ({ ...current, message: '' }))}
+        variant={notice.variant}
+      />
     </>
   );
 }

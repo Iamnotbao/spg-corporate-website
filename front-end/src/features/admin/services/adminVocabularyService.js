@@ -15,6 +15,14 @@ export function createAdminVocabulary(payload) {
   });
 }
 
+export function importAdminVocabulary(payload) {
+  return apiRequest('/admin/vocabulary/import', {
+    auth: true,
+    method: 'POST',
+    body: payload,
+  });
+}
+
 export function updateAdminVocabulary(id, payload) {
   return apiRequest(`/admin/vocabulary/${encodeURIComponent(id)}`, {
     auth: true,

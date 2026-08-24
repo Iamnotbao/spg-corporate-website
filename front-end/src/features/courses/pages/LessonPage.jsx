@@ -51,6 +51,7 @@ export default function LessonPage() {
   const [submitting, setSubmitting] = useState(false);
   const [lessonVocabulary, setLessonVocabulary] = useState([]);
   const [vocabularyStatus, setVocabularyStatus] = useState('idle');
+  const [visibleVocabularyCount, setVisibleVocabularyCount] = useState(6);
   const [savedIds, setSavedIds] = useState(new Set());
   const [busyVocabularyId, setBusyVocabularyId] = useState('');
   const [notice, setNotice] = useState({ message: '', variant: 'success' });
@@ -80,9 +81,11 @@ export default function LessonPage() {
     if (lesson.data?.type !== 'vocabulary' || !lesson.data?.id) {
       setLessonVocabulary([]);
       setVocabularyStatus('idle');
+      setVisibleVocabularyCount(6);
       return;
     }
     setVocabularyStatus('loading');
+    setVisibleVocabularyCount(6);
     listPublicVocabulary({ lessonId: lesson.data.id })
       .then((result) => {
         setLessonVocabulary(result.data || []);
@@ -132,11 +135,16 @@ export default function LessonPage() {
         return next;
       });
       setNotice({
-        message: wasSaved ? `Đã bỏ lưu “${item.simplified}”.` : `Đã lưu “${item.simplified}” để ôn lại.`,
+        message: wasSaved
+          ? `Đã bỏ lưu “${item.simplified}”.`
+          : `Đã lưu “${item.simplified}” để ôn lại.`,
         variant: 'success',
       });
     } catch (error) {
-      setNotice({ message: error.message || 'Không thể cập nhật từ đã lưu.', variant: 'error' });
+      setNotice({
+        message: error.message || 'Không thể cập nhật từ đã lưu.',
+        variant: 'error',
+      });
     } finally {
       setBusyVocabularyId('');
     }
@@ -216,9 +224,13 @@ export default function LessonPage() {
                 </div>
                 <Link to="/vocabulary">Xem toàn bộ từ vựng →</Link>
               </div>
-              {vocabularyStatus === 'loading' && <LoadingState count={3} label="Đang tải từ vựng" />}
+              {vocabularyStatus === 'loading' && (
+                <LoadingState count={3} label="Đang tải từ vựng" />
+              )}
               {vocabularyStatus === 'error' && (
-                <p className="lesson-vocabulary-empty">Không thể tải từ vựng của bài học này.</p>
+                <p className="lesson-vocabulary-empty">
+                  Không thể tải từ vựng của bài học này.
+                </p>
               )}
               {vocabularyStatus === 'ready' && lessonVocabulary.length === 0 && (
                 <p className="lesson-vocabulary-empty">
@@ -227,7 +239,7 @@ export default function LessonPage() {
               )}
               {vocabularyStatus === 'ready' && lessonVocabulary.length > 0 && (
                 <div className="lesson-vocabulary-grid">
-                  {lessonVocabulary.map((item) => (
+                  {lessonVocabulary.slice(0, visibleVocabularyCount).map((item) => (
                     <VocabularyCard
                       busy={busyVocabularyId === item.id}
                       item={item}
@@ -238,6 +250,16 @@ export default function LessonPage() {
                   ))}
                 </div>
               )}
+              {vocabularyStatus === 'ready' &&
+                lessonVocabulary.length > visibleVocabularyCount && (
+                  <button
+                    className="button button--secondary lesson-vocabulary-load-more"
+                    onClick={() => setVisibleVocabularyCount((count) => count + 6)}
+                    type="button"
+                  >
+                    Xem thêm 6 từ
+                  </button>
+                )}
             </section>
           )}
 
