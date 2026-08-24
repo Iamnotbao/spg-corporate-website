@@ -87,8 +87,18 @@ function parseXml(text, label) {
   return document;
 }
 
+function elementsByLocalName(node, localName) {
+  const namespaced = node?.getElementsByTagNameNS?.('*', localName);
+  if (namespaced?.length) return Array.from(namespaced);
+  return Array.from(node?.getElementsByTagName?.(localName) || []);
+}
+
 function normalizeZipPath(baseDirectory, target) {
-  const parts = `${baseDirectory}/${String(target || '').replace(/^\//, '')}`.split('/');
+  const rawTarget = String(target || '').replace(/\\/g, '/');
+  const source = rawTarget.startsWith('/')
+    ? rawTarget.slice(1)
+    : `${baseDirectory}/${rawTarget}`;
+  const parts = source.split('/');
   const normalized = [];
   for (const part of parts) {
     if (!part || part === '.') continue;
@@ -184,15 +194,15 @@ async function parseXlsx(file) {
   );
   const workbook = parseXml(workbookXml, 'workbook.xml');
   const relationships = parseXml(relationshipsXml, 'workbook relationships');
-  const firstSheet = workbook.getElementsByTagName('sheet')[0];
+  const firstSheet = elementsByLocalName(workbook, 'sheet')[0];
   if (!firstSheet) throw new Error('File Excel không có worksheet để import.');
 
   const relationshipId =
     firstSheet.getAttributeNS(RELATIONSHIP_NAMESPACE, 'id') ||
     firstSheet.getAttribute('r:id');
-  const relationship = Array.from(
-    relationships.getElementsByTagName('Relationship'),
-  ).find((item) => item.getAttribute('Id') === relationshipId);
+  const relationship = elementsByLocalName(relationships, 'Relationship').find(
+    (item) => item.getAttribute('Id') === relationshipId,
+  );
   if (!relationship) throw new Error('Không xác định được worksheet đầu tiên trong Excel.');
 
   const sheetPath = normalizeZipPath('xl', relationship.getAttribute('Target'));
@@ -207,9 +217,9 @@ async function parseXlsx(file) {
 
   if (sharedStringsXml) {
     const sharedDocument = parseXml(sharedStringsXml, 'sharedStrings.xml');
-    for (const item of sharedDocument.getElementsByTagName('si')) {
+    for (const item of elementsByLocalName(sharedDocument, 'si')) {
       sharedStrings.push(
-        Array.from(item.getElementsByTagName('t'))
+        elementsByLocalName(item, 't')
           .map((node) => node.textContent || '')
           .join(''),
       );
@@ -218,19 +228,19 @@ async function parseXlsx(file) {
 
   const worksheet = parseXml(sheetXml, 'worksheet');
   const rows = [];
-  for (const rowNode of worksheet.getElementsByTagName('row')) {
+  for (const rowNode of elementsByLocalName(worksheet, 'row')) {
     const values = [];
-    for (const cell of rowNode.getElementsByTagName('c')) {
+    for (const cell of elementsByLocalName(rowNode, 'c')) {
       const index = columnIndex(cell.getAttribute('r'));
       const type = cell.getAttribute('t');
       let value;
 
       if (type === 'inlineStr') {
-        value = Array.from(cell.getElementsByTagName('t'))
+        value = elementsByLocalName(cell, 't')
           .map((node) => node.textContent || '')
           .join('');
       } else {
-        const raw = cell.getElementsByTagName('v')[0]?.textContent ?? '';
+        const raw = elementsByLocalName(cell, 'v')[0]?.textContent ?? '';
         if (type === 's') value = sharedStrings[Number(raw)] ?? '';
         else if (type === 'b') value = raw === '1' ? 'TRUE' : 'FALSE';
         else value = raw;
