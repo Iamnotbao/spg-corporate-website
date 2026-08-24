@@ -98,6 +98,11 @@ router.delete(
 );
 
 router.get(
+  "/lesson-options",
+  requireAdmin,
+  asyncHandler(learningController.listLessonOptions),
+);
+router.get(
   "/lessons",
   requireAdmin,
   asyncHandler(learningController.listLessons),
@@ -232,177 +237,125 @@ router.delete(
 );
 
 router.get(
-  "/languages",
-  requirePermission("languages.read"),
-  asyncHandler(languageController.listLanguages),
-);
-router.post(
-  "/languages",
-  requirePermission("languages.create"),
-  asyncHandler(languageController.createLanguage),
-);
-router.put(
-  "/languages/:id",
-  requirePermission("languages.update"),
-  asyncHandler(languageController.updateLanguage),
-);
-router.delete(
-  "/languages/:id",
-  requirePermission("languages.delete"),
-  asyncHandler(languageController.deleteLanguage),
-);
-
-router.get(
-  "/chat/settings",
-  requirePermission("chat.read"),
-  asyncHandler(chatController.getAdminChatSettings),
-);
-router.put(
-  "/chat/settings",
-  requirePermission("chat.settings"),
-  asyncHandler(chatController.updateAdminChatSettings),
-);
-router.get(
-  "/chat/sessions",
-  requirePermission("chat.read"),
-  asyncHandler(chatController.listAdminChatSessions),
-);
-router.get(
-  "/chat/sessions/:sessionId/messages",
-  requirePermission("chat.read"),
-  asyncHandler(chatController.getAdminChatMessages),
-);
-router.post(
-  "/chat/sessions/:sessionId/messages",
-  requirePermission("chat.reply"),
-  asyncHandler(chatController.createAdminChatMessage),
-);
-router.put(
-  "/chat/sessions/:sessionId",
-  requirePermission("chat.reply"),
-  asyncHandler(chatController.updateAdminChatSession),
-);
-
-router.get(
   "/communications/banner",
-  requirePermission("communications.read"),
+  requireAdmin,
   asyncHandler(communicationsController.getBanner),
 );
 router.put(
   "/communications/banner",
-  requirePermission("communications.update"),
+  requireAdmin,
   asyncHandler(communicationsController.updateBanner),
 );
 router.get(
   "/communications/notifications",
-  requirePermission("communications.read"),
+  requireAdmin,
   asyncHandler(communicationsController.listNotifications),
 );
 router.post(
   "/communications/notifications",
-  requirePermission("communications.update"),
+  requireAdmin,
   asyncHandler(communicationsController.createNotification),
 );
 router.put(
   "/communications/notifications/:id",
-  requirePermission("communications.update"),
+  requireAdmin,
   asyncHandler(communicationsController.updateNotification),
 );
 router.delete(
   "/communications/notifications/:id",
-  requirePermission("communications.update"),
+  requireAdmin,
   asyncHandler(communicationsController.deleteNotification),
 );
 
 router.get(
+  "/languages",
+  requireAdmin,
+  asyncHandler(languageController.listLanguages),
+);
+router.post(
+  "/languages",
+  requireAdmin,
+  asyncHandler(languageController.createLanguage),
+);
+router.put(
+  "/languages/:id",
+  requireAdmin,
+  asyncHandler(languageController.updateLanguage),
+);
+router.delete(
+  "/languages/:id",
+  requireAdmin,
+  asyncHandler(languageController.deleteLanguage),
+);
+
+router.get("/chat", requireAdmin, asyncHandler(chatController.listAdminChats));
+router.get("/chat/config", requireAdmin, asyncHandler(chatController.getChatConfig));
+router.put("/chat/config", requireAdmin, asyncHandler(chatController.updateChatConfig));
+router.get("/chat/:id", requireAdmin, asyncHandler(chatController.getAdminChat));
+router.post("/chat/:id/reply", requireAdmin, asyncHandler(chatController.adminReply));
+router.put("/chat/:id/status", requireAdmin, asyncHandler(chatController.updateChatStatus));
+
+router.get(
   "/site-profile",
-  requirePermission("settings.read"),
+  requireAdmin,
   asyncHandler(siteProfileController.getAdminSiteProfile),
 );
 router.put(
   "/site-profile",
-  requirePermission("settings.update"),
+  requireAdmin,
   asyncHandler(siteProfileController.updateAdminSiteProfile),
 );
-router.get(
-  "/media",
-  requirePermission("media.read"),
-  asyncHandler(mediaController.listMedia),
-);
-router.delete(
-  "/media",
-  requirePermission("media.delete"),
-  asyncHandler(mediaController.deleteMedia),
-);
+
+router.get("/media", requireAdmin, asyncHandler(mediaController.listMedia));
+router.delete("/media/:id", requireAdmin, asyncHandler(mediaController.deleteMedia));
 
 router.post(
   "/uploads/images",
+  requireAdmin,
   uploadLimiter,
   imageUpload.single("image"),
   validateImageSignature,
   asyncHandler(controller.uploadImage),
 );
 
-for (const type of ["posts", "jobs"]) {
-  router.post(
-    `/${type}/import`,
-    requirePermission(`${type}.import`),
-    uploadLimiter,
-    contentImportUpload.array("files", 20),
-    validateContentImportSignature,
-    asyncHandler((req, res) => importContent(type, req, res)),
-  );
-  router.get(
-    `/${type}`,
-    requirePermission(`${type}.read`),
-    asyncHandler((req, res) => controller.list(type, req, res)),
-  );
-  router.get(
-    `/${type}/:id`,
-    requirePermission(`${type}.read`),
-    asyncHandler((req, res) => controller.getOne(type, req, res)),
-  );
-  router.post(
-    `/${type}`,
-    requirePermission(`${type}.create`),
-    asyncHandler((req, res) => controller.create(type, req, res)),
-  );
-  router.put(
-    `/${type}/:id`,
-    requirePermission(`${type}.update`),
-    asyncHandler((req, res) => controller.update(type, req, res)),
-  );
-  router.delete(
-    `/${type}/:id`,
-    requirePermission(`${type}.delete`),
-    asyncHandler((req, res) => controller.remove(type, req, res)),
-  );
-  router.post(
-    `/${type}/bulk-delete`,
-    requirePermission(`${type}.delete`),
-    asyncHandler((req, res) => controller.bulkRemove(type, req, res)),
-  );
-}
+router.post(
+  "/posts/import",
+  requireAdmin,
+  contentImportUpload.array("files", 12),
+  validateContentImportSignature,
+  asyncHandler(importContent),
+);
+router.post(
+  "/jobs/import",
+  requireAdmin,
+  contentImportUpload.array("files", 12),
+  validateContentImportSignature,
+  asyncHandler(importContent),
+);
+
+router.get("/posts", requireAdmin, asyncHandler(controller.listPosts));
+router.get("/posts/:id", requireAdmin, asyncHandler(controller.getPost));
+router.post("/posts", requireAdmin, asyncHandler(controller.createPost));
+router.put("/posts/:id", requireAdmin, asyncHandler(controller.updatePost));
+router.delete("/posts/:id", requireAdmin, asyncHandler(controller.deletePost));
+router.post("/posts/bulk-delete", requireAdmin, asyncHandler(controller.bulkDeletePosts));
+
+router.get("/jobs", requireAdmin, asyncHandler(controller.listJobs));
+router.get("/jobs/:id", requireAdmin, asyncHandler(controller.getJob));
+router.post("/jobs", requireAdmin, asyncHandler(controller.createJob));
+router.put("/jobs/:id", requireAdmin, asyncHandler(controller.updateJob));
+router.delete("/jobs/:id", requireAdmin, asyncHandler(controller.deleteJob));
+router.post("/jobs/bulk-delete", requireAdmin, asyncHandler(controller.bulkDeleteJobs));
 
 router.get(
   "/applications",
-  requirePermission("applications.read"),
+  requireAdmin,
   asyncHandler(controller.listApplications),
 );
 router.get(
   "/applications/:id/cv",
-  requirePermission("applications.download"),
+  requireAdmin,
   asyncHandler(controller.downloadApplicationCv),
-);
-router.get(
-  "/settings/logo",
-  requirePermission("settings.read"),
-  asyncHandler(controller.getLogo),
-);
-router.put(
-  "/settings/logo",
-  requirePermission("settings.update"),
-  asyncHandler(controller.updateLogo),
 );
 
 export default router;
