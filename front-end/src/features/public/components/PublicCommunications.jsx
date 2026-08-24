@@ -157,9 +157,13 @@ export default function PublicCommunications() {
           }
         >
           <div className="public-container public-event-banner__inner">
-            <div>
+            <div className="public-event-banner__content">
               <strong>{banner.title || 'Thông báo từ Mandora'}</strong>
-              {banner.message && <span>{banner.message}</span>}
+              {banner.message && (
+                <div className="public-event-banner__marquee">
+                  <span>{banner.message}</span>
+                </div>
+              )}
             </div>
             {banner.link && (
               <a href={banner.link}>Xem chi tiết <span aria-hidden="true">→</span></a>
