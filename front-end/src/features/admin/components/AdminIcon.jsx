@@ -143,7 +143,7 @@ const PATHS = {
       <circle cx="12" cy="12" r="2.5" />
     </>
   ),
-  arrowLeft: <path d="m15 18-6-6 6-6M20 18l-6-6 6-6" />,
+  arrowLeft: <path d="m15 18-6-6 6-6" />,
   arrowRight: <path d="m9 18 6-6-6-6" />,
   logout: (
     <>
