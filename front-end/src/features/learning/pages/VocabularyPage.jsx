@@ -22,6 +22,7 @@ import '../styles/learning.css';
 
 const PAGE_SIZE = 12;
 const FEATURED_SIZE = 6;
+const HSK_LEVELS = ['Tất cả', 'HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5', 'HSK 6'];
 
 export default function VocabularyPage() {
   const auth = useStudentAuth();
@@ -133,9 +134,9 @@ export default function VocabularyPage() {
   }, [level, query, savedOnly, state.data]);
 
   const levels = useMemo(() => {
-    const source = savedOnly ? state.data : [...featured.data, ...state.data];
-    return ['Tất cả', ...new Set(source.map((item) => item.hskLevel).filter(Boolean))];
-  }, [featured.data, savedOnly, state.data]);
+    if (!savedOnly) return HSK_LEVELS;
+    return ['Tất cả', ...new Set(state.data.map((item) => item.hskLevel).filter(Boolean))];
+  }, [savedOnly, state.data]);
 
   function updateLevel(value) {
     setLevel(value);
