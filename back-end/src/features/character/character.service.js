@@ -33,6 +33,7 @@ function serializeCharacter(item) {
     strokeDataKey: item.strokeDataKey,
     lessonId: item.lessonId ? String(item.lessonId) : null,
     status: item.status,
+    generatedFromVocabulary: Boolean(item.generatedFromVocabulary),
     createdAt: item.createdAt,
     updatedAt: item.updatedAt,
   };
@@ -119,6 +120,14 @@ export function createCharacterService(
   }
 
   async function validatePublishable(item) {
+    const requiredText = ["pinyin", "meaningVietnamese", "radical"];
+    const missing = requiredText.filter((field) => !String(item[field] || "").trim());
+    if (missing.length) {
+      throw new CharacterServiceError(
+        409,
+        `Complete generated character fields before publishing: ${missing.join(", ")}`,
+      );
+    }
     const data = await dataLoader(item.strokeDataKey);
     if (data.strokes.length !== item.strokeCount) {
       throw new CharacterServiceError(
