@@ -223,7 +223,7 @@ async function parseXlsx(file) {
     for (const cell of rowNode.getElementsByTagName('c')) {
       const index = columnIndex(cell.getAttribute('r'));
       const type = cell.getAttribute('t');
-      let value = '';
+      let value;
 
       if (type === 'inlineStr') {
         value = Array.from(cell.getElementsByTagName('t'))
@@ -235,7 +235,7 @@ async function parseXlsx(file) {
         else if (type === 'b') value = raw === '1' ? 'TRUE' : 'FALSE';
         else value = raw;
       }
-      values[index] = value;
+      values[index] = value ?? '';
     }
     rows.push(values.map((value) => value ?? ''));
   }
