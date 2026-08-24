@@ -8,6 +8,7 @@ import './styles/users.css';
 import './styles/categories.css';
 import './styles/admin-phase-three.css';
 import './styles/learning.css';
+import './styles/vocabulary-import-polish.css';
 import './styles/chat.css';
 import './styles/communications.css';
 import './styles/site-profile.css';
