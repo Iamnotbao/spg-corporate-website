@@ -4,6 +4,9 @@ export function listPublicVocabulary(filters = {}) {
   const params = new URLSearchParams();
   if (filters.hskLevel) params.set('hskLevel', filters.hskLevel);
   if (filters.lessonId) params.set('lessonId', filters.lessonId);
+  if (filters.search) params.set('search', filters.search);
+  if (filters.page) params.set('page', String(filters.page));
+  if (filters.pageSize) params.set('pageSize', String(filters.pageSize));
   const query = params.toString();
   return apiRequest(`/vocabulary${query ? `?${query}` : ''}`);
 }
