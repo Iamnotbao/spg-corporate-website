@@ -9,6 +9,7 @@ import {
   getPublicCharacter,
   submitCharacterAttempt,
 } from '../services/characterService.js';
+import '../styles/learning-integration.css';
 
 const LEVEL_LABELS = {
   excellent: 'Rất sát mẫu',
@@ -106,10 +107,19 @@ export default function CharacterPracticeModal({ character, onClose }) {
   }
 
   return (
-    <div className="character-practice-modal" role="presentation" onMouseDown={(event) => {
-      if (event.target === event.currentTarget) onClose();
-    }}>
-      <section aria-label={`Luyện viết chữ ${character}`} aria-modal="true" className="character-practice-modal__dialog" role="dialog">
+    <div
+      className="character-practice-modal"
+      role="presentation"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <section
+        aria-label={`Luyện viết chữ ${character}`}
+        aria-modal="true"
+        className="character-practice-modal__dialog"
+        role="dialog"
+      >
         <header className="character-practice-modal__header">
           <div>
             <span>Luyện viết ngay trong bài học</span>
@@ -166,7 +176,11 @@ export default function CharacterPracticeModal({ character, onClose }) {
                   </div>
                 </div>
               )}
-              <Link className="character-practice-modal__full-link" onClick={onClose} to={`/characters/${encodeURIComponent(state.item.simplified)}/practice`}>
+              <Link
+                className="character-practice-modal__full-link"
+                onClick={onClose}
+                to={`/characters/${encodeURIComponent(state.item.simplified)}/practice`}
+              >
                 Mở trang luyện tập đầy đủ →
               </Link>
             </section>
