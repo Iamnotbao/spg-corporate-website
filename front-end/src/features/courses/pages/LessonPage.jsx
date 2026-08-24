@@ -22,6 +22,7 @@ import CourseOutline from '../components/CourseOutline.jsx';
 import LessonNavigation from '../components/LessonNavigation.jsx';
 import { getPublicCourse, getPublicLesson } from '../services/courseCatalogService.js';
 import '../styles/courses.css';
+import '../styles/lesson-vocabulary.css';
 
 const TYPE_LABELS = {
   character: 'Hán tự',
