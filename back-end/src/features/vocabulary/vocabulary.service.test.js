@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { ObjectId } from "mongodb";
-import { createVocabularyService } from "./vocabulary.service.js";
+import { createVocabularyService, extractHanCharacters } from "./vocabulary.service.js";
 import { MAX_VOCABULARY_IMPORT_ROWS } from "./vocabulary.validation.js";
 
 const studentA = new ObjectId("707f1f77bcf86cd799439011");
@@ -43,6 +43,10 @@ function repository(overrides = {}) {
     async listPublishedCourses() {
       return [{ _id: courseId, status: "published" }];
     },
+    async listCharactersBySimplified() {
+      return [];
+    },
+    async insertCharacters() {},
     async save(userId) {
       return {
         userId,
@@ -63,6 +67,12 @@ function repository(overrides = {}) {
   };
 }
 
+const fakeCharacterData = async () => ({ strokes: ["stroke"], medians: [] });
+
+test("extracts unique Han characters only", () => {
+  assert.deepEqual(extractHanCharacters("学习 123, 学!"), ["学", "习"]);
+});
+
 test("vocabulary saves and lists are scoped to the authenticated student", async () => {
   let savedOwner;
   let removedOwner;
@@ -77,6 +87,7 @@ test("vocabulary saves and lists are scoped to the authenticated student", async
         return { deletedCount: 1 };
       },
     }),
+    fakeCharacterData,
   );
   await service.save({ _id: studentA, role: "student" }, String(wordId));
   await service.unsave({ _id: studentB, role: "student" }, String(wordId));
@@ -99,8 +110,9 @@ test("draft or hidden hierarchy vocabulary is unavailable to students", async ()
         return [];
       },
     }),
+    fakeCharacterData,
   );
-  assert.deepEqual(await service.listPublic(), []);
+  assert.deepEqual((await service.listPublic()).data, []);
   await assert.rejects(
     () => service.save({ _id: studentA, role: "student" }, String(wordId)),
     { status: 404 },
@@ -140,6 +152,7 @@ test("batch import validates once and inserts 100 rows in one repository call", 
         return { insertedCount: documents.length, failures: [] };
       },
     }),
+    fakeCharacterData,
   );
   const result = await service.importBatch({
     lessonId: String(lessonId),
@@ -180,6 +193,7 @@ test("batch import skips normalized database and file duplicates", async () => {
         return { insertedCount: nextDocuments.length, failures: [] };
       },
     }),
+    fakeCharacterData,
   );
   const result = await service.importBatch({
     lessonId: String(lessonId),
@@ -219,6 +233,7 @@ test("batch import can allow duplicates and reports invalid rows", async () => {
         return { insertedCount: nextDocuments.length, failures: [] };
       },
     }),
+    fakeCharacterData,
   );
   const result = await service.importBatch({
     lessonId: String(lessonId),
@@ -255,6 +270,7 @@ test("batch import maps partial write failures back to source rows", async () =>
         };
       },
     }),
+    fakeCharacterData,
   );
   const result = await service.importBatch({
     lessonId: String(lessonId),
@@ -277,7 +293,7 @@ test("batch import maps partial write failures back to source rows", async () =>
 });
 
 test("batch import rejects requests over the 500-row limit", async () => {
-  const service = createVocabularyService(repository());
+  const service = createVocabularyService(repository(), fakeCharacterData);
   await assert.rejects(
     () =>
       service.importBatch({
