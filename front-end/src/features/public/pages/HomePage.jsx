@@ -12,9 +12,7 @@ import CourseCard from '../../courses/components/CourseCard.jsx';
 import { listPublicCourses } from '../../courses/services/courseCatalogService.js';
 import HskLevelCard from '../../learning/components/HskLevelCard.jsx';
 import { HSK_LEVELS } from '../../learning/data/demoLearningContent.js';
-import GoogleMapEmbed from '../../shared/GoogleMapEmbed.jsx';
 import { usePublicCollection } from '../hooks/usePublicContent.js';
-import '../../../styles/map-embed.css';
 import '../styles/home.css';
 
 const LEARNING_FEATURES = [
@@ -121,13 +119,13 @@ export default function HomePage() {
   usePageTitle('Học tiếng Trung cho người Việt');
   const loadCourses = useCallback(() => listPublicCourses(), []);
   const courses = usePublicCollection(loadCourses);
-  const [profile, setProfile] = useState({ metrics: [], partners: [], location: {} });
+  const [profile, setProfile] = useState({ metrics: [], partners: [] });
   const [courseSlide, setCourseSlide] = useState(0);
 
   useEffect(() => {
     const controller = new AbortController();
     getPublicSiteProfile({ signal: controller.signal })
-      .then((payload) => setProfile(payload?.data || { metrics: [], partners: [], location: {} }))
+      .then((payload) => setProfile(payload?.data || { metrics: [], partners: [] }))
       .catch(() => {});
     return () => controller.abort();
   }, []);
@@ -135,7 +133,6 @@ export default function HomePage() {
   const metrics = (profile.metrics || []).filter((item) => item.enabled !== false && item.label);
   const partners = (profile.partners || []).filter((item) => item.enabled !== false && (item.logoUrl || item.name));
   const featuredSlides = useMemo(() => chunk((courses.data || []).slice(0, 9), 3), [courses.data]);
-  const hasMap = Boolean(profile.location?.embedUrl || (profile.location?.address && import.meta.env.VITE_GOOGLE_MAPS_EMBED_KEY));
 
   useEffect(() => {
     if (featuredSlides.length < 2 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
@@ -206,8 +203,6 @@ export default function HomePage() {
       <section className="home-section home-section--vocabulary" aria-labelledby="daily-word-title"><div className="public-container home-vocabulary__grid"><div><p className="public-eyebrow">Một từ mỗi ngày</p><h2 id="daily-word-title">Học từ trong một câu hoàn chỉnh.</h2><p>Mỗi thẻ từ được thiết kế để hỗ trợ chữ giản thể, phồn thể, Pinyin, nghĩa tiếng Việt và ví dụ ngữ cảnh.</p><Link className="button button--secondary" to="/vocabulary">Khám phá từ vựng <span aria-hidden="true">→</span></Link></div><div className="home-vocabulary__character" aria-hidden="true" lang="zh-Hans">词</div></div></section>
 
       <BlogHighlights />
-
-      {hasMap && <section className="home-section home-location" aria-labelledby="home-location-title"><div className="public-container home-location__grid"><div><p className="public-eyebrow">Địa điểm</p><h2 id="home-location-title">Tìm Mandora trên Google Maps</h2>{profile.location?.name && <h3>{profile.location.name}</h3>}{profile.location?.address && <p>{profile.location.address}</p>}{profile.location?.mapsUrl && <a className="button button--secondary" href={profile.location.mapsUrl} target="_blank" rel="noreferrer">Mở Google Maps ↗</a>}</div><GoogleMapEmbed location={profile.location} title={profile.location?.name || 'Mandora trên Google Maps'} /></div></section>}
 
       <section className="mandora-cta home-final-cta"><div className="public-container mandora-cta__inner"><div><p className="public-eyebrow public-eyebrow--light">Hành trình Mandora</p><h2>Bắt đầu từ một bài học nhỏ hôm nay.</h2></div><div className="home-final-cta__actions"><Link className="button button--light" to="/courses">Xem khóa học <span aria-hidden="true">→</span></Link><Link className="button button--ghost-light" to="/login">Đăng nhập</Link></div></div></section>
     </>
