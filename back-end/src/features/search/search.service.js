@@ -1,6 +1,16 @@
 import { getCollection } from "../../config/db.js";
 import { LEARNING_COLLECTIONS } from "../learning/learning.constants.js";
 
+const MANDORA_BLOG_CATEGORIES = [
+  "hoc-tieng-trung",
+  "hsk",
+  "tu-vung",
+  "ngu-phap",
+  "han-tu",
+  "van-hoa",
+  "kinh-nghiem-hoc-tap",
+];
+
 function escapeRegex(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -29,19 +39,28 @@ export async function searchPublicContent(input = {}) {
     };
   }
 
-  const [coursesCollection, unitsCollection, lessonsCollection, vocabularyCollection, charactersCollection, postsCollection] =
-    await Promise.all([
-      getCollection(LEARNING_COLLECTIONS.courses),
-      getCollection(LEARNING_COLLECTIONS.units),
-      getCollection(LEARNING_COLLECTIONS.lessons),
-      getCollection("vocabularies"),
-      getCollection("characters"),
-      getCollection("posts"),
-    ]);
+  const [
+    coursesCollection,
+    unitsCollection,
+    lessonsCollection,
+    vocabularyCollection,
+    charactersCollection,
+    postsCollection,
+  ] = await Promise.all([
+    getCollection(LEARNING_COLLECTIONS.courses),
+    getCollection(LEARNING_COLLECTIONS.units),
+    getCollection(LEARNING_COLLECTIONS.lessons),
+    getCollection("vocabularies"),
+    getCollection("characters"),
+    getCollection("posts"),
+  ]);
 
   const [courses, lessons, vocabulary, characters, posts] = await Promise.all([
     coursesCollection
-      .find({ status: "published", ...textFilter(["title", "slug", "description", "level"], q) })
+      .find({
+        status: "published",
+        ...textFilter(["title", "slug", "description", "level"], q),
+      })
       .sort({ order: 1, title: 1 })
       .limit(limit)
       .toArray(),
@@ -75,7 +94,14 @@ export async function searchPublicContent(input = {}) {
       .find({
         status: "published",
         ...textFilter(
-          ["simplified", "traditional", "pinyin", "meaningVietnamese", "meaningEnglish", "radical"],
+          [
+            "simplified",
+            "traditional",
+            "pinyin",
+            "meaningVietnamese",
+            "meaningEnglish",
+            "radical",
+          ],
           q,
         ),
       })
@@ -85,6 +111,7 @@ export async function searchPublicContent(input = {}) {
     postsCollection
       .find({
         published: { $ne: false },
+        category: { $in: MANDORA_BLOG_CATEGORIES },
         ...textFilter(["title", "summary", "description", "content"], q),
       })
       .sort({ publishedAt: -1, createdAt: -1 })
@@ -92,31 +119,27 @@ export async function searchPublicContent(input = {}) {
       .toArray(),
   ]);
 
-  const unitIds = [...new Set(lessons.map((item) => idString(item.unitId)).filter(Boolean))];
-  const units = unitIds.length
-    ? await unitsCollection
-        .find({ _id: { $in: unitIds.map((id) => lessonsCollection.s?.db?.bsonOptions ? id : id) } })
-        .toArray()
-        .catch(() => [])
-    : [];
-
-  // Mongo ObjectIds cannot be reconstructed safely from string without the shared utility,
-  // so use the original ids collected from lessons for the actual lookup.
-  const rawUnitIds = [...new Map(lessons.filter((item) => item.unitId).map((item) => [String(item.unitId), item.unitId])).values()];
-  const resolvedUnits = rawUnitIds.length
-    ? await unitsCollection.find({ _id: { $in: rawUnitIds } }).toArray()
-    : units;
-  const unitById = new Map(resolvedUnits.map((item) => [String(item._id), item]));
-  const rawCourseIds = [
+  const unitIds = [
     ...new Map(
-      resolvedUnits
+      lessons
+        .filter((item) => item.unitId)
+        .map((item) => [String(item.unitId), item.unitId]),
+    ).values(),
+  ];
+  const units = unitIds.length
+    ? await unitsCollection.find({ _id: { $in: unitIds } }).toArray()
+    : [];
+  const unitById = new Map(units.map((item) => [String(item._id), item]));
+  const courseIds = [
+    ...new Map(
+      units
         .filter((item) => item.courseId)
         .map((item) => [String(item.courseId), item.courseId]),
     ).values(),
   ];
-  const lessonCourses = rawCourseIds.length
+  const lessonCourses = courseIds.length
     ? await coursesCollection
-        .find({ _id: { $in: rawCourseIds }, status: "published" })
+        .find({ _id: { $in: courseIds }, status: "published" })
         .toArray()
     : [];
   const courseById = new Map(lessonCourses.map((item) => [String(item._id), item]));
@@ -152,14 +175,18 @@ export async function searchPublicContent(input = {}) {
         id: idString(item._id),
         type: "vocabulary",
         title: item.simplified,
-        subtitle: [item.pinyin, item.meaningVietnamese, item.hskLevel].filter(Boolean).join(" · "),
+        subtitle: [item.pinyin, item.meaningVietnamese, item.hskLevel]
+          .filter(Boolean)
+          .join(" · "),
         url: `/vocabulary?search=${encodeURIComponent(item.simplified)}`,
       })),
       characters: characters.map((item) => ({
         id: idString(item._id),
         type: "character",
         title: item.simplified,
-        subtitle: [item.pinyin, item.meaningVietnamese, item.radical].filter(Boolean).join(" · "),
+        subtitle: [item.pinyin, item.meaningVietnamese, item.radical]
+          .filter(Boolean)
+          .join(" · "),
         url: `/characters/${encodeURIComponent(item.simplified)}/practice`,
       })),
       posts: posts.map((item) => ({
