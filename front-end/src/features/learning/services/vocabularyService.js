@@ -1,7 +1,11 @@
 import { apiRequest } from '../../../services/httpClient.js';
 
-export function listPublicVocabulary() {
-  return apiRequest('/vocabulary');
+export function listPublicVocabulary(filters = {}) {
+  const params = new URLSearchParams();
+  if (filters.hskLevel) params.set('hskLevel', filters.hskLevel);
+  if (filters.lessonId) params.set('lessonId', filters.lessonId);
+  const query = params.toString();
+  return apiRequest(`/vocabulary${query ? `?${query}` : ''}`);
 }
 
 export function listSavedVocabulary() {
