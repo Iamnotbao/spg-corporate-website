@@ -116,6 +116,14 @@ export const learningRepository = {
       .sort({ order: 1, title: 1 })
       .toArray();
   },
+  async listLessonsPage(filter = {}, { skip = 0, limit = 10 } = {}) {
+    return (await collection(LEARNING_COLLECTIONS.lessons))
+      .find(filter)
+      .sort({ order: 1, title: 1 })
+      .skip(skip)
+      .limit(limit)
+      .toArray();
+  },
   async findLesson(identifier, filter = {}) {
     return (await collection(LEARNING_COLLECTIONS.lessons)).findOne({
       ...identifierFilter(identifier),
