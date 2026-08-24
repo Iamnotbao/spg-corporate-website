@@ -10,6 +10,7 @@ export const ADMIN_NAV_GROUPS = [
       { key: 'units', label: 'Chương học', icon: 'units', path: '/admin/units', adminOnly: true },
       { key: 'lessons', label: 'Bài học', icon: 'lessons', path: '/admin/lessons', adminOnly: true },
       { key: 'vocabulary', label: 'Từ vựng', icon: 'vocabulary', path: '/admin/vocabulary', adminOnly: true },
+      { key: 'characters', label: 'Hán tự', icon: 'characters', path: '/admin/characters', adminOnly: true },
       { key: 'quizzes', label: 'Quiz', icon: 'quizzes', path: '/admin/quizzes', adminOnly: true },
     ],
   },

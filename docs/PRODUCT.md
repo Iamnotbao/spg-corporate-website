@@ -3,9 +3,8 @@
 ## Status
 
 This document defines the approved Mandora V1 product boundary. It describes the target
-product, not the current implementation. The repository audit in
-[`ARCHITECTURE.md`](./ARCHITECTURE.md) confirms that the learning product has not yet
-been implemented.
+product, not a substitute for implementation documentation. The current implemented
+baseline and remaining gaps are tracked in [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 
 ## Product definition
 
@@ -53,6 +52,7 @@ Mandora V1 has two authenticated roles: `admin` and `student`. The current legac
 | Course Detail | Explains one course and exposes its published learning structure.                       |
 | Lesson        | Presents the published lesson learning experience.                                      |
 | Vocabulary    | Presents the vocabulary experience defined for the relevant public context.             |
+| Hán tự        | Catalogs published characters and provides stroke-order and handwriting practice.       |
 | Quiz          | Presents and evaluates the quiz experience defined for the relevant public context.     |
 | Blog          | Lists and displays Mandora editorial content.                                           |
 
@@ -63,6 +63,7 @@ Mandora V1 has two authenticated roles: `admin` and `student`. The current legac
 | Login/Register | Creates and authenticates student accounts through one shared authentication foundation.  |
 | My Courses     | Shows the courses associated with the signed-in student.                                  |
 | Progress       | Shows the signed-in student's learning progress according to the agreed completion rules. |
+| Luyện Hán tự   | Stores the student's own practice attempts and shows latest/best scores.                  |
 
 ### Admin
 
@@ -73,6 +74,7 @@ Mandora V1 has two authenticated roles: `admin` and `student`. The current legac
 | Units      | Manages units within their course hierarchy.                                         |
 | Lessons    | Manages lessons within their unit hierarchy.                                         |
 | Vocabulary | Manages vocabulary associated with the agreed learning context.                      |
+| Hán tự     | Manages character metadata, Lesson links, stroke references, and publishing.         |
 | Quizzes    | Manages quiz definitions and their relationship to learning content.                 |
 | Blog       | Manages Mandora Blog content.                                                        |
 | Students   | Views and manages student accounts within explicit authorization rules.              |
@@ -87,9 +89,10 @@ Course
     └── Lesson
 ```
 
-Vocabulary and Quizzes are required V1 domains, but their exact ownership within the
-hierarchy must be confirmed before schemas and routes are implemented. The system must
-not encode conflicting relationships in the frontend and backend.
+Vocabulary belongs to one Lesson. A Quiz belongs to one `quiz` Lesson. A Character is a
+separate glyph/stroke-learning record and may optionally link to one `character` Lesson;
+it does not duplicate or replace Vocabulary. Character practice is supplemental and never
+changes LessonProgress or the Course completion denominator.
 
 ## Cross-cutting V1 requirements
 
@@ -127,8 +130,10 @@ The current application now provides Mandora public Course, Course Detail, Lesso
 Vocabulary reads; admin CRUD APIs for those learning resources; public student
 registration/login; Enrollment; My Courses; explicit Lesson completion; derived Course
 progress; student-owned saved Vocabulary; and the Quiz, Question, QuizAttempt, scoring,
-and result flow. It does not yet provide password recovery/email verification, a separate
-aggregate Progress page, or an admin student/progress reporting API. Legacy Posts/Blog,
+and result flow. Phase 7 additionally provides Character CRUD/publishing, the public Hán
+tự catalog, animated stroke order, pointer-based handwriting comparison, and owned
+CharacterPracticeAttempt history. It does not yet provide password recovery/email
+verification. Legacy Posts/Blog,
 Jobs, applications, visitor chat,
 company settings, media, and CMS compatibility code still exists in the backend and must
 be retired only through an approved data-retention process.
@@ -171,6 +176,22 @@ Mark Complete. A `quiz` Lesson can only be completed by passing its associated p
 Quiz. Failed attempts are retained but do not change LessonProgress. Passing retries use
 the existing idempotent LessonProgress record and therefore do not inflate Course
 progress.
+
+Phase 7 defines a Character as one unique simplified glyph with optional traditional form,
+Pinyin, Vietnamese/English meanings, radical, expected stroke count, HSK level, examples,
+an open stroke-data key, optional `character` Lesson link, and draft/published lifecycle.
+Only published Characters are public. Hanzi Writer renders the stroke-order demonstration;
+the pinned Hanzi Writer Data source supplies SVG paths and medians. Publishing verifies
+that the declared stroke count matches that data.
+
+Handwriting comparison is deterministic and educational, not calligraphy certification.
+The server weights exact stroke count (25%) and per-stroke similarity (75%). Per-stroke
+similarity weights resampled trajectory (45%), start/end points (25%), relative length and
+shape (15%), and placement (15%); comparison by target index also identifies likely order
+swaps. Empty, missing, and extra strokes receive explicit feedback. A signed-in comparison
+stores only score, submitted stroke count, feedback summary, and timestamp under the
+authenticated student. Raw pointer paths are discarded after scoring. Latest, best, and
+attempt count are owner-scoped. Anonymous visitors may compare without persistence.
 
 Until decided, architecture documents may identify these as open boundaries but must not
 invent product behavior.

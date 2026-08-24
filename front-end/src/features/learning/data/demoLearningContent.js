@@ -32,39 +32,6 @@ export const HSK_LEVELS = [
   },
 ];
 
-export const DEMO_CHARACTERS = [
-  {
-    simplified: '学',
-    traditional: '學',
-    pinyin: 'xué',
-    meaning: 'học',
-    radical: '子',
-    strokes: 8,
-    level: 'HSK 1',
-    examples: ['学生 · học sinh', '学习 · học tập'],
-  },
-  {
-    simplified: '好',
-    traditional: '好',
-    pinyin: 'hǎo',
-    meaning: 'tốt, khỏe',
-    radical: '女',
-    strokes: 6,
-    level: 'HSK 1',
-    examples: ['你好 · xin chào', '很好 · rất tốt'],
-  },
-  {
-    simplified: '语',
-    traditional: '語',
-    pinyin: 'yǔ',
-    meaning: 'ngôn ngữ, lời nói',
-    radical: '讠',
-    strokes: 9,
-    level: 'HSK 2',
-    examples: ['汉语 · tiếng Trung', '语言 · ngôn ngữ'],
-  },
-];
-
 export const PRACTICE_AREAS = [
   {
     slug: 'vocabulary',

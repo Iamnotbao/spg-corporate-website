@@ -6,6 +6,8 @@ import PublicToast from '../../../components/ui/PublicToast.jsx';
 import { usePageTitle } from '../../../hooks/usePageTitle.js';
 import { useStudentAuth } from '../../auth/StudentAuthContext.jsx';
 import VocabularyCard from '../../learning/components/VocabularyCard.jsx';
+import CharacterCard from '../../learning/components/CharacterCard.jsx';
+import { listPublicCharacters } from '../../learning/services/characterService.js';
 import {
   listPublicVocabulary,
   listSavedVocabulary,
@@ -52,6 +54,8 @@ export default function LessonPage() {
   const [lessonVocabulary, setLessonVocabulary] = useState([]);
   const [vocabularyStatus, setVocabularyStatus] = useState('idle');
   const [visibleVocabularyCount, setVisibleVocabularyCount] = useState(6);
+  const [lessonCharacters, setLessonCharacters] = useState([]);
+  const [characterStatus, setCharacterStatus] = useState('idle');
   const [savedIds, setSavedIds] = useState(new Set());
   const [busyVocabularyId, setBusyVocabularyId] = useState('');
   const [notice, setNotice] = useState({ message: '', variant: 'success' });
@@ -94,6 +98,24 @@ export default function LessonPage() {
       .catch(() => {
         setLessonVocabulary([]);
         setVocabularyStatus('error');
+      });
+  }, [lesson.data?.id, lesson.data?.type]);
+
+  useEffect(() => {
+    if (lesson.data?.type !== 'character' || !lesson.data?.id) {
+      setLessonCharacters([]);
+      setCharacterStatus('idle');
+      return;
+    }
+    setCharacterStatus('loading');
+    listPublicCharacters({ lessonId: lesson.data.id, pageSize: 50 })
+      .then((result) => {
+        setLessonCharacters(result.data || []);
+        setCharacterStatus('ready');
+      })
+      .catch(() => {
+        setLessonCharacters([]);
+        setCharacterStatus('error');
       });
   }, [lesson.data?.id, lesson.data?.type]);
 
@@ -260,6 +282,38 @@ export default function LessonPage() {
                     Xem thêm 6 từ
                   </button>
                 )}
+            </section>
+          )}
+
+          {lesson.data.type === 'character' && (
+            <section className="lesson-vocabulary-section">
+              <div className="lesson-vocabulary-section__heading">
+                <div>
+                  <span>Hán tự trong bài</span>
+                  <h2>Luyện viết ngay trong Lesson</h2>
+                </div>
+                <Link to="/characters">Xem toàn bộ Hán tự →</Link>
+              </div>
+              {characterStatus === 'loading' && (
+                <LoadingState count={3} label="Đang tải Hán tự" />
+              )}
+              {characterStatus === 'error' && (
+                <p className="lesson-vocabulary-empty">
+                  Không thể tải Hán tự của bài học này.
+                </p>
+              )}
+              {characterStatus === 'ready' && lessonCharacters.length === 0 && (
+                <p className="lesson-vocabulary-empty">
+                  Bài học này chưa có Hán tự được xuất bản.
+                </p>
+              )}
+              {characterStatus === 'ready' && lessonCharacters.length > 0 && (
+                <div className="character-catalog-grid">
+                  {lessonCharacters.map((item) => (
+                    <CharacterCard item={item} key={item.id} />
+                  ))}
+                </div>
+              )}
             </section>
           )}
 
