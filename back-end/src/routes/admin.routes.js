@@ -133,6 +133,11 @@ router.get(
   requireAdmin,
   asyncHandler(vocabularyController.listAdmin),
 );
+router.post(
+  "/vocabulary/import",
+  requireAdmin,
+  asyncHandler(vocabularyController.importBatch),
+);
 router.get(
   "/vocabulary/:id",
   requireAdmin,

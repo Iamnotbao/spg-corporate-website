@@ -69,10 +69,21 @@ test("admin image upload requires authentication", async () => {
 });
 
 test("learning administration routes require authentication", async () => {
-  const response = await fetch(`${baseUrl}/api/admin/courses`);
-
-  assert.equal(response.status, 401);
-  assert.deepEqual(await response.json(), { error: "Missing access token" });
+  for (const [path, options] of [
+    ["/api/admin/courses", {}],
+    [
+      "/api/admin/vocabulary/import",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      },
+    ],
+  ]) {
+    const response = await fetch(`${baseUrl}${path}`, options);
+    assert.equal(response.status, 401);
+    assert.deepEqual(await response.json(), { error: "Missing access token" });
+  }
 });
 
 test("student enrollment and owned learning routes require authentication", async () => {

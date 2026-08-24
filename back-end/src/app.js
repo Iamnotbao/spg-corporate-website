@@ -49,6 +49,7 @@ app.use(
 );
 
 app.use(helmet());
+app.use("/api/admin/vocabulary/import", express.json({ limit: "6mb" }));
 app.use(express.json({ limit: "1mb" }));
 app.use("/api", apiLimiter);
 app.use("/api/admin", adminRoutes);
