@@ -1,0 +1,275 @@
+.student-login-card {
+  position: relative;
+  overflow: hidden;
+  width: min(680px, 100%);
+  padding: clamp(28px, 5vw, 48px);
+  border-radius: 28px 28px 28px 10px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 253, 248, 0.97)),
+    var(--mandora-paper);
+}
+
+.student-login-card::before {
+  position: absolute;
+  top: -88px;
+  right: -72px;
+  width: 210px;
+  height: 210px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--mandora-red-100) 82%, transparent);
+  content: '';
+}
+
+.student-login-card__header {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.student-login-card__mark {
+  display: grid;
+  width: 56px;
+  height: 56px;
+  place-items: center;
+  border-radius: 18px 18px 18px 6px;
+  background: var(--mandora-red-700);
+  color: #fff;
+  font-family: serif;
+  font-size: 1.7rem;
+  box-shadow: 0 14px 28px rgba(173, 47, 67, 0.2);
+}
+
+.student-login-card__header .public-eyebrow {
+  margin-bottom: 8px;
+}
+
+.student-login-card__header h1 {
+  font-size: clamp(2.15rem, 5vw, 3.7rem);
+}
+
+.student-login-card__lead {
+  max-width: 500px;
+  margin: 12px 0 0;
+  color: var(--mandora-muted);
+  line-height: 1.65;
+}
+
+.student-login-form {
+  position: relative;
+  z-index: 1;
+  margin-top: 30px;
+}
+
+.student-login-form__two-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.student-login-form input:not([type='checkbox']) {
+  min-height: 50px;
+  padding: 13px 15px;
+  border-radius: 14px;
+  background: #fff;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease;
+}
+
+.student-login-form input:not([type='checkbox']):focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--mandora-red-700) 55%, var(--mandora-line));
+  background: var(--mandora-paper);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--mandora-red-100) 70%, transparent);
+}
+
+.student-login-form__options {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: -3px;
+  font-size: 0.84rem;
+}
+
+.student-login-form__options > a {
+  color: var(--mandora-red-700);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.student-login-form__options > a:hover {
+  text-decoration: underline;
+}
+
+.student-login-remember {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 9px !important;
+  cursor: pointer;
+  color: var(--mandora-muted) !important;
+  font-weight: 700 !important;
+}
+
+.student-login-remember input {
+  width: 17px;
+  height: 17px;
+  margin: 0;
+  accent-color: var(--mandora-red-700);
+}
+
+.student-login-error {
+  padding: 11px 13px;
+  border: 1px solid color-mix(in srgb, var(--mandora-red-700) 30%, var(--mandora-line));
+  border-radius: 12px;
+  background: var(--mandora-red-100);
+  line-height: 1.45;
+}
+
+.student-login-submit {
+  width: 100%;
+  min-height: 52px;
+  margin-top: 2px;
+  border-radius: 14px;
+}
+
+.student-login-divider {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 26px 0 18px;
+  color: var(--mandora-muted);
+  font-size: 0.75rem;
+  font-weight: 750;
+}
+
+.student-login-divider::before,
+.student-login-divider::after {
+  height: 1px;
+  flex: 1;
+  background: var(--mandora-line);
+  content: '';
+}
+
+.student-login-divider span {
+  white-space: nowrap;
+}
+
+.student-social-auth {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.student-social-button {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-height: 54px;
+  padding: 8px 14px;
+  border: 1px solid var(--mandora-line);
+  border-radius: 14px;
+  background: #fff;
+  color: var(--mandora-ink);
+  font: inherit;
+  font-weight: 800;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.student-social-button:not(:disabled):hover {
+  border-color: color-mix(in srgb, var(--mandora-red-700) 34%, var(--mandora-line));
+  box-shadow: 0 10px 24px rgba(57, 41, 34, 0.06);
+  transform: translateY(-2px);
+}
+
+.student-social-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.56;
+}
+
+.student-social-button__icon {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid var(--mandora-line);
+  border-radius: 10px;
+  background: var(--mandora-surface);
+  color: var(--mandora-red-700);
+  font-weight: 900;
+}
+
+.student-social-button small {
+  grid-column: 2;
+  margin-top: -7px;
+  color: var(--mandora-muted);
+  font-size: 0.66rem;
+  font-weight: 650;
+}
+
+.student-login-card__switch {
+  position: relative;
+  z-index: 1;
+  margin-top: 22px !important;
+  text-align: center;
+}
+
+.student-login-card__switch a {
+  color: var(--mandora-red-700);
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.student-login-card__security-note {
+  position: relative;
+  z-index: 1;
+  margin-top: 14px !important;
+  padding-top: 14px;
+  border-top: 1px solid var(--mandora-line);
+  color: var(--mandora-muted) !important;
+  font-size: 0.72rem;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .student-login-card__header {
+    grid-template-columns: 1fr;
+  }
+
+  .student-login-card__mark {
+    width: 50px;
+    height: 50px;
+  }
+
+  .student-login-form__two-columns,
+  .student-social-auth {
+    grid-template-columns: 1fr;
+  }
+
+  .student-login-form__options {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .student-login-form input,
+  .student-social-button {
+    transition: none;
+  }
+}
