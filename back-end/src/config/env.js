@@ -12,6 +12,15 @@ const groqApiKey = String(process.env.GROQ_API_KEY || "").trim();
 const groqModel = String(
   process.env.GROQ_MODEL || "openai/gpt-oss-120b",
 ).trim();
+const aiProvider = String(process.env.AI_PROVIDER || "")
+  .trim()
+  .toLowerCase();
+
+// `env.openai` is kept as a backwards-compatible surface for the older
+// website-support chat module. It now follows the configured AI provider so
+// Admin Chat can use the same provider as the Phase 10 AI Tutor.
+const legacyChatApiKey = aiProvider === "groq" ? groqApiKey : openAiApiKey;
+const legacyChatModel = aiProvider === "groq" ? groqModel : openAiModel;
 
 export const env = {
   port: Number(process.env.PORT || 10000),
@@ -33,13 +42,11 @@ export const env = {
   jwtSecret: process.env.JWT_SECRET || process.env.ADMIN_TOKEN || "",
   logoUrl: process.env.LOGO_URL || "",
   openai: {
-    apiKey: openAiApiKey,
-    model: openAiModel,
+    apiKey: legacyChatApiKey,
+    model: legacyChatModel,
   },
   ai: {
-    provider: String(process.env.AI_PROVIDER || "")
-      .trim()
-      .toLowerCase(),
+    provider: aiProvider,
     openAiApiKey,
     openAiModel,
     groqApiKey,
