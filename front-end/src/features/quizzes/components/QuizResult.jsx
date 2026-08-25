@@ -45,6 +45,17 @@ export default function QuizResult({ courseSlug, onRetry, result }) {
         ))}
       </div>
       <div className="quiz-result__actions">
+        <Link
+          className="button button--secondary quiz-result__ai"
+          state={{
+            initialPrompt:
+              'Hãy giải thích các câu tôi làm sai và cách tránh lỗi tương tự.',
+          }}
+          to={`/ai-tutor?quizAttempt=${encodeURIComponent(attempt.id)}`}
+        >
+          <span aria-hidden="true">文</span>
+          Giải thích lỗi bằng AI
+        </Link>
         <button className="button button--secondary" onClick={onRetry} type="button">
           Làm lại Quiz
         </button>

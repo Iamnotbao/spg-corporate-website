@@ -102,7 +102,10 @@ export default function LessonPage() {
     [completedLessonIds],
   );
   const isComplete = completedLessonSet.has(lesson.data?.id);
-  const relatedVocabulary = useMemo(() => lessonVocabulary.slice(0, 5), [lessonVocabulary]);
+  const relatedVocabulary = useMemo(
+    () => lessonVocabulary.slice(0, 5),
+    [lessonVocabulary],
+  );
   usePageTitle(lesson.data?.title || 'Bài học');
 
   const lessonTypes = useMemo(
@@ -127,7 +130,8 @@ export default function LessonPage() {
             lessonFilter === 'all' ||
             (lessonFilter === 'completed' && completed) ||
             (lessonFilter === 'incomplete' && !completed);
-          const matchesType = lessonTypeFilter === 'all' || item.type === lessonTypeFilter;
+          const matchesType =
+            lessonTypeFilter === 'all' || item.type === lessonTypeFilter;
           return matchesSearch && matchesStatus && matchesType;
         }),
       }))
@@ -268,6 +272,18 @@ export default function LessonPage() {
     }
   }
 
+  function askAiAboutVocabulary(item) {
+    const destination = `/ai-tutor?vocabulary=${encodeURIComponent(item.id)}`;
+    const state = {
+      initialPrompt: `Hãy giải thích cách dùng từ ${item.simplified} và cho ví dụ dễ nhớ.`,
+    };
+    if (auth.status !== 'signed-in') {
+      navigate('/login', { state: { from: destination } });
+      return;
+    }
+    navigate(destination, { state });
+  }
+
   if (course.status === 'loading' || lesson.status === 'loading')
     return (
       <section className="course-detail-loading">
@@ -385,7 +401,11 @@ export default function LessonPage() {
                   <small>Mục lục khóa học</small>
                   <strong>{course.data.title}</strong>
                 </div>
-                <button onClick={() => setOutlineOpen(false)} type="button" aria-label="Đóng">
+                <button
+                  onClick={() => setOutlineOpen(false)}
+                  type="button"
+                  aria-label="Đóng"
+                >
                   ×
                 </button>
               </header>
@@ -411,6 +431,17 @@ export default function LessonPage() {
             </div>
             <h1>{lesson.data.title}</h1>
             {lesson.data.description && <p>{lesson.data.description}</p>}
+            <Link
+              className="button button--secondary lesson-header__ai"
+              state={{
+                initialPrompt:
+                  'Hãy giải thích nội dung chính và điểm cần nhớ trong bài học này.',
+              }}
+              to={`/ai-tutor?lesson=${encodeURIComponent(lesson.data.id)}`}
+            >
+              <span aria-hidden="true">文</span>
+              Hỏi AI về bài này
+            </Link>
           </header>
           <div className="lesson-body lesson-body--plain">
             {lesson.data.content
@@ -449,7 +480,9 @@ export default function LessonPage() {
                   <div className="lesson-vocabulary-filters" aria-label="Lọc từ vựng">
                     {VOCAB_FILTERS.map((filter) => (
                       <button
-                        className={vocabularyFilter === filter.value ? 'is-active' : undefined}
+                        className={
+                          vocabularyFilter === filter.value ? 'is-active' : undefined
+                        }
                         key={filter.value}
                         onClick={() => setVocabularyFilter(filter.value)}
                         type="button"
@@ -468,15 +501,21 @@ export default function LessonPage() {
                 <LoadingState count={4} label="Đang tải từ vựng" />
               )}
               {vocabularyStatus === 'error' && (
-                <p className="lesson-vocabulary-empty">Không thể tải từ vựng của bài học này.</p>
+                <p className="lesson-vocabulary-empty">
+                  Không thể tải từ vựng của bài học này.
+                </p>
               )}
               {vocabularyStatus === 'ready' && lessonVocabulary.length === 0 && (
-                <p className="lesson-vocabulary-empty">Bài học này chưa có từ vựng được xuất bản.</p>
+                <p className="lesson-vocabulary-empty">
+                  Bài học này chưa có từ vựng được xuất bản.
+                </p>
               )}
               {vocabularyStatus === 'ready' &&
                 lessonVocabulary.length > 0 &&
                 filteredVocabulary.length === 0 && (
-                  <p className="lesson-vocabulary-empty">Không có từ vựng phù hợp với bộ lọc.</p>
+                  <p className="lesson-vocabulary-empty">
+                    Không có từ vựng phù hợp với bộ lọc.
+                  </p>
                 )}
               {vocabularyStatus === 'ready' && filteredVocabulary.length > 0 && (
                 <div
@@ -490,6 +529,7 @@ export default function LessonPage() {
                         busy={busyVocabularyId === item.id}
                         item={item}
                         key={item.id}
+                        onAskAi={askAiAboutVocabulary}
                         onPracticeCharacter={setPracticeCharacter}
                         onToggleSave={toggleSaveVocabulary}
                         saved={savedIds.has(item.id)}
@@ -510,12 +550,18 @@ export default function LessonPage() {
                 </div>
                 <Link to="/characters">Xem toàn bộ Hán tự →</Link>
               </div>
-              {characterStatus === 'loading' && <LoadingState count={3} label="Đang tải Hán tự" />}
+              {characterStatus === 'loading' && (
+                <LoadingState count={3} label="Đang tải Hán tự" />
+              )}
               {characterStatus === 'error' && (
-                <p className="lesson-vocabulary-empty">Không thể tải Hán tự của bài học này.</p>
+                <p className="lesson-vocabulary-empty">
+                  Không thể tải Hán tự của bài học này.
+                </p>
               )}
               {characterStatus === 'ready' && lessonCharacters.length === 0 && (
-                <p className="lesson-vocabulary-empty">Bài học này chưa có Hán tự được xuất bản.</p>
+                <p className="lesson-vocabulary-empty">
+                  Bài học này chưa có Hán tự được xuất bản.
+                </p>
               )}
               {characterStatus === 'ready' && lessonCharacters.length > 0 && (
                 <div className="character-catalog-grid">
@@ -570,7 +616,11 @@ export default function LessonPage() {
                 onClick={markComplete}
                 type="button"
               >
-                {submitting ? 'Đang lưu…' : isComplete ? 'Đã hoàn thành' : 'Đánh dấu hoàn thành'}
+                {submitting
+                  ? 'Đang lưu…'
+                  : isComplete
+                    ? 'Đã hoàn thành'
+                    : 'Đánh dấu hoàn thành'}
               </button>
             )}
           </div>

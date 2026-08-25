@@ -191,6 +191,25 @@
   display: block;
 }
 
+.vocabulary-card__ai {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 8px 12px;
+  border: 1px solid var(--mandora-line);
+  border-radius: 7px;
+  background: var(--mandora-jade-100);
+  color: var(--mandora-jade-700);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.vocabulary-card__ai:hover {
+  border-color: var(--mandora-jade-700);
+}
+
 .vocabulary-card__example strong {
   font-family: var(--font-chinese);
   font-size: 1.12rem;

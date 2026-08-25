@@ -40,6 +40,18 @@ A compound index on `(userId, saved, nextReviewAt)` supports the due queue. The 
 
 Unsave is intended to be non-destructive: it changes `saved` to false instead of erasing review history. Re-saving can therefore continue with the same historical record.
 
+Phase 9.1 adds the append-only `vocabulary_review_history` collection. Each event stores
+the authenticated `userId`, `vocabularyId`, server-validated rating, previous/next interval
+and ease values, `reviewedAt`, source, and a unique `reviewId`. The frontend cannot supply
+ownership, intervals, ease, or due dates. Standalone MongoDB deployments use a persisted
+pending-event marker and unique replay so a partial failure is recoverable without
+duplicating immutable events. A `reviewCount` compare-and-set guard rejects concurrent
+requests calculated from stale scheduling state.
+
+The shared mastery rule is deterministic: `repetitions >= 5`, `intervalDays >= 21`, and
+`easeFactor >= 2.0`. The normalized stages are `new`, `learning`, `review`, and `mastered`;
+the backend helper and dashboard aggregation share these thresholds.
+
 ## V1 scheduling rule
 
 This is a deterministic product rule inspired by common spaced-repetition mechanics; it is not presented as a scientifically optimal or SM-2-identical implementation.
@@ -65,6 +77,8 @@ A due progress record is returned as a flashcard only while its Vocabulary item 
 - `POST /api/student/vocabulary-review/:vocabularyId`
   - body: `{ "rating": "again|hard|good|easy" }`;
   - stores the server-derived next scheduling state.
+- `GET /api/student/vocabulary-review/history?limit=50`
+  - returns only the authenticated student's append-only review events.
 
 The frontend exposes the protected `/review` page and links to it from the signed-in student account menu.
 

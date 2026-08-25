@@ -94,6 +94,8 @@ test("student enrollment and owned learning routes require authentication", asyn
     ["/api/student/vocabulary", "GET"],
     ["/api/student/quizzes/507f1f77bcf86cd799439011/attempts", "POST"],
     ["/api/student/progress", "GET"],
+    ["/api/student/dashboard", "GET"],
+    ["/api/auth/send-verification", "POST"],
     ["/api/student/enrollments/507f1f77bcf86cd799439011", "DELETE"],
   ]) {
     const response = await fetch(`${baseUrl}${path}`, { method });
@@ -128,6 +130,19 @@ test("student Character attempt routes require authentication", async () => {
       "GET",
     ],
     ["/api/student/character-attempts/507f1f77bcf86cd799439012", "GET"],
+  ]) {
+    const response = await fetch(`${baseUrl}${path}`, { method });
+    assert.equal(response.status, 401);
+    assert.deepEqual(await response.json(), { error: "Missing access token" });
+  }
+});
+
+test("AI Tutor routes require student authentication", async () => {
+  for (const [path, method] of [
+    ["/api/student/ai/status", "GET"],
+    ["/api/student/ai/conversations", "GET"],
+    ["/api/student/ai/conversations/507f1f77bcf86cd799439011/messages", "GET"],
+    ["/api/student/ai/chat", "POST"],
   ]) {
     const response = await fetch(`${baseUrl}${path}`, { method });
     assert.equal(response.status, 401);

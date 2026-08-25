@@ -13,3 +13,8 @@ export async function review(req, res) {
     ),
   });
 }
+
+export async function history(req, res) {
+  const result = await vocabularyReviewService.history(req.user, req.query);
+  return res.json({ ok: true, ...result });
+}

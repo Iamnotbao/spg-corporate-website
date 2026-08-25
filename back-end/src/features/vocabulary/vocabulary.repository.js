@@ -10,6 +10,7 @@ import { ensureLearningIndexes } from "../learning/learning.repository.js";
 export const VOCABULARY_COLLECTIONS = Object.freeze({
   vocabulary: "vocabularies",
   progress: "vocabulary_progress",
+  reviewHistory: "vocabulary_review_history",
 });
 
 let indexPromise;
@@ -32,6 +33,17 @@ export async function ensureVocabularyIndexes() {
           ),
           collection.createIndex({ userId: 1, saved: 1, updatedAt: -1 }),
           collection.createIndex({ userId: 1, saved: 1, nextReviewAt: 1 }),
+        ]),
+      ),
+      getCollection(VOCABULARY_COLLECTIONS.reviewHistory).then((collection) =>
+        Promise.all([
+          collection.createIndex({ reviewId: 1 }, { unique: true }),
+          collection.createIndex({ userId: 1, reviewedAt: -1 }),
+          collection.createIndex({
+            userId: 1,
+            vocabularyId: 1,
+            reviewedAt: -1,
+          }),
         ]),
       ),
       ensureLearningIndexes(),
@@ -144,9 +156,9 @@ export const vocabularyRepository = {
       .toArray();
   },
   async listCharactersBySimplified(values, filter = {}) {
-    const simplified = [...new Set(values.map((value) => String(value).trim()))].filter(
-      Boolean,
-    );
+    const simplified = [
+      ...new Set(values.map((value) => String(value).trim())),
+    ].filter(Boolean);
     if (!simplified.length) return [];
     return (await collection(CHARACTER_COLLECTIONS.characters))
       .find({ simplified: { $in: simplified }, ...filter })
@@ -155,13 +167,18 @@ export const vocabularyRepository = {
   async insertCharacters(documents) {
     if (!documents.length) return;
     try {
-      await (await collection(CHARACTER_COLLECTIONS.characters)).insertMany(documents, {
+      await (
+        await collection(CHARACTER_COLLECTIONS.characters)
+      ).insertMany(documents, {
         ordered: false,
       });
     } catch (error) {
-      const writeErrors = Array.isArray(error?.writeErrors) ? error.writeErrors : [];
+      const writeErrors = Array.isArray(error?.writeErrors)
+        ? error.writeErrors
+        : [];
       const duplicateOnly =
-        writeErrors.length > 0 && writeErrors.every((item) => item?.code === 11000);
+        writeErrors.length > 0 &&
+        writeErrors.every((item) => item?.code === 11000);
       if (!duplicateOnly) throw error;
     }
   },
@@ -208,6 +225,83 @@ export const vocabularyRepository = {
       { $set: update },
       { returnDocument: "after" },
     );
+  },
+  async persistReview(
+    userId,
+    vocabularyId,
+    expectedReviewCount,
+    update,
+    history,
+  ) {
+    const progressCollection = await collection(
+      VOCABULARY_COLLECTIONS.progress,
+    );
+    const historyCollection = await collection(
+      VOCABULARY_COLLECTIONS.reviewHistory,
+    );
+    const next = await progressCollection.findOneAndUpdate(
+      {
+        userId: toObjectId(userId),
+        vocabularyId: toObjectId(vocabularyId),
+        saved: true,
+        $expr: {
+          $eq: [{ $ifNull: ["$reviewCount", 0] }, expectedReviewCount],
+        },
+      },
+      { $set: { ...update, pendingReviewHistory: history } },
+      { returnDocument: "after" },
+    );
+    if (!next) return null;
+    try {
+      await historyCollection.insertOne(history);
+    } catch (error) {
+      if (error?.code !== 11000) throw error;
+    }
+    await progressCollection.updateOne(
+      {
+        _id: next._id,
+        "pendingReviewHistory.reviewId": history.reviewId,
+      },
+      { $unset: { pendingReviewHistory: "" } },
+    );
+    delete next.pendingReviewHistory;
+    return next;
+  },
+  async reconcilePendingReviewHistory(userId, limit = 20) {
+    const progressCollection = await collection(
+      VOCABULARY_COLLECTIONS.progress,
+    );
+    const historyCollection = await collection(
+      VOCABULARY_COLLECTIONS.reviewHistory,
+    );
+    const rows = await progressCollection
+      .find({
+        userId: toObjectId(userId),
+        "pendingReviewHistory.reviewId": { $type: "string" },
+      })
+      .limit(limit)
+      .toArray();
+    for (const row of rows) {
+      try {
+        await historyCollection.insertOne(row.pendingReviewHistory);
+      } catch (error) {
+        if (error?.code !== 11000) throw error;
+      }
+      await progressCollection.updateOne(
+        {
+          _id: row._id,
+          "pendingReviewHistory.reviewId": row.pendingReviewHistory.reviewId,
+        },
+        { $unset: { pendingReviewHistory: "" } },
+      );
+    }
+  },
+  async listReviewHistory(userId, limit = 50) {
+    return (await collection(VOCABULARY_COLLECTIONS.reviewHistory))
+      .find({ userId: toObjectId(userId) })
+      .sort({ reviewedAt: -1, _id: -1 })
+      .limit(limit)
+      .toArray();
   },
   async listSavedProgress(userId) {
     return (await collection(VOCABULARY_COLLECTIONS.progress))

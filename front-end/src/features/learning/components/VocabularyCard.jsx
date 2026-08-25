@@ -1,12 +1,17 @@
 import '../styles/learning.css';
 
 function hanCharacters(value) {
-  return [...new Set(Array.from(String(value || '')).filter((char) => /^\p{Script=Han}$/u.test(char)))];
+  return [
+    ...new Set(
+      Array.from(String(value || '')).filter((char) => /^\p{Script=Han}$/u.test(char)),
+    ),
+  ];
 }
 
 export default function VocabularyCard({
   busy = false,
   item,
+  onAskAi,
   onPracticeCharacter,
   onToggleSave,
   saved = false,
@@ -50,11 +55,18 @@ export default function VocabularyCard({
         <p>{item.meaningVietnamese}</p>
       </div>
       {onPracticeCharacter && characters.length > 0 && (
-        <div className="vocabulary-card__characters" aria-label={`Luyện viết Hán tự trong ${item.simplified}`}>
+        <div
+          className="vocabulary-card__characters"
+          aria-label={`Luyện viết Hán tự trong ${item.simplified}`}
+        >
           <span>Luyện viết</span>
           <div>
             {characters.map((character) => (
-              <button key={character} onClick={() => onPracticeCharacter(character)} type="button">
+              <button
+                key={character}
+                onClick={() => onPracticeCharacter(character)}
+                type="button"
+              >
                 <strong lang="zh-Hans">{character}</strong>
                 <small>Viết</small>
               </button>
@@ -68,6 +80,16 @@ export default function VocabularyCard({
           {item.examplePinyin && <span>{item.examplePinyin}</span>}
           {item.exampleVietnamese && <p>{item.exampleVietnamese}</p>}
         </div>
+      )}
+      {onAskAi && (
+        <button
+          className="vocabulary-card__ai"
+          onClick={() => onAskAi(item)}
+          type="button"
+        >
+          <span aria-hidden="true">文</span>
+          Hỏi AI
+        </button>
       )}
     </article>
   );

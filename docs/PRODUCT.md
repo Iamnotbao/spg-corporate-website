@@ -17,8 +17,8 @@ The product has three surfaces:
 3. an authenticated admin content-management application.
 
 The immediate goal is a clear, dependable learning flow built around courses, units,
-lessons, vocabulary, quizzes, and progress. Mandora V1 is not a marketplace, live-class
-platform, certification system, or AI tutoring product.
+lessons, vocabulary, quizzes, progress, and a bounded AI Chinese Tutor. Mandora V1 is not
+a marketplace, live-class platform, or certification system.
 
 ## Audience and roles
 
@@ -61,9 +61,11 @@ Mandora V1 has two authenticated roles: `admin` and `student`. The current legac
 | Area           | V1 outcome                                                                                |
 | -------------- | ----------------------------------------------------------------------------------------- |
 | Login/Register | Creates and authenticates student accounts through one shared authentication foundation.  |
+| Dashboard      | Summarizes the signed-in student's persisted learning activity and next actions.          |
 | My Courses     | Shows the courses associated with the signed-in student.                                  |
 | Progress       | Shows the signed-in student's learning progress according to the agreed completion rules. |
 | Luyện Hán tự   | Stores the student's own practice attempts and shows latest/best scores.                  |
+| AI Gia sư      | Gives advisory Chinese-learning help using compact, backend-resolved Mandora context.     |
 
 ### Admin
 
@@ -110,7 +112,6 @@ changes LessonProgress or the Course completion denominator.
 
 ## Explicitly out of scope for V1
 
-- AI Tutor
 - repurposing the existing corporate OpenAI/chat feature as a learning feature
 - payments
 - subscriptions
@@ -132,8 +133,14 @@ registration/login; Enrollment; My Courses; explicit Lesson completion; derived 
 progress; student-owned saved Vocabulary; and the Quiz, Question, QuizAttempt, scoring,
 and result flow. Phase 7 additionally provides Character CRUD/publishing, the public Hán
 tự catalog, animated stroke order, pointer-based handwriting comparison, and owned
-CharacterPracticeAttempt history. It does not yet provide password recovery/email
-verification. Legacy Posts/Blog,
+CharacterPracticeAttempt history. Phase 8 adds deterministic saved-Vocabulary SRS review,
+Phase 9 adds an owned learning dashboard, study streaks, real activity analytics, and a
+rule-based daily plan, and Phase 9.1 adds secure password recovery, optional email
+verification, append-only SRS review history, and deterministic Vocabulary mastery.
+Phase 10 adds a protected, advisory AI Chinese Tutor with compact Lesson, Vocabulary, and
+owned QuizAttempt context, simple owner-scoped conversation history, and server-side cost
+controls. AI never writes official learning state.
+Legacy Posts/Blog,
 Jobs, applications, visitor chat,
 company settings, media, and CMS compatibility code still exists in the backend and must
 be retired only through an approved data-retention process.
@@ -165,8 +172,8 @@ Phase 4B defines My Courses as active student enrollment in a published Course. 
 is complete only after the enrolled student explicitly marks the published Lesson
 complete. Course progress is calculated dynamically as completed published Lessons
 divided by all published Lessons in Unit order; no percentage is stored. Vocabulary is
-attached to a Lesson, and V1 persistence records only whether the authenticated student
-saved it. Learned state and spaced-repetition scheduling remain out of scope.
+attached to a Lesson. Phase 8 extends its student-owned saved record with the approved
+spaced-repetition scheduling state; it does not create a second deck or ownership model.
 
 Phase 4C-1 defines exactly one Quiz per Lesson, and only Lessons whose type is `quiz` may
 own one. Supported Question types are `multiple_choice`, `true_false`, `fill_blank`, and
@@ -192,6 +199,38 @@ swaps. Empty, missing, and extra strokes receive explicit feedback. A signed-in 
 stores only score, submitted stroke count, feedback summary, and timestamp under the
 authenticated student. Raw pointer paths are discarded after scoring. Latest, best, and
 attempt count are owner-scoped. Anonymous visitors may compare without persistence.
+
+Phase 9 defines the student learning dashboard as a read-only aggregate over persisted
+learning records. A study date counts when the student completes a Lesson, submits a
+QuizAttempt, reviews a saved Vocabulary card, or submits a CharacterPracticeAttempt. Day
+boundaries use `Asia/Ho_Chi_Minh` (UTC+07:00). The current streak may end today or yesterday
+so it does not reset before the student has had a chance to study today; the longest streak
+uses every persisted study date. Phase 9.1 derives SRS activity from append-only
+`vocabulary_review_history`; reviews completed before that collection existed cannot be
+reconstructed and must not be invented.
+
+The daily plan is deterministic and ordered: due SRS Vocabulary, Continue Learning for an
+active Course, an incomplete published Quiz Lesson, then Character practice linked from
+recently reviewed Vocabulary when a published Character exists. The backend returns the
+action type and destination for every recommendation. Phase 9 does not add AI,
+gamification rewards, stored counters, or a generic learning-event collection.
+
+Phase 10 adds AI as an optional advisory surface without changing that Phase 9 rule. The
+tutor may explain learning content, correct sentences, and generate unofficial mini
+practice, but it cannot grade Quiz attempts, complete Lessons, calculate Course progress,
+change SRS scheduling, authenticate users, or perform admin actions. The backend resolves
+all LMS context references and only sends compact approved fields to the configured
+provider.
+
+Phase 9.1 defines Vocabulary as `mastered` only when its persisted SRS state has at least
+five repetitions, an interval of at least 21 days, and an ease factor of at least 2.0.
+Stages are exactly `new`, `learning`, `review`, and `mastered`, derived by one backend rule.
+Unsave is non-destructive and does not erase progress or append-only review history.
+
+Password recovery always gives the same public response for known and unknown email
+addresses. Reset and verification links are expiring, single-use, and stored only as token
+hashes. A successful reset invalidates earlier student JWTs. Verification is optional in
+this phase so existing users without `emailVerifiedAt` remain able to use Mandora.
 
 Until decided, architecture documents may identify these as open boundaries but must not
 invent product behavior.

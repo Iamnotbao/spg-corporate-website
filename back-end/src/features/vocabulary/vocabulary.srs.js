@@ -32,20 +32,42 @@ export function calculateNextReview(progress = {}, rating, now = new Date()) {
     nextReviewAt = new Date(now.getTime() + 10 * MINUTE_MS);
     stage = "learning";
   } else if (rating === "hard") {
-    intervalDays = previousInterval > 0 ? Math.max(1, Math.round(previousInterval * 1.2)) : 1;
+    intervalDays =
+      previousInterval > 0
+        ? Math.max(1, Math.round(previousInterval * 1.2))
+        : 1;
     nextRepetitions = repetitions + 1;
     easeFactor = clamp(previousEase - 0.15, 1.3, 3.2);
     nextReviewAt = new Date(now.getTime() + intervalDays * DAY_MS);
   } else if (rating === "good") {
-    intervalDays = repetitions === 0 ? 1 : repetitions === 1 ? 3 : Math.max(1, Math.round(previousInterval * previousEase));
+    intervalDays =
+      repetitions === 0
+        ? 1
+        : repetitions === 1
+          ? 3
+          : Math.max(1, Math.round(previousInterval * previousEase));
     nextRepetitions = repetitions + 1;
     nextReviewAt = new Date(now.getTime() + intervalDays * DAY_MS);
   } else {
-    intervalDays = repetitions === 0 ? 4 : Math.max(2, Math.round(Math.max(1, previousInterval) * previousEase * 1.3));
+    intervalDays =
+      repetitions === 0
+        ? 4
+        : Math.max(
+            2,
+            Math.round(Math.max(1, previousInterval) * previousEase * 1.3),
+          );
     nextRepetitions = repetitions + 1;
     easeFactor = clamp(previousEase + 0.15, 1.3, 3.2);
     nextReviewAt = new Date(now.getTime() + intervalDays * DAY_MS);
   }
+
+  stage = vocabularyStage({
+    stage,
+    repetitions: nextRepetitions,
+    intervalDays,
+    easeFactor,
+    reviewCount,
+  });
 
   return {
     saved: true,
@@ -77,7 +99,7 @@ export function initialSrsState(now = new Date()) {
 
 export function serializeSrs(progress = {}) {
   return {
-    stage: progress.stage || "new",
+    stage: vocabularyStage(progress),
     repetitions: Number(progress.repetitions) || 0,
     intervalDays: Number(progress.intervalDays) || 0,
     easeFactor: Number(progress.easeFactor) || 2.5,
@@ -88,3 +110,4 @@ export function serializeSrs(progress = {}) {
     nextReviewAt: progress.nextReviewAt || null,
   };
 }
+import { vocabularyStage } from "./vocabulary.mastery.js";

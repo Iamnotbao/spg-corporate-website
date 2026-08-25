@@ -28,6 +28,7 @@ const secretPatterns = [
   { name: 'Private key block', pattern: /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/g },
   { name: 'JWT-looking literal', pattern: /\beyJ[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,}\b/g },
   { name: 'Cloudinary API secret assignment', pattern: /CLOUDINARY_API_SECRET\s*=\s*(?!$|replace|example|your-|<)[^\s#]+/gi },
+  { name: 'Resend API key', pattern: /\bre_[A-Za-z0-9_-]{20,}\b/g },
   { name: 'JWT secret assignment', pattern: /JWT_SECRET\s*=\s*(?!$|replace|example|your-|<)[^\s#]+/gi },
   { name: 'Admin password assignment', pattern: /ADMIN_PASSWORD\s*=\s*(?!$|replace|example|your-|<)[^\s#]+/gi },
 ];

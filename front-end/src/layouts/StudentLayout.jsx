@@ -10,7 +10,13 @@ export default function StudentLayout() {
     return <LoadingState count={1} label="Đang kiểm tra phiên học viên" />;
   }
   if (auth.status !== 'signed-in') {
-    return <Navigate replace state={{ from: location.pathname }} to="/login" />;
+    return (
+      <Navigate
+        replace
+        state={{ from: `${location.pathname}${location.search}` }}
+        to="/login"
+      />
+    );
   }
   return <Outlet />;
 }

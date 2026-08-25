@@ -70,6 +70,15 @@ export default function SiteHeader() {
                 {item.label}
               </NavLink>
             ))}
+            {auth.status === 'signed-in' && (
+              <NavLink
+                className={({ isActive }) => (isActive ? 'is-active' : undefined)}
+                onClick={closeMenu}
+                to="/ai-tutor"
+              >
+                AI Gia sư
+              </NavLink>
+            )}
             {auth.status !== 'signed-in' && (
               <Link className="public-nav__login" onClick={closeMenu} to="/login">
                 Đăng nhập
@@ -122,6 +131,9 @@ export default function SiteHeader() {
                     </Link>
                     <Link onClick={closeMenu} to="/review">
                       Ôn tập hôm nay
+                    </Link>
+                    <Link onClick={closeMenu} to="/ai-tutor">
+                      AI Gia sư
                     </Link>
                     <Link onClick={closeMenu} to="/vocabulary?saved=1">
                       Từ vựng đã lưu

@@ -74,6 +74,7 @@ after substantial implementation changes.
 - Login/Register
 - My Courses
 - Progress
+- AI Tutor
 
 ### Admin
 
@@ -88,7 +89,7 @@ after substantial implementation changes.
 
 ### Out of scope for V1
 
-- AI Tutor or repurposing the legacy OpenAI visitor chat as a tutor
+- repurposing the legacy OpenAI visitor chat as a tutor
 - payments or subscriptions
 - live classes
 - certificates

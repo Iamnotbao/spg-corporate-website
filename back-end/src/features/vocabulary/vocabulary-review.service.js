@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { vocabularyRepository } from "./vocabulary.repository.js";
 import {
   calculateNextReview,
@@ -42,9 +43,9 @@ async function publicVocabularyByIds(repository, ids) {
     status: "published",
   });
   if (!items.length) return [];
-  const lessonIds = [...new Set(items.map((item) => String(item.lessonId)))].map(
-    (id) => repository.toObjectId(id),
-  );
+  const lessonIds = [
+    ...new Set(items.map((item) => String(item.lessonId))),
+  ].map((id) => repository.toObjectId(id));
   const lessons = await repository.listPublishedLessons(lessonIds);
   const units = await repository.listUnits(
     [...new Set(lessons.map((lesson) => String(lesson.unitId)))].map((id) =>
@@ -70,10 +71,13 @@ async function publicVocabularyByIds(repository, ids) {
   return items.filter((item) => visibleLessonIds.has(String(item.lessonId)));
 }
 
-export function createVocabularyReviewService(repository = vocabularyRepository) {
+export function createVocabularyReviewService(
+  repository = vocabularyRepository,
+) {
   return {
     async queue(user, options = {}) {
       const userId = requireStudent(user);
+      await repository.reconcilePendingReviewHistory(userId);
       const now = new Date();
       const limit = Math.min(50, Math.max(1, Number(options.limit) || 20));
       const [progressRows, due, saved] = await Promise.all([
@@ -106,6 +110,7 @@ export function createVocabularyReviewService(repository = vocabularyRepository)
 
     async review(user, vocabularyId, input = {}) {
       const userId = requireStudent(user);
+      await repository.reconcilePendingReviewHistory(userId);
       const id = repository.toObjectId(vocabularyId);
       if (!id) throw new VocabularyReviewError(400, "Invalid vocabulary id");
       const progress = await repository.findProgress(userId, id);
@@ -118,17 +123,60 @@ export function createVocabularyReviewService(repository = vocabularyRepository)
       const visible = await publicVocabularyByIds(repository, [id]);
       if (!visible.length)
         throw new VocabularyReviewError(404, "Vocabulary not found");
-      const rating = String(input.rating || "").trim().toLowerCase();
+      const rating = String(input.rating || "")
+        .trim()
+        .toLowerCase();
       const now = new Date();
       const update = calculateNextReview(
         { ...initialSrsState(now), ...progress },
         rating,
         now,
       );
-      const next = await repository.updateProgress(userId, id, update);
+      const history = {
+        reviewId: randomUUID(),
+        userId,
+        vocabularyId: id,
+        rating,
+        previousIntervalDays: Number(progress.intervalDays) || 0,
+        nextIntervalDays: update.intervalDays,
+        previousEase: Number(progress.easeFactor) || 2.5,
+        nextEase: update.easeFactor,
+        reviewedAt: now,
+        source: "review",
+      };
+      const next = await repository.persistReview(
+        userId,
+        id,
+        Number(progress.reviewCount) || 0,
+        update,
+        history,
+      );
+      if (!next) {
+        throw new VocabularyReviewError(409, "Vocabulary review state changed");
+      }
       return {
         vocabulary: serializeVocabulary(visible[0]),
         srs: serializeSrs(next),
+      };
+    },
+
+    async history(user, options = {}) {
+      const userId = requireStudent(user);
+      await repository.reconcilePendingReviewHistory(userId);
+      const limit = Math.min(100, Math.max(1, Number(options.limit) || 50));
+      const rows = await repository.listReviewHistory(userId, limit);
+      return {
+        data: rows.map((item) => ({
+          id: String(item._id),
+          vocabularyId: String(item.vocabularyId),
+          rating: item.rating,
+          previousIntervalDays: item.previousIntervalDays,
+          nextIntervalDays: item.nextIntervalDays,
+          previousEase: item.previousEase,
+          nextEase: item.nextEase,
+          reviewedAt: item.reviewedAt,
+          source: item.source,
+        })),
       };
     },
   };

@@ -77,6 +77,29 @@ test("authentication rejects unsupported roles", async () => {
   assert.equal(result.res.statusCode, 401);
 });
 
+test("authentication rejects JWTs invalidated by a password reset", async () => {
+  const middleware = createAuthMiddleware({
+    findUserById: async () => ({
+      _id: "507f1f77bcf86cd799439011",
+      role: "student",
+      active: true,
+      authVersion: 2,
+    }),
+  });
+  const token = jwt.sign(
+    { sub: "507f1f77bcf86cd799439011", ver: 1 },
+    env.jwtSecret,
+  );
+  const req = { headers: { authorization: `Bearer ${token}` } };
+  const res = responseRecorder();
+  let nextCalled = false;
+  await middleware(req, res, () => {
+    nextCalled = true;
+  });
+  assert.equal(nextCalled, false);
+  assert.equal(res.statusCode, 401);
+});
+
 test("new accounts cannot receive a missing or legacy role default", async () => {
   for (const role of [undefined, "employee"]) {
     const req = {

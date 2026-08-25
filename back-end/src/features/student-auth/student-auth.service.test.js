@@ -5,15 +5,16 @@ import { createStudentAuthService } from "./student-auth.service.js";
 
 test("public registration always creates a student and never accepts an admin role", async () => {
   let created;
-  const service = createStudentAuthService(
-    {
+  const service = createStudentAuthService({
+    repository: {
       async create(document) {
         created = document;
         return { ...document, _id: new ObjectId() };
       },
     },
-    () => "token",
-  );
+    signToken: () => "token",
+    mailer: { async sendEmailVerification() {} },
+  });
   await assert.rejects(
     () =>
       service.register({
@@ -49,7 +50,10 @@ test("registration reports duplicate username and email conflicts", async () => 
     ["email", "Email already exists"],
     ["username", "Username already exists"],
   ]) {
-    const service = createStudentAuthService(duplicate(field));
+    const service = createStudentAuthService({
+      repository: duplicate(field),
+      mailer: { async sendEmailVerification() {} },
+    });
     await assert.rejects(
       () =>
         service.register({

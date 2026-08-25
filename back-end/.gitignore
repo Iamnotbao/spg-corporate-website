@@ -1,8 +1,13 @@
 node_modules/
+
 .env
 .env.*
 !.env.example
+
+ecosystem.config.js
+
 logs/
 uploads/
 coverage/
+
 .DS_Store

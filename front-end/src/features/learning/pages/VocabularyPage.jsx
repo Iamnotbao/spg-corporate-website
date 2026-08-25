@@ -34,7 +34,12 @@ export default function VocabularyPage() {
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [level, setLevel] = useState('Tất cả');
   const [page, setPage] = useState(1);
-  const [state, setState] = useState({ status: 'loading', data: [], pagination: null, error: '' });
+  const [state, setState] = useState({
+    status: 'loading',
+    data: [],
+    pagination: null,
+    error: '',
+  });
   const [featured, setFeatured] = useState({ status: 'loading', data: [], error: '' });
   const [savedIds, setSavedIds] = useState(new Set());
   const [busyId, setBusyId] = useState('');
@@ -55,7 +60,9 @@ export default function VocabularyPage() {
     if (savedOnly) return;
     setFeatured((current) => ({ ...current, status: 'loading' }));
     listPublicVocabulary({ page: 1, pageSize: FEATURED_SIZE })
-      .then((result) => setFeatured({ status: 'ready', data: result.data || [], error: '' }))
+      .then((result) =>
+        setFeatured({ status: 'ready', data: result.data || [], error: '' }),
+      )
       .catch((error) => setFeatured({ status: 'error', data: [], error: error.message }));
   }, [savedOnly]);
 
@@ -73,9 +80,16 @@ export default function VocabularyPage() {
       listSavedVocabulary()
         .then((result) => {
           const data = result.data || [];
-          setState({ status: 'ready', data, pagination: { page: 1, pageSize: data.length || 1, total: data.length }, error: '' });
+          setState({
+            status: 'ready',
+            data,
+            pagination: { page: 1, pageSize: data.length || 1, total: data.length },
+            error: '',
+          });
         })
-        .catch((error) => setState({ status: 'error', data: [], pagination: null, error: error.message }));
+        .catch((error) =>
+          setState({ status: 'error', data: [], pagination: null, error: error.message }),
+        );
       return;
     }
 
@@ -99,7 +113,9 @@ export default function VocabularyPage() {
           error: '',
         }),
       )
-      .catch((error) => setState({ status: 'error', data: [], pagination: null, error: error.message }));
+      .catch((error) =>
+        setState({ status: 'error', data: [], pagination: null, error: error.message }),
+      );
   }, [auth.status, debouncedQuery, level, page, savedOnly, searching]);
 
   useEffect(() => {
@@ -135,7 +151,10 @@ export default function VocabularyPage() {
 
   const levels = useMemo(() => {
     if (!savedOnly) return HSK_LEVELS;
-    return ['Tất cả', ...new Set(state.data.map((item) => item.hskLevel).filter(Boolean))];
+    return [
+      'Tất cả',
+      ...new Set(state.data.map((item) => item.hskLevel).filter(Boolean)),
+    ];
   }, [savedOnly, state.data]);
 
   function updateLevel(value) {
@@ -160,7 +179,10 @@ export default function VocabularyPage() {
         return next;
       });
       if (savedOnly && wasSaved) {
-        setState((current) => ({ ...current, data: current.data.filter((entry) => entry.id !== item.id) }));
+        setState((current) => ({
+          ...current,
+          data: current.data.filter((entry) => entry.id !== item.id),
+        }));
       }
       setNotice({
         message: wasSaved
@@ -169,10 +191,25 @@ export default function VocabularyPage() {
         variant: 'success',
       });
     } catch (caught) {
-      setNotice({ message: caught.message || 'Không thể cập nhật từ đã lưu.', variant: 'error' });
+      setNotice({
+        message: caught.message || 'Không thể cập nhật từ đã lưu.',
+        variant: 'error',
+      });
     } finally {
       setBusyId('');
     }
+  }
+
+  function askAi(item) {
+    const destination = `/ai-tutor?vocabulary=${encodeURIComponent(item.id)}`;
+    const state = {
+      initialPrompt: `Hãy giải thích cách dùng từ ${item.simplified} và cho ví dụ dễ nhớ.`,
+    };
+    if (auth.status !== 'signed-in') {
+      navigate('/login', { state: { from: destination } });
+      return;
+    }
+    navigate(destination, { state });
   }
 
   const resultItems = savedOnly ? savedItems : state.data;
@@ -191,7 +228,10 @@ export default function VocabularyPage() {
       <section className="learning-index-section">
         <div className="public-container">
           {savedOnly && auth.status !== 'signed-in' && (
-            <div className="demo-notice"><span>i</span><p>Đăng nhập để xem danh sách từ vựng bạn đã lưu.</p></div>
+            <div className="demo-notice">
+              <span>i</span>
+              <p>Đăng nhập để xem danh sách từ vựng bạn đã lưu.</p>
+            </div>
           )}
           <div className="learning-toolbar">
             <label className="catalog-search">
@@ -220,18 +260,32 @@ export default function VocabularyPage() {
           </div>
 
           {!savedOnly && !searching && (
-            <section className="vocabulary-featured" aria-labelledby="featured-vocabulary-title">
+            <section
+              className="vocabulary-featured"
+              aria-labelledby="featured-vocabulary-title"
+            >
               <div className="vocabulary-featured__heading">
                 <div>
                   <span>Từ vựng nổi bật</span>
                   <h2 id="featured-vocabulary-title">Lướt nhanh trước khi tìm kiếm</h2>
                 </div>
-                <p>Carousel dùng dữ liệu published thật và tự dừng khi bạn rê chuột hoặc focus.</p>
+                <p>
+                  Carousel dùng dữ liệu published thật và tự dừng khi bạn rê chuột hoặc
+                  focus.
+                </p>
               </div>
-              {featured.status === 'loading' && <LoadingState count={3} label="Đang tải từ nổi bật" />}
-              {featured.status === 'error' && <ErrorState message={featured.error} onRetry={loadFeatured} />}
+              {featured.status === 'loading' && (
+                <LoadingState count={3} label="Đang tải từ nổi bật" />
+              )}
+              {featured.status === 'error' && (
+                <ErrorState message={featured.error} onRetry={loadFeatured} />
+              )}
               {featured.status === 'ready' && featured.data.length === 0 && (
-                <EmptyState icon="词" title="Chưa có từ nổi bật" description="Các từ published sẽ xuất hiện tại đây." />
+                <EmptyState
+                  icon="词"
+                  title="Chưa có từ nổi bật"
+                  description="Các từ published sẽ xuất hiện tại đây."
+                />
               )}
               {featured.status === 'ready' && featured.data.length > 0 && (
                 <div className="vocabulary-featured__viewport">
@@ -241,6 +295,7 @@ export default function VocabularyPage() {
                         busy={busyId === item.id}
                         item={item}
                         key={`${item.id}-${index}`}
+                        onAskAi={askAi}
                         onPracticeCharacter={setPracticeCharacter}
                         onToggleSave={toggleSave}
                         saved={savedIds.has(item.id)}
@@ -252,9 +307,14 @@ export default function VocabularyPage() {
             </section>
           )}
 
-          {(savedOnly || searching) && state.status === 'loading' && <LoadingState count={6} label="Đang tìm từ vựng" />}
-          {(savedOnly || searching) && state.status === 'error' && <ErrorState message={state.error} onRetry={load} />}
-          {(savedOnly || searching) && state.status === 'ready' &&
+          {(savedOnly || searching) && state.status === 'loading' && (
+            <LoadingState count={6} label="Đang tìm từ vựng" />
+          )}
+          {(savedOnly || searching) && state.status === 'error' && (
+            <ErrorState message={state.error} onRetry={load} />
+          )}
+          {(savedOnly || searching) &&
+            state.status === 'ready' &&
             (resultItems.length ? (
               <>
                 <div className="vocabulary-grid">
@@ -263,6 +323,7 @@ export default function VocabularyPage() {
                       busy={busyId === item.id}
                       item={item}
                       key={item.id}
+                      onAskAi={askAi}
                       onPracticeCharacter={setPracticeCharacter}
                       onToggleSave={toggleSave}
                       saved={savedIds.has(item.id)}
@@ -280,14 +341,21 @@ export default function VocabularyPage() {
               </>
             ) : (
               <EmptyState
-                description={savedOnly ? 'Vào trang Từ vựng và bấm Lưu ở những từ bạn muốn ôn lại.' : 'Hãy thử từ khóa hoặc cấp độ khác.'}
+                description={
+                  savedOnly
+                    ? 'Vào trang Từ vựng và bấm Lưu ở những từ bạn muốn ôn lại.'
+                    : 'Hãy thử từ khóa hoặc cấp độ khác.'
+                }
                 icon="词"
                 title={savedOnly ? 'Bạn chưa lưu từ nào' : 'Chưa tìm thấy từ phù hợp'}
               />
             ))}
         </div>
       </section>
-      <CharacterPracticeModal character={practiceCharacter} onClose={() => setPracticeCharacter('')} />
+      <CharacterPracticeModal
+        character={practiceCharacter}
+        onClose={() => setPracticeCharacter('')}
+      />
       <PublicToast
         message={notice.message}
         onClose={() => setNotice((current) => ({ ...current, message: '' }))}

@@ -662,6 +662,15 @@
   line-height: 1.7;
 }
 
+.lesson-header__ai {
+  display: inline-flex;
+  width: fit-content;
+  gap: 7px;
+  margin-top: 14px;
+  border-color: var(--mandora-jade-700);
+  color: var(--mandora-jade-700);
+}
+
 .lesson-body {
   display: grid;
   gap: 24px;

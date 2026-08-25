@@ -45,6 +45,13 @@ const studentAuthLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: "Quá nhiều yêu cầu xác thực. Vui lòng thử lại sau." },
 });
+const recoveryLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { error: "Too many recovery requests. Please try again later." },
+});
 const searchLimiter = rateLimit({
   windowMs: 60 * 1000,
   limit: 90,
@@ -63,6 +70,28 @@ router.post(
   studentAuthLimiter,
   asyncHandler(studentAuthController.login),
 );
+router.post(
+  "/auth/forgot-password",
+  recoveryLimiter,
+  asyncHandler(studentAuthController.forgotPassword),
+);
+router.post(
+  "/auth/reset-password",
+  recoveryLimiter,
+  asyncHandler(studentAuthController.resetPassword),
+);
+router.post(
+  "/auth/send-verification",
+  recoveryLimiter,
+  auth,
+  requireRole("student"),
+  asyncHandler(studentAuthController.sendVerification),
+);
+router.post(
+  "/auth/verify-email",
+  recoveryLimiter,
+  asyncHandler(studentAuthController.verifyEmail),
+);
 router.get(
   "/auth/session",
   auth,
@@ -77,7 +106,11 @@ router.get("/languages", asyncHandler(listPublicLanguages));
 router.get("/communications", asyncHandler(getPublicCommunications));
 router.get("/site-profile", asyncHandler(getPublicSiteProfile));
 router.get("/events", addRealtimeClient);
-router.get("/search", searchLimiter, asyncHandler(searchController.searchPublic));
+router.get(
+  "/search",
+  searchLimiter,
+  asyncHandler(searchController.searchPublic),
+);
 router.get("/courses", asyncHandler(learningController.listPublishedCourses));
 router.get(
   "/courses/:identifier",

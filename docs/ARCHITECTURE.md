@@ -25,7 +25,9 @@ changed the current frontend as follows:
   and Blog presentation are organized by feature;
 - Course, Unit, Lesson, Enrollment, LessonProgress, Vocabulary, saved-Vocabulary, Quiz,
   Question, QuizAttempt, Character, and CharacterPracticeAttempt persistence now exists.
-  HSK and non-Quiz/non-Character Practice composition remains illustrative;
+  HSK level descriptions remain explicitly illustrative but link only to persisted,
+  published Course results; Listening and Grammar Practice remain clearly unavailable,
+  while Vocabulary, Quiz, and Character destinations use persisted backend data;
 - Blog list/detail pages reuse the existing Posts API, but expose only records assigned to
   the approved Mandora Blog category allowlist; legacy corporate Posts are not silently
   published as Mandora content;
@@ -101,6 +103,120 @@ are Character ID, owner ID, score, submitted stroke count, summary, and timestam
 handwriting points are scored transiently and are not persisted. Character practice never
 calls Lesson completion and therefore cannot inflate Course progress. A linked published
 Character can appear as a practice link in its `character` Lesson.
+
+### Phase 8 and Phase 9 student review/dashboard implementation
+
+Phase 8 extends the existing owned `vocabulary_progress` record with deterministic SRS
+fields and exposes the protected review queue at `/review`. Phase 8.1 improves the active
+recall interface without changing the scheduler or its persistence contract.
+
+Phase 9 adds protected `GET /api/student/dashboard` and `/dashboard`. The endpoint derives
+identity exclusively from `req.user._id` and returns one compact aggregate containing
+active Course progress/Continue Learning, visible saved and due Vocabulary, Quiz attempt
+statistics, Character practice statistics, streaks, a seven-day activity series, recent
+activity, and a deterministic daily plan. Existing `/my-courses`, `/progress`, and
+`/review` contracts remain intact.
+
+No dashboard counter, streak record, or generic event log is stored. Repository reads are
+batched by domain and use MongoDB lookups/facets where content visibility must be enforced.
+Active Course and SRS results require published Course/Lesson/content, while historical
+owned Quiz and Character aggregate counts remain derived from attempt snapshots. The
+daily plan is ordered as due SRS, Continue Learning, incomplete published Quiz Lesson, and
+published Character practice linked from recently reviewed Vocabulary. Each plan item
+contains an explicit action type and destination.
+
+Study days use `Asia/Ho_Chi_Minh` calendar boundaries (fixed UTC+07:00). Meaningful signals
+are `lesson_progress.completedAt`, `quiz_attempts.submittedAt`,
+`vocabulary_review_history.reviewedAt`, and `character_practice_attempts.createdAt`. The
+current streak is a consecutive run ending today or yesterday; the longest streak covers
+all persisted study dates. Phase 9.1 adds append-only Vocabulary review events, so rating
+distribution and SRS-only study days are derived from real event history from this phase
+forward. Historical pre-9.1 reviews cannot be reconstructed and are not fabricated.
+
+Vocabulary stage calculation is centralized in `vocabulary.mastery.js`. The normalized
+stages are `new`, `learning`, `review`, and `mastered`; mastery requires at least five
+successful repetitions, a 21-day interval, and an ease factor of at least 2.0. Dashboard
+aggregation uses the same shared thresholds rather than a separate frontend rule.
+
+Phase 9 adds query-supporting indexes on `(userId, completed, completedAt)`,
+`(userId, submittedAt)`, `(userId, saved, lastReviewedAt)`, and `(userId, createdAt)` for
+Lesson, Quiz, Vocabulary, and Character activity respectively. Phase 9.1 adds unique
+`reviewId`, `(userId, reviewedAt)`, and `(userId, vocabularyId, reviewedAt)` history
+indexes plus token-hash/expiry indexes on users. Startup now calls the existing idempotent
+feature index initializers before accepting traffic. No TTL index is placed on users,
+because TTL deletion on token fields would delete the entire account document. This is an
+index initializer, not a destructive data migration runner.
+
+### Phase 9.1 authentication hardening
+
+Student auth now provides `/forgot-password`, `/reset-password`, and `/verify-email`
+frontend routes backed by `POST /api/auth/forgot-password`, `reset-password`,
+`send-verification`, and `verify-email`. Password reset and verification tokens are
+256-bit random values; only SHA-256 hashes and explicit expiry timestamps are stored.
+Reset is atomic and single-use, uses the existing salted scrypt password helper, clears
+the token fields, and increments `authVersion`. JWT middleware compares that version on
+every database-backed session check, invalidating tokens issued before a password reset.
+
+Forgot-password and verification responses avoid account enumeration and use a dedicated
+five-request/15-minute IP limiter in addition to the API limiter. Email verification is
+product-ready but optional: existing users without `emailVerifiedAt` remain usable. Mail
+delivery is isolated behind `mail.service.js`; `MAIL_PROVIDER=resend` uses Node's native
+`fetch`, while an unconfigured development environment logs the URL. Production never
+returns or logs raw tokens and refuses to start without a configured mail provider.
+
+SRS writes use a recoverable standalone-Mongo ordering. The calculated progress update is
+stored with an internal `pendingReviewHistory` event, the immutable event is inserted by
+unique `reviewId`, and the marker is then cleared. Queue, review, and history reads first
+reconcile any pending event. A crash cannot silently lose an event: retry either inserts
+it once or observes the unique duplicate and clears the marker. Unsave remains a soft
+`saved: false` update and never deletes review history. An optimistic `reviewCount` guard
+rejects concurrent stale reviews before either scheduling state or history is written.
+
+Required mail/runtime variables are `APP_PUBLIC_URL`, `MAIL_PROVIDER`, `MAIL_FROM`, and
+`RESEND_API_KEY`. `APP_PUBLIC_URL` must be absolute and use HTTPS in production. Safe
+placeholders are recorded in `back-end/.env.example`; no credential belongs in source.
+
+### Phase 10 AI Chinese Tutor V1
+
+Phase 10 adds the protected frontend route `/ai-tutor` and student API routes under
+`/api/student/ai`. The feature is isolated in `back-end/src/features/ai-tutor/`; it does
+not reuse the legacy visitor `chat_sessions`, `chat_messages`, public chat controller, or
+corporate assistant prompt. `ai-tutor.service.js` depends on an injected provider
+contract. OpenAI and Groq adapters reuse the official OpenAI Node SDK and Responses API
+request shape with structured output, bounded output tokens, timeout, and one controlled
+SDK retry. OpenAI uses the SDK default endpoint; Groq uses the OpenAI-compatible
+`https://api.groq.com/openai/v1` endpoint without an additional dependency.
+
+The supported context types are exactly `general`, `lesson`, `vocabulary`, and
+`quizAttempt`. The browser sends only a type and record ID. The backend resolves published
+Lesson/Vocabulary hierarchy data and owner-scoped QuizAttempt snapshots using explicit
+projections. It sends no user profile, credentials, auth/reset/verification tokens,
+provider secrets, admin fields, or unrelated learning history. Lesson content is reduced
+to bounded text and related published Vocabulary before it reaches the provider.
+
+Conversation persistence is intentionally small: `ai_conversations` stores owner, title,
+and timestamps; `ai_messages` stores owner, conversation, role, bounded rendered response,
+safe context reference, and timestamps. Provider prompts are not exposed by conversation
+reads. Indexes support `(userId, updatedAt)` and `(userId, conversationId, createdAt)`.
+`ai_daily_usage` has a unique `(userId, day)` counter and a TTL cleanup timestamp. There
+is no full conversation-management system, vector database, retrieval pipeline, tool
+execution, or admin AI console.
+
+The server system prompt separates instructions from marked untrusted LMS context and the
+student message. It prohibits secret disclosure and claims of LMS mutation. React renders
+the normalized `answer`, `examples`, and `followUp` as plain text; raw HTML and provider
+Markdown are not interpreted. AI responses are advisory and never call Quiz grading,
+Lesson completion, Course progress, SRS, auth, or admin mutation services.
+
+`AI_PROVIDER=openai` selects `OPENAI_API_KEY` and `OPENAI_MODEL`.
+`AI_PROVIDER=groq` selects the independent backend-only `GROQ_API_KEY` and `GROQ_MODEL`;
+the Groq key is never reused from OpenAI or exposed through a `VITE_*` variable. Shared
+configuration is `AI_MAX_INPUT_CHARS`, `AI_MAX_OUTPUT_TOKENS`,
+`AI_DAILY_MESSAGE_LIMIT`, and `AI_REQUEST_TIMEOUT_MS`. Missing or unsupported provider
+configuration does not fail backend startup: the status route reports unavailable and chat
+returns controlled `AI_UNAVAILABLE`. Per-user burst limiting, an atomic backend daily
+counter, input/context caps, output cap, timeout, and normalized provider errors protect
+cost and availability. Automated tests inject fakes and never call a paid provider.
 
 ### Admin frontend Phase 3 update
 
@@ -391,11 +507,12 @@ stored as salted scrypt hashes. A successful login returns an eight-hour JWT wit
 user ID in `sub`; every authenticated request verifies the token and reloads the active
 user from MongoDB.
 
-The active frontend stores the bearer token in localStorage under an SPG-prefixed key.
-There is no refresh token, server-side logout/revocation mechanism, public registration,
-student login contract, password recovery, email verification, or student record-ownership
-layer. The token transport/storage decision must be reviewed rather than copied blindly
-into the student application.
+At the time of the original audit, the active frontend stored only a legacy admin bearer
+token and had none of the student-auth contracts. The current implementation instead uses
+separate `mandora_admin_token` and `mandora_student_token` keys, public student
+registration/login, owned student routes, password recovery, optional email verification,
+and reset-driven JWT version invalidation. A refresh-token/server-side session store is
+still not present; access JWTs expire after eight hours.
 
 Legacy backend permissions are detailed and server-enforced for most admin routes, and
 self-demotion/disable/delete protections exist. They cover corporate modules and do not

@@ -25,6 +25,7 @@ import DashboardPage from '../features/student/pages/DashboardPage.jsx';
 import ProgressPage from '../features/student/pages/ProgressPage.jsx';
 import VocabularyReviewPage from '../features/student/pages/VocabularyReviewPage.jsx';
 import QuizPage from '../features/quizzes/pages/QuizPage.jsx';
+import AiTutorPage from '../features/ai-tutor/pages/AiTutorPage.jsx';
 
 const AdminApp = lazy(() => import('../features/admin/AdminApp.jsx'));
 
@@ -68,6 +69,7 @@ export default function AppRoutes() {
           <Route path="/my-courses" element={<MyCoursesPage />} />
           <Route path="/progress" element={<ProgressPage />} />
           <Route path="/review" element={<VocabularyReviewPage />} />
+          <Route path="/ai-tutor" element={<AiTutorPage />} />
           <Route
             path="/courses/:courseSlug/lessons/:lessonSlug/quiz"
             element={<QuizPage />}

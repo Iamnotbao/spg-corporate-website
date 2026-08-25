@@ -40,6 +40,9 @@ export function createAuthMiddleware(options = {}) {
         .status(401)
         .json({ error: "Account is disabled or unavailable" });
     }
+    if ((Number(payload?.ver) || 0) !== (Number(user.authVersion) || 0)) {
+      return res.status(401).json({ error: "Invalid or expired access token" });
+    }
 
     req.user = {
       ...user,

@@ -178,6 +178,12 @@
   gap: 10px;
 }
 
+.quiz-result__ai {
+  gap: 7px;
+  border-color: var(--mandora-jade-700);
+  color: var(--mandora-jade-700);
+}
+
 @media (max-width: 640px) {
   .quiz-result__actions {
     align-items: stretch;
