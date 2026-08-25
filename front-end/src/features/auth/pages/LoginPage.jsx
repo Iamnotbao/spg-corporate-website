@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { API_URL, apiRequest } from '../../../services/httpClient.js';
 import { usePageTitle } from '../../../hooks/usePageTitle.js';
 import { useStudentAuth } from '../StudentAuthContext.jsx';
 
@@ -13,11 +14,18 @@ export default function LoginPage({ initialMode = 'login' }) {
   });
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [social, setSocial] = useState({ google: false, facebook: false });
   const auth = useStudentAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const isRegister = mode === 'register';
   usePageTitle(isRegister ? 'Đăng ký' : 'Đăng nhập');
+
+  useEffect(() => {
+    apiRequest('/auth/oauth/status')
+      .then((response) => setSocial(response?.data || {}))
+      .catch(() => setSocial({ google: false, facebook: false }));
+  }, []);
 
   async function submit(event) {
     event.preventDefault();
@@ -34,12 +42,43 @@ export default function LoginPage({ initialMode = 'login' }) {
     }
   }
 
+  function socialLogin(provider) {
+    window.location.assign(`${API_URL}/auth/oauth/${provider}`);
+  }
+
   return (
     <section className="student-access-card" aria-labelledby="student-login-title">
       <p className="public-eyebrow">Không gian học viên</p>
       <h1 id="student-login-title">
         {isRegister ? 'Tạo tài khoản Mandora' : 'Đăng nhập Mandora'}
       </h1>
+
+      <div className="student-social-auth" aria-label="Đăng nhập nhanh">
+        <button
+          className="button button--secondary"
+          disabled={!social.google}
+          onClick={() => socialLogin('google')}
+          type="button"
+        >
+          G&nbsp;&nbsp;Tiếp tục với Google
+        </button>
+        <button
+          className="button button--secondary"
+          disabled={!social.facebook}
+          onClick={() => socialLogin('facebook')}
+          type="button"
+        >
+          f&nbsp;&nbsp;Tiếp tục với Facebook
+        </button>
+        {!social.google && !social.facebook && (
+          <small>Google/Facebook chưa được cấu hình trên máy chủ.</small>
+        )}
+      </div>
+
+      <div className="student-auth-divider" aria-hidden="true">
+        <span>hoặc</span>
+      </div>
+
       <form className="student-auth-form" onSubmit={submit}>
         {isRegister && (
           <>
