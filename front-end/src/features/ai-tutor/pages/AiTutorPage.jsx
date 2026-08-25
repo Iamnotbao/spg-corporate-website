@@ -125,7 +125,8 @@ export default function AiTutorPage() {
   const [historyState, setHistoryState] = useState({ status: 'loading', error: '' });
   const [resolvedContext, setResolvedContext] = useState(null);
   const [lastAttempt, setLastAttempt] = useState('');
-  const endRef = useRef(null);
+  const messagesRef = useRef(null);
+  const shouldAutoScrollRef = useRef(true);
   const generatingTimer = useRef(null);
 
   const loadConversations = useCallback(async () => {
@@ -157,10 +158,23 @@ export default function AiTutorPage() {
     setResolvedContext(null);
     setInput(initialPrompt(location, context));
     setRequestState({ status: 'idle', error: '', code: '' });
+    shouldAutoScrollRef.current = true;
   }, [context, location]);
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    const container = messagesRef.current;
+    if (!container || !shouldAutoScrollRef.current) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+          ? 'auto'
+          : 'smooth',
+      });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
   }, [messages, requestState.status]);
 
   useEffect(
@@ -176,6 +190,7 @@ export default function AiTutorPage() {
     setResolvedContext(null);
     setRequestState({ status: 'idle', error: '', code: '' });
     setInput(initialPrompt(location, context));
+    shouldAutoScrollRef.current = true;
   }
 
   async function openConversation(id) {
@@ -183,6 +198,7 @@ export default function AiTutorPage() {
     setHistoryState({ status: 'loading', error: '' });
     try {
       const response = await listAiMessages(id);
+      shouldAutoScrollRef.current = true;
       setConversationId(id);
       setMessages(response.data || []);
       setResolvedContext(
@@ -199,6 +215,7 @@ export default function AiTutorPage() {
     event?.preventDefault();
     const message = String(retryMessage || input).trim();
     if (!message || !providerStatus.available) return;
+    shouldAutoScrollRef.current = true;
     setLastAttempt(message);
     setInput('');
     setRequestState({ status: 'sending', error: '', code: '' });
@@ -321,7 +338,17 @@ export default function AiTutorPage() {
             <span className="ai-tutor-context">{contextLabel}</span>
           </header>
 
-          <div className="ai-tutor-messages" aria-live="polite">
+          <div
+            className="ai-tutor-messages"
+            aria-live="polite"
+            onScroll={(event) => {
+              const element = event.currentTarget;
+              const distanceFromBottom =
+                element.scrollHeight - element.scrollTop - element.clientHeight;
+              shouldAutoScrollRef.current = distanceFromBottom < 120;
+            }}
+            ref={messagesRef}
+          >
             {messages.length === 0 && requestState.status === 'idle' && (
               <div className="ai-tutor-empty">
                 <span aria-hidden="true">中</span>
@@ -394,7 +421,6 @@ export default function AiTutorPage() {
                 )}
               </div>
             )}
-            <div ref={endRef} />
           </div>
 
           <footer className="ai-tutor-composer">
