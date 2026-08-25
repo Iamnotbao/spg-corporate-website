@@ -37,6 +37,24 @@ const TYPE_LABELS = {
   vocabulary: 'Từ vựng',
 };
 
+const LESSON_FILTERS = [
+  { value: 'all', label: 'Tất cả' },
+  { value: 'incomplete', label: 'Chưa học' },
+  { value: 'completed', label: 'Hoàn thành' },
+];
+
+const VOCAB_FILTERS = [
+  { value: 'all', label: 'Tất cả' },
+  { value: 'saved', label: 'Đã lưu' },
+  { value: 'unsaved', label: 'Chưa lưu' },
+];
+
+function normalizeSearch(value) {
+  return String(value || '')
+    .trim()
+    .toLocaleLowerCase('vi');
+}
+
 export default function LessonPage() {
   const { courseSlug, lessonSlug } = useParams();
   const location = useLocation();
@@ -55,13 +73,18 @@ export default function LessonPage() {
   const [submitting, setSubmitting] = useState(false);
   const [lessonVocabulary, setLessonVocabulary] = useState([]);
   const [vocabularyStatus, setVocabularyStatus] = useState('idle');
-  const [visibleVocabularyCount, setVisibleVocabularyCount] = useState(6);
   const [lessonCharacters, setLessonCharacters] = useState([]);
   const [characterStatus, setCharacterStatus] = useState('idle');
   const [savedIds, setSavedIds] = useState(new Set());
   const [busyVocabularyId, setBusyVocabularyId] = useState('');
   const [practiceCharacter, setPracticeCharacter] = useState('');
   const [notice, setNotice] = useState({ message: '', variant: 'success' });
+  const [lessonSearch, setLessonSearch] = useState('');
+  const [lessonFilter, setLessonFilter] = useState('all');
+  const [lessonTypeFilter, setLessonTypeFilter] = useState('all');
+  const [vocabularySearch, setVocabularySearch] = useState('');
+  const [vocabularyFilter, setVocabularyFilter] = useState('all');
+  const [outlineOpen, setOutlineOpen] = useState(false);
 
   const lessons = useMemo(
     () =>
@@ -71,8 +94,72 @@ export default function LessonPage() {
     [course.data],
   );
   const lessonIndex = lessons.findIndex((item) => item.slug === lessonSlug);
-  const isComplete = studentState?.completedLessonIds?.includes(lesson.data?.id);
+  const completedLessonIds = studentState?.completedLessonIds || [];
+  const completedLessonSet = useMemo(
+    () => new Set(completedLessonIds),
+    [completedLessonIds],
+  );
+  const isComplete = completedLessonSet.has(lesson.data?.id);
   usePageTitle(lesson.data?.title || 'Bài học');
+
+  const lessonTypes = useMemo(
+    () => [...new Set(lessons.map((item) => item.type).filter(Boolean))],
+    [lessons],
+  );
+
+  const filteredCourse = useMemo(() => {
+    if (!course.data) return null;
+    const search = normalizeSearch(lessonSearch);
+    const units = course.data.units
+      .map((unit) => ({
+        ...unit,
+        lessons: unit.lessons.filter((item) => {
+          const matchesSearch =
+            !search ||
+            normalizeSearch(`${item.title} ${unit.title} ${TYPE_LABELS[item.type] || item.type}`).includes(
+              search,
+            );
+          const completed = completedLessonSet.has(item.id);
+          const matchesStatus =
+            lessonFilter === 'all' ||
+            (lessonFilter === 'completed' && completed) ||
+            (lessonFilter === 'incomplete' && !completed);
+          const matchesType = lessonTypeFilter === 'all' || item.type === lessonTypeFilter;
+          return matchesSearch && matchesStatus && matchesType;
+        }),
+      }))
+      .filter((unit) => unit.lessons.length > 0);
+    return { ...course.data, units };
+  }, [course.data, completedLessonSet, lessonFilter, lessonSearch, lessonTypeFilter]);
+
+  const filteredVocabulary = useMemo(() => {
+    const search = normalizeSearch(vocabularySearch);
+    return lessonVocabulary.filter((item) => {
+      const haystack = normalizeSearch(
+        [
+          item.simplified,
+          item.traditional,
+          item.pinyin,
+          item.meaningVietnamese,
+          item.meaningEnglish,
+          item.exampleChinese,
+          item.examplePinyin,
+          item.exampleVietnamese,
+        ].join(' '),
+      );
+      const matchesSearch = !search || haystack.includes(search);
+      const saved = savedIds.has(item.id);
+      const matchesSaved =
+        vocabularyFilter === 'all' ||
+        (vocabularyFilter === 'saved' && saved) ||
+        (vocabularyFilter === 'unsaved' && !saved);
+      return matchesSearch && matchesSaved;
+    });
+  }, [lessonVocabulary, savedIds, vocabularyFilter, vocabularySearch]);
+
+  useEffect(() => {
+    setOutlineOpen(false);
+  }, [lessonSlug]);
 
   useEffect(() => {
     if (auth.status !== 'signed-in') {
@@ -88,11 +175,11 @@ export default function LessonPage() {
     if (lesson.data?.type !== 'vocabulary' || !lesson.data?.id) {
       setLessonVocabulary([]);
       setVocabularyStatus('idle');
-      setVisibleVocabularyCount(6);
       return;
     }
     setVocabularyStatus('loading');
-    setVisibleVocabularyCount(6);
+    setVocabularySearch('');
+    setVocabularyFilter('all');
     listPublicVocabulary({ lessonId: lesson.data.id, page: 1, pageSize: 50 })
       .then((result) => {
         setLessonVocabulary(result.data || []);
@@ -209,6 +296,46 @@ export default function LessonPage() {
   const isQuizLesson = lesson.data.type === 'quiz';
   const quizUrl = `/courses/${courseSlug}/lessons/${lessonSlug}/quiz`;
 
+  const outlineControls = (
+    <>
+      <label className="lesson-outline-search">
+        <span>⌕</span>
+        <input
+          aria-label="Tìm bài học"
+          onChange={(event) => setLessonSearch(event.target.value)}
+          placeholder="Tìm bài học…"
+          type="search"
+          value={lessonSearch}
+        />
+      </label>
+      <div className="lesson-outline-filters" aria-label="Lọc trạng thái bài học">
+        {LESSON_FILTERS.map((filter) => (
+          <button
+            className={lessonFilter === filter.value ? 'is-active' : undefined}
+            key={filter.value}
+            onClick={() => setLessonFilter(filter.value)}
+            type="button"
+          >
+            {filter.label}
+          </button>
+        ))}
+      </div>
+      <select
+        aria-label="Lọc loại bài học"
+        className="lesson-outline-type"
+        onChange={(event) => setLessonTypeFilter(event.target.value)}
+        value={lessonTypeFilter}
+      >
+        <option value="all">Tất cả loại bài</option>
+        {lessonTypes.map((type) => (
+          <option key={type} value={type}>
+            {TYPE_LABELS[type] || type}
+          </option>
+        ))}
+      </select>
+    </>
+  );
+
   return (
     <section className="lesson-page">
       <div className="public-container lesson-page__grid">
@@ -216,8 +343,58 @@ export default function LessonPage() {
           <Link className="breadcrumb-link" to={`/courses/${course.data.slug}`}>
             ← {course.data.title}
           </Link>
-          <CourseOutline compact course={course.data} currentLessonSlug={lesson.data.slug} />
+          <div className="lesson-outline-tools">{outlineControls}</div>
+          <div className="lesson-outline-scroll">
+            <CourseOutline
+              compact
+              completedLessonIds={completedLessonIds}
+              course={filteredCourse}
+              currentLessonSlug={lesson.data.slug}
+            />
+          </div>
         </aside>
+
+        <button
+          aria-expanded={outlineOpen}
+          className="lesson-outline-mobile-trigger"
+          onClick={() => setOutlineOpen(true)}
+          type="button"
+        >
+          ☰ Mục lục khóa học
+        </button>
+
+        {outlineOpen && (
+          <div className="lesson-outline-drawer" role="dialog" aria-modal="true">
+            <button
+              aria-label="Đóng mục lục"
+              className="lesson-outline-drawer__backdrop"
+              onClick={() => setOutlineOpen(false)}
+              type="button"
+            />
+            <aside className="lesson-outline-drawer__panel">
+              <header>
+                <div>
+                  <small>Mục lục khóa học</small>
+                  <strong>{course.data.title}</strong>
+                </div>
+                <button onClick={() => setOutlineOpen(false)} type="button" aria-label="Đóng">
+                  ×
+                </button>
+              </header>
+              <div className="lesson-outline-tools">{outlineControls}</div>
+              <div className="lesson-outline-scroll">
+                <CourseOutline
+                  compact
+                  completedLessonIds={completedLessonIds}
+                  course={filteredCourse}
+                  currentLessonSlug={lesson.data.slug}
+                  onLessonNavigate={() => setOutlineOpen(false)}
+                />
+              </div>
+            </aside>
+          </div>
+        )}
+
         <article className="lesson-content">
           <header className="lesson-header">
             <div>
@@ -248,33 +425,64 @@ export default function LessonPage() {
                 </div>
                 <Link to="/vocabulary">Xem toàn bộ từ vựng →</Link>
               </div>
-              {vocabularyStatus === 'loading' && <LoadingState count={3} label="Đang tải từ vựng" />}
-              {vocabularyStatus === 'error' && <p className="lesson-vocabulary-empty">Không thể tải từ vựng của bài học này.</p>}
+
+              {vocabularyStatus === 'ready' && lessonVocabulary.length > 0 && (
+                <div className="lesson-vocabulary-toolbar">
+                  <label className="lesson-vocabulary-search">
+                    <span>⌕</span>
+                    <input
+                      aria-label="Tìm từ vựng trong bài"
+                      onChange={(event) => setVocabularySearch(event.target.value)}
+                      placeholder="Tìm chữ Hán, pinyin, nghĩa…"
+                      type="search"
+                      value={vocabularySearch}
+                    />
+                  </label>
+                  <div className="lesson-vocabulary-filters" aria-label="Lọc từ vựng">
+                    {VOCAB_FILTERS.map((filter) => (
+                      <button
+                        className={vocabularyFilter === filter.value ? 'is-active' : undefined}
+                        key={filter.value}
+                        onClick={() => setVocabularyFilter(filter.value)}
+                        type="button"
+                      >
+                        {filter.label}
+                      </button>
+                    ))}
+                  </div>
+                  <small>
+                    Hiển thị {filteredVocabulary.length} / {lessonVocabulary.length} từ
+                  </small>
+                </div>
+              )}
+
+              {vocabularyStatus === 'loading' && (
+                <LoadingState count={3} label="Đang tải từ vựng" />
+              )}
+              {vocabularyStatus === 'error' && (
+                <p className="lesson-vocabulary-empty">Không thể tải từ vựng của bài học này.</p>
+              )}
               {vocabularyStatus === 'ready' && lessonVocabulary.length === 0 && (
                 <p className="lesson-vocabulary-empty">Bài học này chưa có từ vựng được xuất bản.</p>
               )}
-              {vocabularyStatus === 'ready' && lessonVocabulary.length > 0 && (
-                <div className="lesson-vocabulary-grid">
-                  {lessonVocabulary.slice(0, visibleVocabularyCount).map((item) => (
-                    <VocabularyCard
-                      busy={busyVocabularyId === item.id}
-                      item={item}
-                      key={item.id}
-                      onPracticeCharacter={setPracticeCharacter}
-                      onToggleSave={toggleSaveVocabulary}
-                      saved={savedIds.has(item.id)}
-                    />
-                  ))}
-                </div>
+              {vocabularyStatus === 'ready' && lessonVocabulary.length > 0 && filteredVocabulary.length === 0 && (
+                <p className="lesson-vocabulary-empty">Không có từ vựng phù hợp với bộ lọc.</p>
               )}
-              {vocabularyStatus === 'ready' && lessonVocabulary.length > visibleVocabularyCount && (
-                <button
-                  className="button button--secondary lesson-vocabulary-load-more"
-                  onClick={() => setVisibleVocabularyCount((count) => count + 6)}
-                  type="button"
-                >
-                  Xem thêm 6 từ
-                </button>
+              {vocabularyStatus === 'ready' && filteredVocabulary.length > 0 && (
+                <div className="lesson-vocabulary-scroll" tabIndex="0" aria-label="Danh sách từ vựng trong bài">
+                  <div className="lesson-vocabulary-grid">
+                    {filteredVocabulary.map((item) => (
+                      <VocabularyCard
+                        busy={busyVocabularyId === item.id}
+                        item={item}
+                        key={item.id}
+                        onPracticeCharacter={setPracticeCharacter}
+                        onToggleSave={toggleSaveVocabulary}
+                        saved={savedIds.has(item.id)}
+                      />
+                    ))}
+                  </div>
+                </div>
               )}
             </section>
           )}
@@ -289,7 +497,9 @@ export default function LessonPage() {
                 <Link to="/characters">Xem toàn bộ Hán tự →</Link>
               </div>
               {characterStatus === 'loading' && <LoadingState count={3} label="Đang tải Hán tự" />}
-              {characterStatus === 'error' && <p className="lesson-vocabulary-empty">Không thể tải Hán tự của bài học này.</p>}
+              {characterStatus === 'error' && (
+                <p className="lesson-vocabulary-empty">Không thể tải Hán tự của bài học này.</p>
+              )}
               {characterStatus === 'ready' && lessonCharacters.length === 0 && (
                 <p className="lesson-vocabulary-empty">Bài học này chưa có Hán tự được xuất bản.</p>
               )}
@@ -314,21 +524,38 @@ export default function LessonPage() {
                       ? 'Hoàn thành bằng Quiz'
                       : 'Hoàn thành bài học'}
                 </strong>
-                {isQuizLesson && !isComplete && <p>Đạt điểm yêu cầu của Quiz để hoàn thành bài học này.</p>}
-                {studentState?.enrolled && <LearningProgress value={studentState.progressPercentage} />}
+                {isQuizLesson && !isComplete && (
+                  <p>Đạt điểm yêu cầu của Quiz để hoàn thành bài học này.</p>
+                )}
+                {studentState?.enrolled && (
+                  <LearningProgress value={studentState.progressPercentage} />
+                )}
                 {completionError && <p role="alert">{completionError}</p>}
               </div>
             </div>
             {auth.status !== 'signed-in' ? (
-              <Link className="button button--primary" state={{ from: isQuizLesson ? quizUrl : location.pathname }} to="/login">
+              <Link
+                className="button button--primary"
+                state={{ from: isQuizLesson ? quizUrl : location.pathname }}
+                to="/login"
+              >
                 Đăng nhập để lưu tiến độ
               </Link>
             ) : !studentState?.enrolled ? (
-              <Link className="button button--primary" to={`/courses/${courseSlug}`}>Đăng ký khóa học</Link>
+              <Link className="button button--primary" to={`/courses/${courseSlug}`}>
+                Đăng ký khóa học
+              </Link>
             ) : isQuizLesson ? (
-              <Link className="button button--primary" to={quizUrl}>{isComplete ? 'Làm lại Quiz' : 'Bắt đầu Quiz'}</Link>
+              <Link className="button button--primary" to={quizUrl}>
+                {isComplete ? 'Làm lại Quiz' : 'Bắt đầu Quiz'}
+              </Link>
             ) : (
-              <button className="button button--primary" disabled={isComplete || submitting} onClick={markComplete} type="button">
+              <button
+                className="button button--primary"
+                disabled={isComplete || submitting}
+                onClick={markComplete}
+                type="button"
+              >
                 {submitting ? 'Đang lưu…' : isComplete ? 'Đã hoàn thành' : 'Đánh dấu hoàn thành'}
               </button>
             )}
@@ -340,7 +567,10 @@ export default function LessonPage() {
           />
         </article>
       </div>
-      <CharacterPracticeModal character={practiceCharacter} onClose={() => setPracticeCharacter('')} />
+      <CharacterPracticeModal
+        character={practiceCharacter}
+        onClose={() => setPracticeCharacter('')}
+      />
       <PublicToast
         message={notice.message}
         onClose={() => setNotice((current) => ({ ...current, message: '' }))}
