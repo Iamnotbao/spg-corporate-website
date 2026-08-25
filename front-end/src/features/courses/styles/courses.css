@@ -587,10 +587,11 @@
 
 .lesson-page__grid {
   display: grid;
-  grid-template-columns: 310px minmax(0, 780px);
+  width: min(1500px, calc(100% - 40px));
+  grid-template-columns: minmax(240px, 280px) minmax(0, 1fr);
   align-items: start;
   justify-content: center;
-  gap: 38px;
+  gap: clamp(28px, 3vw, 44px);
 }
 
 .lesson-sidebar {
@@ -627,7 +628,9 @@
 
 .lesson-content {
   min-width: 0;
-  padding: clamp(28px, 5vw, 58px);
+  width: 100%;
+  max-width: none;
+  padding: clamp(28px, 4vw, 52px);
   border: 1px solid var(--mandora-line);
   border-radius: 30px 30px 30px 10px;
   background: var(--mandora-paper);
@@ -773,6 +776,10 @@
   .course-detail-content__grid,
   .lesson-page__grid {
     grid-template-columns: 1fr;
+  }
+
+  .lesson-page__grid {
+    width: min(1180px, calc(100% - 40px));
   }
 
   .course-enrollment-card,
