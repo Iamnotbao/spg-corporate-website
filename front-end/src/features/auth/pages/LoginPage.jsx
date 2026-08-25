@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { API_URL, apiRequest } from '../../../services/httpClient.js';
 import { usePageTitle } from '../../../hooks/usePageTitle.js';
+import { API_URL, apiRequest } from '../../../services/httpClient.js';
+import AuthVisualPanel from '../components/AuthVisualPanel.jsx';
+import { PasswordVisibilityIcon } from '../components/AuthIcons.jsx';
+import SocialLoginButtons from '../components/SocialLoginButtons.jsx';
 import { useStudentAuth } from '../StudentAuthContext.jsx';
 import '../styles/login.css';
 
@@ -34,19 +37,25 @@ export default function LoginPage({ initialMode = 'login' }) {
     password: '',
   });
   const [rememberLogin, setRememberLogin] = useState(Boolean(savedIdentifier));
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [social, setSocial] = useState({ google: false, facebook: false });
+  const [social, setSocial] = useState({
+    google: false,
+    facebook: false,
+    loading: true,
+  });
   const auth = useStudentAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const isRegister = mode === 'register';
+  const title = isRegister ? 'Tạo tài khoản' : 'Đăng nhập';
   usePageTitle(isRegister ? 'Đăng ký' : 'Đăng nhập');
 
   useEffect(() => {
     apiRequest('/auth/oauth/status')
-      .then((response) => setSocial(response?.data || {}))
-      .catch(() => setSocial({ google: false, facebook: false }));
+      .then((response) => setSocial({ ...response?.data, loading: false }))
+      .catch(() => setSocial({ google: false, facebook: false, loading: false }));
   }, []);
 
   async function submit(event) {
@@ -75,6 +84,7 @@ export default function LoginPage({ initialMode = 'login' }) {
   function changeMode(nextMode) {
     setMode(nextMode);
     setError('');
+    setShowPassword(false);
     setForm((current) => ({
       ...current,
       username: nextMode === 'login' ? rememberedIdentifier() || current.username : '',
@@ -83,150 +93,148 @@ export default function LoginPage({ initialMode = 'login' }) {
   }
 
   return (
-    <section className="student-access-card student-login-card" aria-labelledby="student-login-title">
-      <header className="student-login-card__header">
-        <span className="student-login-card__mark" aria-hidden="true">
-          学
-        </span>
-        <div>
-          <p className="public-eyebrow">Không gian học viên</p>
-          <h1 id="student-login-title">
-            {isRegister ? 'Tạo tài khoản Mandora' : 'Chào mừng bạn trở lại'}
-          </h1>
-          <p className="student-login-card__lead">
+    <section className="student-login-shell" aria-labelledby="student-login-title">
+      <div className="student-login-panel">
+        <header className="student-login-panel__header">
+          <p className="public-eyebrow">Mandora dành cho học viên</p>
+          <h1 id="student-login-title">{title}</h1>
+          <p>
             {isRegister
-              ? 'Tạo tài khoản để lưu tiến độ, từ vựng và lịch ôn tập của bạn.'
-              : 'Đăng nhập để tiếp tục đúng nơi bạn đã dừng lại.'}
+              ? 'Bắt đầu hành trình học tiếng Trung và lưu lại tiến độ của bạn.'
+              : 'Tiếp tục hành trình học tiếng Trung của bạn.'}
           </p>
-        </div>
-      </header>
+        </header>
 
-      <form className="student-auth-form student-login-form" onSubmit={submit}>
-        {isRegister && (
-          <div className="student-login-form__two-columns">
-            <label>
-              Họ tên
+        <form
+          aria-busy={submitting}
+          className="student-auth-form student-login-form"
+          onSubmit={submit}
+        >
+          {isRegister && (
+            <div className="student-login-form__two-columns">
+              <label htmlFor="student-display-name">
+                Họ tên
+                <input
+                  autoComplete="name"
+                  id="student-display-name"
+                  maxLength="100"
+                  required
+                  value={form.displayName}
+                  onChange={(event) =>
+                    setForm({ ...form, displayName: event.target.value })
+                  }
+                />
+              </label>
+              <label htmlFor="student-email">
+                Email
+                <input
+                  autoComplete="email"
+                  id="student-email"
+                  required
+                  type="email"
+                  value={form.email}
+                  onChange={(event) => setForm({ ...form, email: event.target.value })}
+                />
+              </label>
+            </div>
+          )}
+
+          <label htmlFor="student-identifier">
+            {isRegister ? 'Tên đăng nhập' : 'Tên đăng nhập hoặc email'}
+            <input
+              aria-describedby={error ? 'student-login-error' : undefined}
+              aria-invalid={error ? 'true' : undefined}
+              autoComplete="username"
+              id="student-identifier"
+              required
+              value={form.username}
+              onChange={(event) => setForm({ ...form, username: event.target.value })}
+            />
+          </label>
+
+          <div className="student-login-form__field">
+            <label htmlFor="student-password">Mật khẩu</label>
+            <span className="student-password-field">
               <input
+                aria-describedby={error ? 'student-login-error' : undefined}
+                aria-invalid={error ? 'true' : undefined}
+                autoComplete={isRegister ? 'new-password' : 'current-password'}
+                id="student-password"
+                minLength="8"
                 required
-                autoComplete="name"
-                maxLength="100"
-                value={form.displayName}
-                onChange={(event) =>
-                  setForm({ ...form, displayName: event.target.value })
-                }
+                type={showPassword ? 'text' : 'password'}
+                value={form.password}
+                onChange={(event) => setForm({ ...form, password: event.target.value })}
               />
-            </label>
-            <label>
-              Email
-              <input
-                required
-                autoComplete="email"
-                type="email"
-                value={form.email}
-                onChange={(event) => setForm({ ...form, email: event.target.value })}
-              />
-            </label>
+              <button
+                aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                aria-pressed={showPassword}
+                className="student-password-field__toggle"
+                onClick={() => setShowPassword((visible) => !visible)}
+                type="button"
+              >
+                <PasswordVisibilityIcon visible={showPassword} />
+              </button>
+            </span>
           </div>
-        )}
 
-        <label>
-          {isRegister ? 'Tên đăng nhập' : 'Tên đăng nhập hoặc email'}
-          <input
-            required
-            autoComplete="username"
-            value={form.username}
-            onChange={(event) => setForm({ ...form, username: event.target.value })}
-          />
-        </label>
+          {!isRegister && (
+            <div className="student-login-form__options">
+              <label className="student-login-remember">
+                <input
+                  checked={rememberLogin}
+                  onChange={(event) => setRememberLogin(event.target.checked)}
+                  type="checkbox"
+                />
+                <span>Ghi nhớ đăng nhập</span>
+              </label>
+              <Link to="/forgot-password">Quên mật khẩu?</Link>
+            </div>
+          )}
 
-        <label>
-          Mật khẩu
-          <input
-            required
-            minLength="8"
-            autoComplete={isRegister ? 'new-password' : 'current-password'}
-            type="password"
-            value={form.password}
-            onChange={(event) => setForm({ ...form, password: event.target.value })}
-          />
-        </label>
+          {error && (
+            <p
+              className="student-auth-form__error student-login-error"
+              id="student-login-error"
+              role="alert"
+            >
+              {error}
+            </p>
+          )}
+
+          <button
+            className="button button--primary student-login-submit"
+            disabled={submitting}
+            type="submit"
+          >
+            {submitting ? 'Đang xử lý…' : title}
+          </button>
+        </form>
+
+        <div className="student-login-divider" aria-hidden="true">
+          <span>Hoặc tiếp tục với</span>
+        </div>
+
+        <SocialLoginButtons providers={social} onLogin={socialLogin} />
+
+        <p className="student-login-panel__switch">
+          {isRegister ? 'Đã có tài khoản?' : 'Chưa có tài khoản?'}{' '}
+          <Link
+            onClick={() => changeMode(isRegister ? 'login' : 'register')}
+            to={isRegister ? '/login' : '/register'}
+          >
+            {isRegister ? 'Đăng nhập' : 'Đăng ký ngay'}
+          </Link>
+        </p>
 
         {!isRegister && (
-          <div className="student-login-form__options">
-            <label className="student-login-remember">
-              <input
-                checked={rememberLogin}
-                onChange={(event) => setRememberLogin(event.target.checked)}
-                type="checkbox"
-              />
-              <span>Ghi nhớ đăng nhập</span>
-            </label>
-            <Link to="/forgot-password">Quên mật khẩu?</Link>
-          </div>
-        )}
-
-        {error && (
-          <p className="student-auth-form__error student-login-error" role="alert">
-            {error}
+          <p className="student-login-panel__security-note">
+            “Ghi nhớ đăng nhập” chỉ lưu tên đăng nhập hoặc email trên thiết bị này.
           </p>
         )}
-
-        <button
-          className="button button--primary student-login-submit"
-          disabled={submitting}
-          type="submit"
-        >
-          {submitting ? 'Đang xử lý…' : isRegister ? 'Tạo tài khoản' : 'Đăng nhập'}
-        </button>
-      </form>
-
-      <div className="student-login-divider" aria-hidden="true">
-        <span>hoặc tiếp tục với</span>
       </div>
 
-      <div className="student-social-auth" aria-label="Đăng nhập nhanh">
-        <button
-          className="student-social-button"
-          disabled={!social.google}
-          onClick={() => socialLogin('google')}
-          type="button"
-        >
-          <span className="student-social-button__icon" aria-hidden="true">
-            G
-          </span>
-          <span>Google</span>
-          {!social.google && <small>Chưa cấu hình</small>}
-        </button>
-        <button
-          className="student-social-button"
-          disabled={!social.facebook}
-          onClick={() => socialLogin('facebook')}
-          type="button"
-        >
-          <span className="student-social-button__icon" aria-hidden="true">
-            f
-          </span>
-          <span>Facebook</span>
-          {!social.facebook && <small>Chưa cấu hình</small>}
-        </button>
-      </div>
-
-      <p className="student-login-card__switch">
-        {isRegister ? 'Đã có tài khoản?' : 'Chưa có tài khoản?'}{' '}
-        <Link
-          onClick={() => changeMode(isRegister ? 'login' : 'register')}
-          to={isRegister ? '/login' : '/register'}
-        >
-          {isRegister ? 'Đăng nhập' : 'Đăng ký ngay'}
-        </Link>
-      </p>
-
-      {!isRegister && (
-        <p className="student-login-card__security-note">
-          “Ghi nhớ đăng nhập” chỉ lưu tên đăng nhập/email trên thiết bị này. Mandora không
-          lưu mật khẩu thô trong trình duyệt.
-        </p>
-      )}
+      <AuthVisualPanel />
     </section>
   );
 }
