@@ -6,6 +6,7 @@ import StudentLayout from '../layouts/StudentLayout.jsx';
 import BlogDetailPage from '../features/blog/pages/BlogDetailPage.jsx';
 import BlogPage from '../features/blog/pages/BlogPage.jsx';
 import LoginPage from '../features/auth/pages/LoginPage.jsx';
+import OAuthCallbackPage from '../features/auth/pages/OAuthCallbackPage.jsx';
 import ForgotPasswordPage from '../features/auth/pages/ForgotPasswordPage.jsx';
 import ResetPasswordPage from '../features/auth/pages/ResetPasswordPage.jsx';
 import VerifyEmailPage from '../features/auth/pages/VerifyEmailPage.jsx';
@@ -44,6 +45,7 @@ export default function AppRoutes() {
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<LoginPage initialMode="register" />} />
+        <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
