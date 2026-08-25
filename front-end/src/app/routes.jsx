@@ -6,6 +6,9 @@ import StudentLayout from '../layouts/StudentLayout.jsx';
 import BlogDetailPage from '../features/blog/pages/BlogDetailPage.jsx';
 import BlogPage from '../features/blog/pages/BlogPage.jsx';
 import LoginPage from '../features/auth/pages/LoginPage.jsx';
+import ForgotPasswordPage from '../features/auth/pages/ForgotPasswordPage.jsx';
+import ResetPasswordPage from '../features/auth/pages/ResetPasswordPage.jsx';
+import VerifyEmailPage from '../features/auth/pages/VerifyEmailPage.jsx';
 import CourseDetailPage from '../features/courses/pages/CourseDetailPage.jsx';
 import CoursesPage from '../features/courses/pages/CoursesPage.jsx';
 import LessonPage from '../features/courses/pages/LessonPage.jsx';
@@ -40,6 +43,9 @@ export default function AppRoutes() {
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<LoginPage initialMode="register" />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
       </Route>
       <Route element={<PublicLayout />}>
         <Route index element={<HomePage />} />

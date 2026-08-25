@@ -397,7 +397,7 @@
 }
 
 .learning-dashboard-stage-grid {
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
 }
 
 .learning-dashboard-rating-grid {
@@ -606,5 +606,27 @@
 @media (prefers-reduced-motion: reduce) {
   .learning-dashboard-plan__item {
     transition: none;
+  }
+}
+.learning-dashboard-verification {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 16px 18px;
+  border: 1px solid var(--mandora-line);
+  border-left: 4px solid var(--mandora-gold-500);
+  background: var(--mandora-paper);
+}
+
+.learning-dashboard-verification p {
+  margin: 3px 0 0;
+  color: var(--mandora-muted);
+}
+
+@media (max-width: 640px) {
+  .learning-dashboard-verification {
+    align-items: stretch;
+    flex-direction: column;
   }
 }

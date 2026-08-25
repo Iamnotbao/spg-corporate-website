@@ -717,6 +717,20 @@
   color: var(--mandora-red-700);
 }
 
+.student-auth-form__aside {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -8px;
+  color: var(--mandora-red-700);
+  font-size: 0.86rem;
+  font-weight: 750;
+}
+
+.student-access-card__notice.is-error {
+  border-color: rgba(194, 59, 79, 0.35);
+  background: var(--mandora-red-100);
+}
+
 .public-nav button.public-nav__login {
   border: 0;
   cursor: pointer;

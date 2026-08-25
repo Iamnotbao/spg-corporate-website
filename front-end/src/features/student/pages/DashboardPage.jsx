@@ -8,6 +8,7 @@ import {
 } from '../../../components/ui/ContentState.jsx';
 import { usePageTitle } from '../../../hooks/usePageTitle.js';
 import { useStudentAuth } from '../../auth/StudentAuthContext.jsx';
+import { resendStudentVerification } from '../../auth/services/studentAuthService.js';
 import { getStudentDashboard } from '../services/dashboardService.js';
 import '../styles/dashboard.css';
 
@@ -31,6 +32,46 @@ const RATING_LABELS = {
   good: 'Good',
   easy: 'Easy',
 };
+
+function EmailVerificationNotice() {
+  const [status, setStatus] = useState('idle');
+
+  async function resend() {
+    setStatus('loading');
+    try {
+      await resendStudentVerification();
+      setStatus('success');
+    } catch {
+      setStatus('error');
+    }
+  }
+
+  return (
+    <div className="learning-dashboard-verification" role="status">
+      <div>
+        <strong>Xác minh email của bạn</strong>
+        <p>
+          Xác minh là tùy chọn ở giai đoạn này, nhưng giúp bạn sẵn sàng khôi phục tài
+          khoản khi cần.
+        </p>
+      </div>
+      <button
+        className="button button--secondary"
+        disabled={status === 'loading' || status === 'success'}
+        onClick={resend}
+        type="button"
+      >
+        {status === 'loading'
+          ? 'Đang gửi…'
+          : status === 'success'
+            ? 'Đã gửi email'
+            : status === 'error'
+              ? 'Thử gửi lại'
+              : 'Gửi email xác minh'}
+      </button>
+    </div>
+  );
+}
 
 function formatDateTime(value) {
   if (!value) return 'Chưa có';
@@ -201,8 +242,9 @@ function SrsSection({ srs }) {
     ['Mới', srs.stages.new],
     ['Đang học', srs.stages.learning],
     ['Ôn tập', srs.stages.review],
+    ['Đã thành thạo', srs.stages.mastered],
   ];
-  const ratings = Object.entries(srs.latestRatingDistribution);
+  const ratings = Object.entries(srs.ratingDistribution);
   return (
     <section className="learning-dashboard-panel learning-dashboard-domain">
       <header className="learning-dashboard-section-heading">
@@ -427,6 +469,7 @@ export default function DashboardPage() {
       </section>
 
       <div className="public-container learning-dashboard-content">
+        {auth.user && !auth.user.emailVerified && <EmailVerificationNotice />}
         <div className="learning-dashboard-metrics">
           <Metric label="Khóa đang học" value={data.overview.activeCourses} />
           <Metric

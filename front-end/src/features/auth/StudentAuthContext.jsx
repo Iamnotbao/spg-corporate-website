@@ -1,4 +1,11 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import { getStudentToken, setStudentToken } from '../../services/httpClient.js';
 import {
   getStudentSession,
@@ -11,6 +18,12 @@ const StudentAuthContext = createContext(null);
 export function StudentAuthProvider({ children }) {
   const [status, setStatus] = useState(getStudentToken() ? 'checking' : 'signed-out');
   const [user, setUser] = useState(null);
+  const refreshSession = useCallback(async () => {
+    const result = await getStudentSession();
+    setUser(result.user);
+    setStatus('signed-in');
+    return result.user;
+  }, []);
 
   useEffect(() => {
     if (!getStudentToken()) return;
@@ -50,13 +63,14 @@ export function StudentAuthProvider({ children }) {
         setStatus('signed-in');
         return result.user;
       },
+      refreshSession,
       logout() {
         setStudentToken('');
         setUser(null);
         setStatus('signed-out');
       },
     }),
-    [status, user],
+    [refreshSession, status, user],
   );
 
   return (

@@ -74,6 +74,11 @@ export default function LoginPage({ initialMode = 'login' }) {
             onChange={(event) => setForm({ ...form, username: event.target.value })}
           />
         </label>
+        {!isRegister && (
+          <div className="student-auth-form__aside">
+            <Link to="/forgot-password">Quên mật khẩu?</Link>
+          </div>
+        )}
         <label>
           Mật khẩu
           <input
