@@ -20,6 +20,7 @@ import * as studentAuthController from "../features/student-auth/student-auth.co
 import * as vocabularyController from "../features/vocabulary/vocabulary.controller.js";
 import * as quizController from "../features/quiz/quiz.controller.js";
 import * as characterController from "../features/character/character.controller.js";
+import * as searchController from "../features/search/search.controller.js";
 import { auth, requireRole } from "../middleware/auth.js";
 
 const router = Router();
@@ -43,6 +44,13 @@ const studentAuthLimiter = rateLimit({
   standardHeaders: "draft-8",
   legacyHeaders: false,
   message: { error: "Quá nhiều yêu cầu xác thực. Vui lòng thử lại sau." },
+});
+const searchLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 90,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { error: "Bạn đang tìm kiếm quá nhanh. Vui lòng thử lại sau." },
 });
 
 router.post(
@@ -69,6 +77,7 @@ router.get("/languages", asyncHandler(listPublicLanguages));
 router.get("/communications", asyncHandler(getPublicCommunications));
 router.get("/site-profile", asyncHandler(getPublicSiteProfile));
 router.get("/events", addRealtimeClient);
+router.get("/search", searchLimiter, asyncHandler(searchController.searchPublic));
 router.get("/courses", asyncHandler(learningController.listPublishedCourses));
 router.get(
   "/courses/:identifier",
@@ -80,6 +89,11 @@ router.get(
 );
 router.get("/vocabulary", asyncHandler(vocabularyController.listPublic));
 router.get("/characters", asyncHandler(characterController.listPublic));
+router.post(
+  "/characters/recognize",
+  searchLimiter,
+  asyncHandler(characterController.recognize),
+);
 router.get(
   "/characters/:identifier/strokes",
   asyncHandler(characterController.getStrokeData),

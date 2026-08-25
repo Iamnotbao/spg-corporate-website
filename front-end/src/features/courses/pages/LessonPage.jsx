@@ -23,6 +23,7 @@ import {
 } from '../../student/services/studentLearningService.js';
 import CourseOutline from '../components/CourseOutline.jsx';
 import LessonNavigation from '../components/LessonNavigation.jsx';
+import LessonRelatedVocabulary from '../components/LessonRelatedVocabulary.jsx';
 import { getPublicCourse, getPublicLesson } from '../services/courseCatalogService.js';
 import '../styles/courses.css';
 import '../styles/lesson-vocabulary.css';
@@ -36,6 +37,8 @@ const TYPE_LABELS = {
   reading: 'Đọc hiểu',
   vocabulary: 'Từ vựng',
 };
+
+const VOCABULARY_BATCH_SIZE = 8;
 
 export default function LessonPage() {
   const { courseSlug, lessonSlug } = useParams();
@@ -55,7 +58,7 @@ export default function LessonPage() {
   const [submitting, setSubmitting] = useState(false);
   const [lessonVocabulary, setLessonVocabulary] = useState([]);
   const [vocabularyStatus, setVocabularyStatus] = useState('idle');
-  const [visibleVocabularyCount, setVisibleVocabularyCount] = useState(6);
+  const [visibleVocabularyCount, setVisibleVocabularyCount] = useState(VOCABULARY_BATCH_SIZE);
   const [lessonCharacters, setLessonCharacters] = useState([]);
   const [characterStatus, setCharacterStatus] = useState('idle');
   const [savedIds, setSavedIds] = useState(new Set());
@@ -70,6 +73,7 @@ export default function LessonPage() {
       ),
     [course.data],
   );
+  const relatedVocabulary = useMemo(() => lessonVocabulary.slice(0, 5), [lessonVocabulary]);
   const lessonIndex = lessons.findIndex((item) => item.slug === lessonSlug);
   const isComplete = studentState?.completedLessonIds?.includes(lesson.data?.id);
   usePageTitle(lesson.data?.title || 'Bài học');
@@ -88,11 +92,11 @@ export default function LessonPage() {
     if (lesson.data?.type !== 'vocabulary' || !lesson.data?.id) {
       setLessonVocabulary([]);
       setVocabularyStatus('idle');
-      setVisibleVocabularyCount(6);
+      setVisibleVocabularyCount(VOCABULARY_BATCH_SIZE);
       return;
     }
     setVocabularyStatus('loading');
-    setVisibleVocabularyCount(6);
+    setVisibleVocabularyCount(VOCABULARY_BATCH_SIZE);
     listPublicVocabulary({ lessonId: lesson.data.id, page: 1, pageSize: 50 })
       .then((result) => {
         setLessonVocabulary(result.data || []);
@@ -207,11 +211,16 @@ export default function LessonPage() {
     return <NotFoundPage />;
 
   const isQuizLesson = lesson.data.type === 'quiz';
+  const isVocabularyLesson = lesson.data.type === 'vocabulary';
   const quizUrl = `/courses/${courseSlug}/lessons/${lessonSlug}/quiz`;
 
   return (
     <section className="lesson-page">
-      <div className="public-container lesson-page__grid">
+      <div
+        className={`public-container lesson-page__grid${
+          isVocabularyLesson ? ' lesson-page__grid--with-related' : ''
+        }`}
+      >
         <aside className="lesson-sidebar">
           <Link className="breadcrumb-link" to={`/courses/${course.data.slug}`}>
             ← {course.data.title}
@@ -239,7 +248,7 @@ export default function LessonPage() {
               )}
           </div>
 
-          {lesson.data.type === 'vocabulary' && (
+          {isVocabularyLesson && (
             <section className="lesson-vocabulary-section">
               <div className="lesson-vocabulary-section__heading">
                 <div>
@@ -248,7 +257,7 @@ export default function LessonPage() {
                 </div>
                 <Link to="/vocabulary">Xem toàn bộ từ vựng →</Link>
               </div>
-              {vocabularyStatus === 'loading' && <LoadingState count={3} label="Đang tải từ vựng" />}
+              {vocabularyStatus === 'loading' && <LoadingState count={4} label="Đang tải từ vựng" />}
               {vocabularyStatus === 'error' && <p className="lesson-vocabulary-empty">Không thể tải từ vựng của bài học này.</p>}
               {vocabularyStatus === 'ready' && lessonVocabulary.length === 0 && (
                 <p className="lesson-vocabulary-empty">Bài học này chưa có từ vựng được xuất bản.</p>
@@ -270,10 +279,10 @@ export default function LessonPage() {
               {vocabularyStatus === 'ready' && lessonVocabulary.length > visibleVocabularyCount && (
                 <button
                   className="button button--secondary lesson-vocabulary-load-more"
-                  onClick={() => setVisibleVocabularyCount((count) => count + 6)}
+                  onClick={() => setVisibleVocabularyCount((count) => count + VOCABULARY_BATCH_SIZE)}
                   type="button"
                 >
-                  Xem thêm 6 từ
+                  Xem thêm {VOCABULARY_BATCH_SIZE} từ
                 </button>
               )}
             </section>
@@ -339,6 +348,13 @@ export default function LessonPage() {
             previous={lessons[lessonIndex - 1]}
           />
         </article>
+        {isVocabularyLesson && (
+          <LessonRelatedVocabulary
+            items={relatedVocabulary}
+            status={vocabularyStatus}
+            total={lessonVocabulary.length}
+          />
+        )}
       </div>
       <CharacterPracticeModal character={practiceCharacter} onClose={() => setPracticeCharacter('')} />
       <PublicToast
