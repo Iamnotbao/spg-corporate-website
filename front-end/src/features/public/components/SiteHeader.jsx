@@ -96,10 +96,14 @@ export default function SiteHeader() {
                   type="button"
                 >
                   <span className="student-account__avatar" aria-hidden="true">
-                    {(auth.user?.displayName || auth.user?.username || 'H').slice(0, 1).toUpperCase()}
+                    {(auth.user?.displayName || auth.user?.username || 'H')
+                      .slice(0, 1)
+                      .toUpperCase()}
                   </span>
                   <span className="student-account__identity">
-                    <strong>{auth.user?.displayName || auth.user?.username || 'Học viên'}</strong>
+                    <strong>
+                      {auth.user?.displayName || auth.user?.username || 'Học viên'}
+                    </strong>
                     <small>Học viên</small>
                   </span>
                   <span aria-hidden="true">⌄</span>
@@ -110,11 +114,24 @@ export default function SiteHeader() {
                       <strong>{auth.user?.displayName || auth.user?.username}</strong>
                       <small>{auth.user?.email}</small>
                     </div>
-                    <Link onClick={closeMenu} to="/my-courses">Khóa học của tôi</Link>
-                    <Link onClick={closeMenu} to="/review">Ôn tập hôm nay</Link>
-                    <Link onClick={closeMenu} to="/vocabulary?saved=1">Từ vựng đã lưu</Link>
-                    <Link onClick={closeMenu} to="/progress">Tiến độ học tập</Link>
-                    <button onClick={openNotifications} type="button">Thông báo</button>
+                    <Link onClick={closeMenu} to="/dashboard">
+                      Bảng học tập
+                    </Link>
+                    <Link onClick={closeMenu} to="/my-courses">
+                      Khóa học của tôi
+                    </Link>
+                    <Link onClick={closeMenu} to="/review">
+                      Ôn tập hôm nay
+                    </Link>
+                    <Link onClick={closeMenu} to="/vocabulary?saved=1">
+                      Từ vựng đã lưu
+                    </Link>
+                    <Link onClick={closeMenu} to="/progress">
+                      Tiến độ học tập
+                    </Link>
+                    <button onClick={openNotifications} type="button">
+                      Thông báo
+                    </button>
                     <div className="student-account__divider" />
                     <button
                       className="student-account__logout"

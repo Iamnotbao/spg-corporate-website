@@ -26,7 +26,7 @@ export default function LoginPage({ initialMode = 'login' }) {
     try {
       if (isRegister) await auth.register(form);
       else await auth.login({ identifier: form.username, password: form.password });
-      navigate(location.state?.from || '/my-courses', { replace: true });
+      navigate(location.state?.from || '/dashboard', { replace: true });
     } catch (caught) {
       setError(caught.message);
     } finally {

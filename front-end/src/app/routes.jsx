@@ -18,6 +18,7 @@ import VocabularyPage from '../features/learning/pages/VocabularyPage.jsx';
 import HomePage from '../features/public/pages/HomePage.jsx';
 import NotFoundPage from '../features/public/pages/NotFoundPage.jsx';
 import MyCoursesPage from '../features/student/pages/MyCoursesPage.jsx';
+import DashboardPage from '../features/student/pages/DashboardPage.jsx';
 import ProgressPage from '../features/student/pages/ProgressPage.jsx';
 import VocabularyReviewPage from '../features/student/pages/VocabularyReviewPage.jsx';
 import QuizPage from '../features/quizzes/pages/QuizPage.jsx';
@@ -57,6 +58,7 @@ export default function AppRoutes() {
         <Route path="/blog" element={<BlogPage />} />
         <Route path="/blog/:id" element={<BlogDetailPage />} />
         <Route element={<StudentLayout />}>
+          <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/my-courses" element={<MyCoursesPage />} />
           <Route path="/progress" element={<ProgressPage />} />
           <Route path="/review" element={<VocabularyReviewPage />} />
