@@ -15,8 +15,8 @@
 }
 
 .lesson-page .lesson-vocabulary-grid {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(3, minmax(240px, 1fr));
+  gap: 18px;
 }
 
 .lesson-page .lesson-vocabulary-section {
@@ -124,6 +124,12 @@
   text-decoration: none;
 }
 
+@media (min-width: 1680px) {
+  .lesson-page .lesson-vocabulary-grid {
+    grid-template-columns: repeat(4, minmax(230px, 1fr));
+  }
+}
+
 @media (min-width: 1451px) {
   .lesson-page .lesson-content {
     padding-inline: clamp(36px, 3vw, 52px);
@@ -139,7 +145,7 @@
   }
 
   .lesson-page .lesson-vocabulary-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(240px, 1fr));
   }
 
   .lesson-related-rail {
@@ -164,10 +170,6 @@
 }
 
 @media (max-width: 1080px) {
-  .lesson-page .lesson-vocabulary-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .lesson-related-list {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -177,6 +179,10 @@
   .lesson-page .public-container.lesson-page__grid,
   .lesson-page .public-container.lesson-page__grid--with-related {
     grid-template-columns: 1fr;
+  }
+
+  .lesson-page .lesson-vocabulary-grid {
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
   }
 
   .lesson-related-rail {

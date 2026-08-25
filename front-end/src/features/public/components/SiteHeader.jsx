@@ -111,6 +111,7 @@ export default function SiteHeader() {
                       <small>{auth.user?.email}</small>
                     </div>
                     <Link onClick={closeMenu} to="/my-courses">Khóa học của tôi</Link>
+                    <Link onClick={closeMenu} to="/review">Ôn tập hôm nay</Link>
                     <Link onClick={closeMenu} to="/vocabulary?saved=1">Từ vựng đã lưu</Link>
                     <Link onClick={closeMenu} to="/progress">Tiến độ học tập</Link>
                     <button onClick={openNotifications} type="button">Thông báo</button>

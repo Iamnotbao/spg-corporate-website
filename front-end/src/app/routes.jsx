@@ -19,6 +19,7 @@ import HomePage from '../features/public/pages/HomePage.jsx';
 import NotFoundPage from '../features/public/pages/NotFoundPage.jsx';
 import MyCoursesPage from '../features/student/pages/MyCoursesPage.jsx';
 import ProgressPage from '../features/student/pages/ProgressPage.jsx';
+import VocabularyReviewPage from '../features/student/pages/VocabularyReviewPage.jsx';
 import QuizPage from '../features/quizzes/pages/QuizPage.jsx';
 
 const AdminApp = lazy(() => import('../features/admin/AdminApp.jsx'));
@@ -58,6 +59,7 @@ export default function AppRoutes() {
         <Route element={<StudentLayout />}>
           <Route path="/my-courses" element={<MyCoursesPage />} />
           <Route path="/progress" element={<ProgressPage />} />
+          <Route path="/review" element={<VocabularyReviewPage />} />
           <Route
             path="/courses/:courseSlug/lessons/:lessonSlug/quiz"
             element={<QuizPage />}

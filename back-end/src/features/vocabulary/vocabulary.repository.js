@@ -31,6 +31,7 @@ export async function ensureVocabularyIndexes() {
             { unique: true },
           ),
           collection.createIndex({ userId: 1, saved: 1, updatedAt: -1 }),
+          collection.createIndex({ userId: 1, saved: 1, nextReviewAt: 1 }),
         ]),
       ),
       ensureLearningIndexes(),
@@ -164,7 +165,7 @@ export const vocabularyRepository = {
       if (!duplicateOnly) throw error;
     }
   },
-  async save(userId, vocabularyId, now) {
+  async save(userId, vocabularyId, now, initialState = {}) {
     const filter = {
       userId: toObjectId(userId),
       vocabularyId: toObjectId(vocabularyId),
@@ -172,23 +173,79 @@ export const vocabularyRepository = {
     return (await collection(VOCABULARY_COLLECTIONS.progress)).findOneAndUpdate(
       filter,
       {
-        $setOnInsert: { ...filter, createdAt: now },
+        $setOnInsert: {
+          ...filter,
+          createdAt: now,
+          ...initialState,
+        },
         $set: { saved: true, updatedAt: now },
       },
       { upsert: true, returnDocument: "after" },
     );
   },
-  async unsave(userId, vocabularyId) {
-    return (await collection(VOCABULARY_COLLECTIONS.progress)).deleteOne({
+  async unsave(userId, vocabularyId, now) {
+    return (await collection(VOCABULARY_COLLECTIONS.progress)).findOneAndUpdate(
+      {
+        userId: toObjectId(userId),
+        vocabularyId: toObjectId(vocabularyId),
+      },
+      { $set: { saved: false, updatedAt: now } },
+      { returnDocument: "after" },
+    );
+  },
+  async findProgress(userId, vocabularyId) {
+    return (await collection(VOCABULARY_COLLECTIONS.progress)).findOne({
       userId: toObjectId(userId),
       vocabularyId: toObjectId(vocabularyId),
     });
+  },
+  async updateProgress(userId, vocabularyId, update) {
+    return (await collection(VOCABULARY_COLLECTIONS.progress)).findOneAndUpdate(
+      {
+        userId: toObjectId(userId),
+        vocabularyId: toObjectId(vocabularyId),
+      },
+      { $set: update },
+      { returnDocument: "after" },
+    );
   },
   async listSavedProgress(userId) {
     return (await collection(VOCABULARY_COLLECTIONS.progress))
       .find({ userId: toObjectId(userId), saved: true })
       .sort({ updatedAt: -1 })
       .toArray();
+  },
+  async listDueProgress(userId, now, limit = 20) {
+    return (await collection(VOCABULARY_COLLECTIONS.progress))
+      .find({
+        userId: toObjectId(userId),
+        saved: true,
+        $or: [
+          { nextReviewAt: { $lte: now } },
+          { nextReviewAt: { $exists: false } },
+          { nextReviewAt: null },
+        ],
+      })
+      .sort({ nextReviewAt: 1, updatedAt: 1 })
+      .limit(limit)
+      .toArray();
+  },
+  async countDueProgress(userId, now) {
+    return (await collection(VOCABULARY_COLLECTIONS.progress)).countDocuments({
+      userId: toObjectId(userId),
+      saved: true,
+      $or: [
+        { nextReviewAt: { $lte: now } },
+        { nextReviewAt: { $exists: false } },
+        { nextReviewAt: null },
+      ],
+    });
+  },
+  async countSavedProgress(userId) {
+    return (await collection(VOCABULARY_COLLECTIONS.progress)).countDocuments({
+      userId: toObjectId(userId),
+      saved: true,
+    });
   },
   toObjectId,
 };

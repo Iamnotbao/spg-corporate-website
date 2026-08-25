@@ -1,6 +1,7 @@
 import { Router } from "express";
 import * as studentLearningController from "../features/student-learning/student-learning.controller.js";
 import * as vocabularyController from "../features/vocabulary/vocabulary.controller.js";
+import * as vocabularyReviewController from "../features/vocabulary/vocabulary-review.controller.js";
 import * as quizController from "../features/quiz/quiz.controller.js";
 import * as progressController from "../features/progress/progress.controller.js";
 import * as characterController from "../features/character/character.controller.js";
@@ -44,6 +45,11 @@ router.put("/vocabulary/:id/saved", asyncHandler(vocabularyController.save));
 router.delete(
   "/vocabulary/:id/saved",
   asyncHandler(vocabularyController.unsave),
+);
+router.get("/vocabulary-review", asyncHandler(vocabularyReviewController.queue));
+router.post(
+  "/vocabulary-review/:vocabularyId",
+  asyncHandler(vocabularyReviewController.review),
 );
 router.post("/quizzes/:quizId/attempts", asyncHandler(quizController.submit));
 router.get(
