@@ -357,6 +357,7 @@ export default function AdminLearningPanel({ onNotify, onUnauthorized, section }
     pagedItems.length > 0 && pagedItems.every((item) => selectedIds.has(item.id));
   const canBulkPublish = section === 'courses' || section === 'lessons';
   const selectedDrafts = selectedItems.filter((item) => item.status !== 'published');
+  const selectedPublished = selectedItems.filter((item) => item.status === 'published');
 
   function beginCreate() {
     setForm(emptyForm(section, parents));
@@ -461,6 +462,38 @@ export default function AdminLearningPanel({ onNotify, onUnauthorized, section }
       const first = failures[0];
       onNotify(
         `${failures.length} mục chưa thể xuất bản. ${first.item.title}: ${first.message}`,
+        'error',
+      );
+    }
+  }
+
+  async function unpublishSelected() {
+    if (!canBulkPublish || !selectedPublished.length || bulkBusy) return;
+    setBulkBusy(true);
+    const failures = [];
+    let successCount = 0;
+    for (const item of selectedPublished) {
+      try {
+        await updateAdminLearning(section, item.id, { status: 'draft' });
+        successCount += 1;
+      } catch (requestError) {
+        if (onUnauthorized(requestError)) {
+          setBulkBusy(false);
+          return;
+        }
+        failures.push({ item, message: requestError.message });
+      }
+    }
+    await load();
+    setSelectedIds(new Set(failures.map(({ item }) => item.id)));
+    setBulkBusy(false);
+    if (successCount) {
+      onNotify(`Đã gỡ xuất bản ${successCount} ${copy.singular}.`);
+    }
+    if (failures.length) {
+      const first = failures[0];
+      onNotify(
+        `${failures.length} mục chưa thể gỡ xuất bản. ${first.item.title}: ${first.message}`,
         'error',
       );
     }
@@ -610,6 +643,17 @@ export default function AdminLearningPanel({ onNotify, onUnauthorized, section }
                 >
                   <AdminIcon name="check" size={16} />
                   {bulkBusy ? 'Đang xử lý…' : `Xuất bản đã chọn (${selectedDrafts.length})`}
+                </button>
+              )}
+              {canBulkPublish && (
+                <button
+                  className="admin-button admin-button--secondary"
+                  disabled={!selectedPublished.length || bulkBusy}
+                  onClick={unpublishSelected}
+                  type="button"
+                >
+                  <AdminIcon name="refresh" size={16} />
+                  {bulkBusy ? 'Đang xử lý…' : `Gỡ xuất bản đã chọn (${selectedPublished.length})`}
                 </button>
               )}
               <button
