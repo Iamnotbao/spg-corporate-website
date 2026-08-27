@@ -1,3 +1,4 @@
+import { vocabularyDeduplicationService } from "./vocabulary-deduplication.service.js";
 import { vocabularyService } from "./vocabulary.service.js";
 
 export async function listPublic(req, res) {
@@ -27,6 +28,12 @@ export async function update(req, res) {
 export async function remove(req, res) {
   await vocabularyService.delete(req.params.id);
   return res.json({ ok: true });
+}
+export async function analyzeDuplicates(_req, res) {
+  return res.json({ data: await vocabularyDeduplicationService.analyze() });
+}
+export async function cleanupDuplicates(_req, res) {
+  return res.json({ data: await vocabularyDeduplicationService.cleanup() });
 }
 export async function save(req, res) {
   return res.json({
