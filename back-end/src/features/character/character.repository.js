@@ -18,6 +18,7 @@ export async function ensureCharacterIndexes() {
           collection.createIndex({ simplified: 1 }, { unique: true }),
           collection.createIndex({ status: 1, hskLevel: 1, simplified: 1 }),
           collection.createIndex({ lessonId: 1, status: 1 }),
+          collection.createIndex({ deletedAt: 1, trashRoot: 1 }),
         ]),
       ),
       getCollection(CHARACTER_COLLECTIONS.attempts).then((collection) =>
@@ -53,31 +54,33 @@ function identifierFilter(identifier) {
     : { $or: [{ simplified: value }, { traditional: value }] };
 }
 
+function active(filter = {}) {
+  return { ...filter, deletedAt: { $exists: false } };
+}
+
 export const characterRepository = {
-  async listPage(filter, { skip, limit }) {
+  async listPage(filter = {}, { skip, limit }) {
     return (await collection(CHARACTER_COLLECTIONS.characters))
-      .find(filter)
+      .find(active(filter))
       .sort({ hskLevel: 1, simplified: 1 })
       .skip(skip)
       .limit(limit)
       .toArray();
   },
-  async count(filter) {
+  async count(filter = {}) {
     return (await collection(CHARACTER_COLLECTIONS.characters)).countDocuments(
-      filter,
+      active(filter),
     );
   },
   async find(id, filter = {}) {
-    return (await collection(CHARACTER_COLLECTIONS.characters)).findOne({
-      ...idFilter(id),
-      ...filter,
-    });
+    return (await collection(CHARACTER_COLLECTIONS.characters)).findOne(
+      active({ ...idFilter(id), ...filter }),
+    );
   },
   async findByIdentifier(identifier, filter = {}) {
-    return (await collection(CHARACTER_COLLECTIONS.characters)).findOne({
-      ...identifierFilter(identifier),
-      ...filter,
-    });
+    return (await collection(CHARACTER_COLLECTIONS.characters)).findOne(
+      active({ ...identifierFilter(identifier), ...filter }),
+    );
   },
   async create(document) {
     const result = await (
@@ -89,19 +92,19 @@ export const characterRepository = {
     return (
       await collection(CHARACTER_COLLECTIONS.characters)
     ).findOneAndUpdate(
-      idFilter(id),
+      active(idFilter(id)),
       { $set: update },
       { returnDocument: "after" },
     );
   },
   async delete(id) {
     return (await collection(CHARACTER_COLLECTIONS.characters)).deleteOne(
-      idFilter(id),
+      active(idFilter(id)),
     );
   },
   async findLesson(id) {
     return (await collection(LEARNING_COLLECTIONS.lessons)).findOne(
-      idFilter(id),
+      active(idFilter(id)),
     );
   },
   async countAttempts(characterId) {
