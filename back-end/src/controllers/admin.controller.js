@@ -196,6 +196,22 @@ export async function getOne(type, req, res) {
   return res.json({ data: item });
 }
 
+// Thin route adapters keep the generic content helpers reusable while giving
+// Express concrete handler functions for the legacy /posts and /jobs routes.
+export const listPosts = (req, res) => list("posts", req, res);
+export const getPost = (req, res) => getOne("posts", req, res);
+export const createPost = (req, res) => create("posts", req, res);
+export const updatePost = (req, res) => update("posts", req, res);
+export const deletePost = (req, res) => remove("posts", req, res);
+export const bulkDeletePosts = (req, res) => bulkRemove("posts", req, res);
+
+export const listJobs = (req, res) => list("jobs", req, res);
+export const getJob = (req, res) => getOne("jobs", req, res);
+export const createJob = (req, res) => create("jobs", req, res);
+export const updateJob = (req, res) => update("jobs", req, res);
+export const deleteJob = (req, res) => remove("jobs", req, res);
+export const bulkDeleteJobs = (req, res) => bulkRemove("jobs", req, res);
+
 export async function listApplications(req, res) {
   const requestedPage = Math.max(1, Number(req.query.page) || 1);
   const pageSize = Math.min(50, Math.max(1, Number(req.query.pageSize) || 10));
