@@ -72,6 +72,10 @@ async function cleanupImages(publicIds = []) {
   await Promise.all([...new Set(publicIds.filter(Boolean))].map(cleanupImage));
 }
 
+function activeContentFilter(filter = {}) {
+  return { ...filter, deletedAt: { $exists: false } };
+}
+
 // Kept only for legacy direct imports. The active /admin/verify route uses account login.
 export function verify(req, res) {
   const password = String(
@@ -85,7 +89,7 @@ export function verify(req, res) {
 }
 
 function queryFor(type, query) {
-  const filter = {};
+  const filter = { deletedAt: { $exists: false } };
   const search = String(query.search || "").trim();
   if (search) {
     const safeSearch = escapeRegex(search);
@@ -122,7 +126,7 @@ export async function list(type, req, res) {
   const page = Math.min(requestedPage, totalPages);
   const items = await collection
     .find(filter)
-    .sort({ createdAt: -1 })
+    .sort({ createdAt: -1, _id: -1 })
     .skip((page - 1) * pageSize)
     .limit(pageSize)
     .toArray();
@@ -143,11 +147,11 @@ export async function update(type, req, res) {
   if (!id) return res.status(400).json({ error: "Invalid id" });
 
   const collection = await getCollection(type);
-  const existing = await collection.findOne({ _id: id });
+  const existing = await collection.findOne(activeContentFilter({ _id: id }));
   if (!existing) return res.status(404).json({ error: "Not found" });
 
   const result = await collection.updateOne(
-    { _id: id },
+    activeContentFilter({ _id: id }),
     { $set: { ...req.body, updatedAt: new Date() } },
   );
 
@@ -166,8 +170,8 @@ export async function remove(type, req, res) {
   const id = toObjectId(req.params.id);
   if (!id) return res.status(400).json({ error: "Invalid id" });
   const collection = await getCollection(type);
-  const existing = await collection.findOne({ _id: id });
-  const result = await collection.deleteOne({ _id: id });
+  const existing = await collection.findOne(activeContentFilter({ _id: id }));
+  const result = await collection.deleteOne(activeContentFilter({ _id: id }));
   if (result.deletedCount) await cleanupImages(contentPublicIds(existing));
   return res.json({ ok: true, deleted: result.deletedCount });
 }
@@ -176,13 +180,14 @@ export async function bulkRemove(type, req, res) {
   const ids = (req.body.ids || []).map(toObjectId).filter(Boolean);
   if (!ids.length) return res.status(400).json({ error: "No ids provided" });
   const collection = await getCollection(type);
+  const filter = activeContentFilter({ _id: { $in: ids } });
   const items = await collection
     .find(
-      { _id: { $in: ids } },
+      filter,
       { projection: { imagePublicId: 1, imagePublicIds: 1, contentBlocks: 1 } },
     )
     .toArray();
-  const result = await collection.deleteMany({ _id: { $in: ids } });
+  const result = await collection.deleteMany(filter);
   await cleanupImages(items.flatMap(contentPublicIds));
   return res.json({ ok: true, deleted: result.deletedCount });
 }
@@ -191,7 +196,7 @@ export async function getOne(type, req, res) {
   const id = toObjectId(req.params.id);
   if (!id) return res.status(400).json({ error: "Invalid id" });
   const collection = await getCollection(type);
-  const item = await collection.findOne({ _id: id });
+  const item = await collection.findOne(activeContentFilter({ _id: id }));
   if (!item) return res.status(404).json({ error: "Not found" });
   return res.json({ data: item });
 }
@@ -229,7 +234,7 @@ export async function listApplications(req, res) {
   const page = Math.min(requestedPage, totalPages);
   const applications = await collection
     .find(filter)
-    .sort({ createdAt: -1 })
+    .sort({ createdAt: -1, _id: -1 })
     .skip((page - 1) * pageSize)
     .limit(pageSize)
     .toArray();
