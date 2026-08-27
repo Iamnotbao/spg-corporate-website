@@ -7,6 +7,8 @@ const lessonId = new ObjectId("707f1f77bcf86cd799439015");
 const firstId = new ObjectId("707f1f77bcf86cd799439016");
 const secondId = new ObjectId("707f1f77bcf86cd799439017");
 const thirdId = new ObjectId("707f1f77bcf86cd799439018");
+const firstUserId = new ObjectId("707f1f77bcf86cd799439019");
+const secondUserId = new ObjectId("707f1f77bcf86cd799439020");
 
 function word(id, overrides = {}) {
   return {
@@ -37,8 +39,14 @@ function repository(overrides = {}) {
         ids.map((id) => [String(id), { progress: 0, reviewHistory: 0, total: 0 }]),
       );
     },
+    async listProgressRows() {
+      return [];
+    },
     async deleteDuplicates(ids) {
       return { deletedCount: ids.length };
+    },
+    async mergeLearningReferences() {
+      return { movedProgress: 0, movedReviewHistory: 0, deletedCount: 1 };
     },
     ...overrides,
   };
@@ -60,7 +68,8 @@ test("duplicate cleanup keeps one canonical record and deletes unreferenced redu
   assert.equal(result.summary.duplicateGroups, 1);
   assert.equal(result.summary.redundantRecords, 1);
   assert.equal(result.summary.deletableRecords, 1);
-  assert.equal(result.summary.protectedRecords, 0);
+  assert.equal(result.summary.mergeableRecords, 0);
+  assert.equal(result.summary.manualRecords, 0);
   assert.equal(result.deleted, 1);
   assert.deepEqual(deletedIds, [String(secondId)]);
 });
@@ -87,16 +96,16 @@ test("canonical selection prefers the vocabulary record with student learning re
   assert.deepEqual(report.groups[0].deletableIds, [String(firstId)]);
 });
 
-test("referenced redundant duplicates are protected instead of being hard deleted", async () => {
-  let deletedIds = null;
+test("referenced duplicate with a different student is merged into the canonical record", async () => {
+  let merged = null;
   const service = createVocabularyDeduplicationService(
     repository({
       async listDuplicateGroups() {
         return [
           {
             _id: { lessonId, simplified: "学习", pinyin: "xuéxí" },
-            count: 3,
-            items: [word(firstId), word(secondId), word(thirdId)],
+            count: 2,
+            items: [word(firstId), word(secondId)],
           },
         ];
       },
@@ -104,29 +113,86 @@ test("referenced redundant duplicates are protected instead of being hard delete
         return Object.fromEntries(
           ids.map((id) => {
             const key = String(id);
-            if (key === String(firstId)) {
-              return [key, { progress: 4, reviewHistory: 1, total: 5 }];
-            }
-            if (key === String(secondId)) {
-              return [key, { progress: 1, reviewHistory: 0, total: 1 }];
-            }
-            return [key, { progress: 0, reviewHistory: 0, total: 0 }];
+            return key === String(firstId)
+              ? [key, { progress: 2, reviewHistory: 2, total: 4 }]
+              : [key, { progress: 1, reviewHistory: 1, total: 2 }];
           }),
         );
       },
-      async deleteDuplicates(ids) {
-        deletedIds = ids;
-        return { deletedCount: ids.length };
+      async listProgressRows() {
+        return [
+          { userId: firstUserId, vocabularyId: firstId },
+          { userId: secondUserId, vocabularyId: secondId },
+        ];
+      },
+      async mergeLearningReferences(canonicalId, duplicateId) {
+        merged = { canonicalId, duplicateId };
+        return { movedProgress: 1, movedReviewHistory: 1, deletedCount: 1 };
       },
     }),
   );
 
   const result = await service.cleanup();
 
-  assert.equal(result.groups[0].canonical.id, String(firstId));
-  assert.deepEqual(result.groups[0].protectedIds, [String(secondId)]);
-  assert.deepEqual(result.groups[0].deletableIds, [String(thirdId)]);
-  assert.deepEqual(deletedIds, [String(thirdId)]);
-  assert.equal(result.summary.protectedRecords, 1);
-  assert.equal(result.deleted, 1);
+  assert.deepEqual(result.groups[0].mergeableIds, [String(secondId)]);
+  assert.equal(result.summary.manualRecords, 0);
+  assert.equal(result.merged, 1);
+  assert.equal(result.movedProgress, 1);
+  assert.equal(result.movedReviewHistory, 1);
+  assert.deepEqual(merged, {
+    canonicalId: String(firstId),
+    duplicateId: String(secondId),
+  });
+});
+
+test("duplicate stays manual when the same student has progress on both records", async () => {
+  const service = createVocabularyDeduplicationService(
+    repository({
+      async countLearningReferences(ids) {
+        return Object.fromEntries(
+          ids.map((id) => [String(id), { progress: 1, reviewHistory: 0, total: 1 }]),
+        );
+      },
+      async listProgressRows() {
+        return [
+          { userId: firstUserId, vocabularyId: firstId },
+          { userId: firstUserId, vocabularyId: secondId },
+        ];
+      },
+    }),
+  );
+
+  const report = await service.analyze();
+
+  assert.deepEqual(report.groups[0].manualIds, [String(secondId)]);
+  assert.equal(report.groups[0].duplicates[0].mergeStatus, "manual");
+  assert.match(report.groups[0].duplicates[0].manualReason, /cả bản chính và bản trùng/i);
+  assert.equal(report.summary.manualRecords, 1);
+});
+
+test("duplicate stays manual while a review history write is pending", async () => {
+  const service = createVocabularyDeduplicationService(
+    repository({
+      async countLearningReferences(ids) {
+        return Object.fromEntries(
+          ids.map((id) => [String(id), { progress: 1, reviewHistory: 1, total: 2 }]),
+        );
+      },
+      async listProgressRows() {
+        return [
+          { userId: firstUserId, vocabularyId: firstId },
+          {
+            userId: secondUserId,
+            vocabularyId: secondId,
+            pendingReviewHistory: { reviewId: "pending-review" },
+          },
+        ];
+      },
+    }),
+  );
+
+  const report = await service.analyze();
+
+  assert.deepEqual(report.groups[0].manualIds, [String(secondId)]);
+  assert.match(report.groups[0].duplicates[0].manualReason, /chờ đồng bộ/i);
 });
