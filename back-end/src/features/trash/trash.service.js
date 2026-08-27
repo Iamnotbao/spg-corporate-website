@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { getCollection } from "../../config/db.js";
+import { destroyAsset } from "../../utils/cloudinary.js";
 import { toObjectId } from "../../utils/objectId.js";
 
 const TYPES = Object.freeze({
@@ -58,6 +59,47 @@ function titleOf(item, type) {
   );
 }
 
+function blockPublicIds(blocks = []) {
+  if (!Array.isArray(blocks)) return [];
+  return blocks.flatMap((block) => {
+    if (block?.type === "image") return block.publicId ? [block.publicId] : [];
+    if (block?.type === "gallery" && Array.isArray(block.images)) {
+      return block.images.map((image) => image?.publicId).filter(Boolean);
+    }
+    return [];
+  });
+}
+
+function contentPublicIds(item = {}) {
+  return [
+    item.imagePublicId,
+    ...(Array.isArray(item.imagePublicIds) ? item.imagePublicIds : []),
+    ...blockPublicIds(item.contentBlocks),
+  ].filter(Boolean);
+}
+
+async function cleanupContentAssets(batchId) {
+  const publicIds = [];
+  for (const name of ["posts", "jobs"]) {
+    const rows = await (await getCollection(name))
+      .find(
+        { trashBatchId: batchId },
+        { projection: { imagePublicId: 1, imagePublicIds: 1, contentBlocks: 1 } },
+      )
+      .toArray();
+    publicIds.push(...rows.flatMap(contentPublicIds));
+  }
+  await Promise.all(
+    [...new Set(publicIds)].map(async (publicId) => {
+      try {
+        await destroyAsset(publicId);
+      } catch (error) {
+        console.error("Unable to remove trashed Cloudinary asset:", error.message);
+      }
+    }),
+  );
+}
+
 async function ids(collectionName, filter) {
   return (await getCollection(collectionName))
     .find(filter, { projection: { _id: 1 } })
@@ -65,7 +107,12 @@ async function ids(collectionName, filter) {
     .then((rows) => rows.map((row) => row._id));
 }
 
-async function markMany(collectionName, filter, metadata, { draft = false, unpublished = false } = {}) {
+async function markMany(
+  collectionName,
+  filter,
+  metadata,
+  { draft = false, unpublished = false } = {},
+) {
   const collection = await getCollection(collectionName);
   const rows = await collection.find(filter).toArray();
   if (!rows.length) return [];
@@ -112,11 +159,20 @@ async function hierarchy(type, rootId) {
   if (["course", "unit", "lesson"].includes(type)) {
     if (result.lessons.length) {
       [result.vocabularies, result.quizzes] = await Promise.all([
-        ids("vocabularies", { lessonId: { $in: result.lessons }, ...activeFilter() }),
-        ids("quizzes", { lessonId: { $in: result.lessons }, ...activeFilter() }),
+        ids("vocabularies", {
+          lessonId: { $in: result.lessons },
+          ...activeFilter(),
+        }),
+        ids("quizzes", {
+          lessonId: { $in: result.lessons },
+          ...activeFilter(),
+        }),
       ]);
       result.quizQuestions = result.quizzes.length
-        ? await ids("quiz_questions", { quizId: { $in: result.quizzes }, ...activeFilter() })
+        ? await ids("quiz_questions", {
+            quizId: { $in: result.quizzes },
+            ...activeFilter(),
+          })
         : [];
     }
   } else if (type === "vocabulary") {
@@ -152,39 +208,65 @@ async function impactFor(graph, type, rootId) {
   if (graph.courses.length) {
     jobs.push(
       getCollection("enrollments")
-        .then((collection) => collection.countDocuments({ courseId: { $in: graph.courses } }))
-        .then((count) => { counts.enrollments = count; }),
+        .then((collection) =>
+          collection.countDocuments({ courseId: { $in: graph.courses } }),
+        )
+        .then((count) => {
+          counts.enrollments = count;
+        }),
     );
   }
   if (graph.lessons.length) {
     jobs.push(
       getCollection("lesson_progress")
-        .then((collection) => collection.countDocuments({ lessonId: { $in: graph.lessons } }))
-        .then((count) => { counts.lessonProgress = count; }),
+        .then((collection) =>
+          collection.countDocuments({ lessonId: { $in: graph.lessons } }),
+        )
+        .then((count) => {
+          counts.lessonProgress = count;
+        }),
     );
   }
   if (graph.vocabularies.length) {
     jobs.push(
       getCollection("vocabulary_progress")
-        .then((collection) => collection.countDocuments({ vocabularyId: { $in: graph.vocabularies } }))
-        .then((count) => { counts.vocabularyProgress = count; }),
+        .then((collection) =>
+          collection.countDocuments({
+            vocabularyId: { $in: graph.vocabularies },
+          }),
+        )
+        .then((count) => {
+          counts.vocabularyProgress = count;
+        }),
       getCollection("vocabulary_review_history")
-        .then((collection) => collection.countDocuments({ vocabularyId: { $in: graph.vocabularies } }))
-        .then((count) => { counts.vocabularyReviewHistory = count; }),
+        .then((collection) =>
+          collection.countDocuments({
+            vocabularyId: { $in: graph.vocabularies },
+          }),
+        )
+        .then((count) => {
+          counts.vocabularyReviewHistory = count;
+        }),
     );
   }
   if (graph.quizzes.length) {
     jobs.push(
       getCollection("quiz_attempts")
-        .then((collection) => collection.countDocuments({ quizId: { $in: graph.quizzes } }))
-        .then((count) => { counts.quizAttempts = count; }),
+        .then((collection) =>
+          collection.countDocuments({ quizId: { $in: graph.quizzes } }),
+        )
+        .then((count) => {
+          counts.quizAttempts = count;
+        }),
     );
   }
   if (type === "character") {
     jobs.push(
       getCollection("character_practice_attempts")
         .then((collection) => collection.countDocuments({ characterId: rootId }))
-        .then((count) => { counts.characterAttempts = count; }),
+        .then((count) => {
+          counts.characterAttempts = count;
+        }),
     );
   }
   await Promise.all(jobs);
@@ -193,12 +275,43 @@ async function impactFor(graph, type, rootId) {
 
 async function markHierarchy(graph, metadata) {
   const jobs = [];
-  if (graph.courses.length) jobs.push(markMany("courses", { _id: { $in: graph.courses } }, metadata, { draft: true }));
-  if (graph.units.length) jobs.push(markMany("units", { _id: { $in: graph.units } }, metadata));
-  if (graph.lessons.length) jobs.push(markMany("lessons", { _id: { $in: graph.lessons } }, metadata, { draft: true }));
-  if (graph.vocabularies.length) jobs.push(markMany("vocabularies", { _id: { $in: graph.vocabularies } }, metadata, { draft: true }));
-  if (graph.quizzes.length) jobs.push(markMany("quizzes", { _id: { $in: graph.quizzes } }, metadata, { draft: true }));
-  if (graph.quizQuestions.length) jobs.push(markMany("quiz_questions", { _id: { $in: graph.quizQuestions } }, metadata));
+  if (graph.courses.length)
+    jobs.push(
+      markMany("courses", { _id: { $in: graph.courses } }, metadata, {
+        draft: true,
+      }),
+    );
+  if (graph.units.length)
+    jobs.push(markMany("units", { _id: { $in: graph.units } }, metadata));
+  if (graph.lessons.length)
+    jobs.push(
+      markMany("lessons", { _id: { $in: graph.lessons } }, metadata, {
+        draft: true,
+      }),
+    );
+  if (graph.vocabularies.length)
+    jobs.push(
+      markMany(
+        "vocabularies",
+        { _id: { $in: graph.vocabularies } },
+        metadata,
+        { draft: true },
+      ),
+    );
+  if (graph.quizzes.length)
+    jobs.push(
+      markMany("quizzes", { _id: { $in: graph.quizzes } }, metadata, {
+        draft: true,
+      }),
+    );
+  if (graph.quizQuestions.length)
+    jobs.push(
+      markMany(
+        "quiz_questions",
+        { _id: { $in: graph.quizQuestions } },
+        metadata,
+      ),
+    );
   await Promise.all(jobs);
 }
 
@@ -209,7 +322,11 @@ async function restoreBatch(batchId) {
     const rows = await collection.find({ trashBatchId: batchId }).toArray();
     for (const row of rows) {
       const set = { updatedAt: new Date() };
-      if (["courses", "lessons", "vocabularies", "quizzes", "characters"].includes(name)) {
+      if (
+        ["courses", "lessons", "vocabularies", "quizzes", "characters"].includes(
+          name,
+        )
+      ) {
         set.status = "draft";
       }
       if (["posts", "jobs"].includes(name)) set.published = false;
@@ -255,23 +372,45 @@ async function batchGraph(batchId) {
 async function purgeBatch(batchId) {
   const graph = await batchGraph(batchId);
 
+  await cleanupContentAssets(batchId);
+
   if (graph.courses.length) {
-    await (await getCollection("enrollments")).deleteMany({ courseId: { $in: graph.courses } });
+    await (await getCollection("enrollments")).deleteMany({
+      courseId: { $in: graph.courses },
+    });
   }
   if (graph.lessons.length) {
-    await (await getCollection("lesson_progress")).deleteMany({ lessonId: { $in: graph.lessons } });
+    await (await getCollection("lesson_progress")).deleteMany({
+      lessonId: { $in: graph.lessons },
+    });
+    await (await getCollection("characters")).updateMany(
+      { lessonId: { $in: graph.lessons }, deletedAt: { $exists: false } },
+      { $set: { lessonId: null, updatedAt: new Date() } },
+    );
   }
   if (graph.vocabularies.length) {
     await Promise.all([
-      getCollection("vocabulary_progress").then((collection) => collection.deleteMany({ vocabularyId: { $in: graph.vocabularies } })),
-      getCollection("vocabulary_review_history").then((collection) => collection.deleteMany({ vocabularyId: { $in: graph.vocabularies } })),
+      getCollection("vocabulary_progress").then((collection) =>
+        collection.deleteMany({ vocabularyId: { $in: graph.vocabularies } }),
+      ),
+      getCollection("vocabulary_review_history").then((collection) =>
+        collection.deleteMany({ vocabularyId: { $in: graph.vocabularies } }),
+      ),
     ]);
   }
   if (graph.quizzes.length) {
-    await (await getCollection("quiz_attempts")).deleteMany({ quizId: { $in: graph.quizzes } });
+    await (await getCollection("quiz_attempts")).deleteMany({
+      quizId: { $in: graph.quizzes },
+    });
   }
   if (graph.characters.length) {
-    await (await getCollection("character_practice_attempts")).deleteMany({ characterId: { $in: graph.characters } });
+    await (await getCollection("character_practice_attempts")).deleteMany({
+      characterId: { $in: graph.characters },
+    });
+    await (await getCollection("vocabularies")).updateMany(
+      { characterIds: { $in: graph.characters } },
+      { $pull: { characterIds: { $in: graph.characters } } },
+    );
   }
 
   let deleted = 0;
@@ -286,7 +425,9 @@ async function purgeBatch(batchId) {
     "posts",
     "jobs",
   ]) {
-    const result = await (await getCollection(name)).deleteMany({ trashBatchId: batchId });
+    const result = await (await getCollection(name)).deleteMany({
+      trashBatchId: batchId,
+    });
     deleted += result.deletedCount || 0;
   }
   return deleted;
@@ -315,7 +456,9 @@ export const trashService = {
     } else if (type === "character") {
       await markMany("characters", { _id: rootId }, metadata, { draft: true });
     } else {
-      await markMany(config.collection, { _id: rootId }, metadata, { unpublished: true });
+      await markMany(config.collection, { _id: rootId }, metadata, {
+        unpublished: true,
+      });
     }
 
     await collection.updateOne(
@@ -336,7 +479,9 @@ export const trashService = {
   async list(filters = {}) {
     const type = String(filters.type || "").trim();
     if (type) requireType(type);
-    const search = String(filters.search || "").trim().toLocaleLowerCase("vi");
+    const search = String(filters.search || "")
+      .trim()
+      .toLocaleLowerCase("vi");
     const pageSize = Math.min(50, Math.max(1, Number(filters.pageSize) || 10));
     const requestedPage = Math.max(1, Number(filters.page) || 1);
     const rows = [];
@@ -403,12 +548,17 @@ export const trashService = {
     const roots = [];
     for (const config of Object.values(TYPES)) {
       const items = await (await getCollection(config.collection))
-        .find({ trashRoot: true, deletedAt: { $exists: true } }, { projection: { trashBatchId: 1 } })
+        .find(
+          { trashRoot: true, deletedAt: { $exists: true } },
+          { projection: { trashBatchId: 1 } },
+        )
         .toArray();
       roots.push(...items);
     }
     let deleted = 0;
-    for (const batchId of [...new Set(roots.map((item) => item.trashBatchId).filter(Boolean))]) {
+    for (const batchId of [
+      ...new Set(roots.map((item) => item.trashBatchId).filter(Boolean)),
+    ]) {
       deleted += await purgeBatch(batchId);
     }
     return { deleted };
