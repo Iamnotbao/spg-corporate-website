@@ -1,5 +1,4 @@
 import { AdminEmpty, AdminSkeletonRows } from './AdminFeedback.jsx';
-import AdminIcon from './AdminIcon.jsx';
 import AdminPagination from './AdminPagination.jsx';
 import AdminFilterToolbar from './AdminFilterToolbar.jsx';
 
