@@ -24,6 +24,13 @@ async function groupedReferenceCounts(name, ids) {
     .toArray();
 }
 
+function manualMergeError(message) {
+  const error = new Error(message);
+  error.status = 409;
+  error.code = "VOCABULARY_DUPLICATE_MANUAL_REVIEW";
+  return error;
+}
+
 export const vocabularyDeduplicationRepository = {
   async listDuplicateGroups() {
     return (await collection(VOCABULARY_COLLECTIONS.vocabulary))
@@ -94,14 +101,75 @@ export const vocabularyDeduplicationRepository = {
     return result;
   },
 
-  async updateCanonical(id, update) {
-    const _id = toObjectId(id);
-    if (!_id) return null;
-    return (await collection(VOCABULARY_COLLECTIONS.vocabulary)).findOneAndUpdate(
-      { _id },
-      { $set: update },
-      { returnDocument: "after" },
+  async listProgressRows(vocabularyIds = []) {
+    const ids = objectIds(vocabularyIds);
+    if (!ids.length) return [];
+    return (await collection(VOCABULARY_COLLECTIONS.progress))
+      .find(
+        { vocabularyId: { $in: ids } },
+        {
+          projection: {
+            userId: 1,
+            vocabularyId: 1,
+            pendingReviewHistory: 1,
+          },
+        },
+      )
+      .toArray();
+  },
+
+  async mergeLearningReferences(canonicalId, duplicateId) {
+    const canonical = toObjectId(canonicalId);
+    const duplicate = toObjectId(duplicateId);
+    if (!canonical || !duplicate || String(canonical) === String(duplicate)) {
+      throw manualMergeError("Invalid duplicate merge target");
+    }
+
+    const progressCollection = await collection(VOCABULARY_COLLECTIONS.progress);
+    const historyCollection = await collection(VOCABULARY_COLLECTIONS.reviewHistory);
+    const vocabularyCollection = await collection(VOCABULARY_COLLECTIONS.vocabulary);
+
+    const rows = await progressCollection
+      .find(
+        { vocabularyId: { $in: [canonical, duplicate] } },
+        { projection: { userId: 1, vocabularyId: 1, pendingReviewHistory: 1 } },
+      )
+      .toArray();
+
+    if (rows.some((row) => row.pendingReviewHistory?.reviewId)) {
+      throw manualMergeError("A review is still being synchronized for this duplicate");
+    }
+
+    const canonicalUsers = new Set(
+      rows
+        .filter((row) => String(row.vocabularyId) === String(canonical))
+        .map((row) => String(row.userId)),
     );
+    const duplicateUsers = rows
+      .filter((row) => String(row.vocabularyId) === String(duplicate))
+      .map((row) => String(row.userId));
+
+    if (duplicateUsers.some((userId) => canonicalUsers.has(userId))) {
+      throw manualMergeError(
+        "At least one student has progress for both vocabulary records",
+      );
+    }
+
+    const progressResult = await progressCollection.updateMany(
+      { vocabularyId: duplicate },
+      { $set: { vocabularyId: canonical, updatedAt: new Date() } },
+    );
+    const historyResult = await historyCollection.updateMany(
+      { vocabularyId: duplicate },
+      { $set: { vocabularyId: canonical } },
+    );
+    const deleteResult = await vocabularyCollection.deleteOne({ _id: duplicate });
+
+    return {
+      movedProgress: progressResult.modifiedCount || 0,
+      movedReviewHistory: historyResult.modifiedCount || 0,
+      deletedCount: deleteResult.deletedCount || 0,
+    };
   },
 
   async deleteDuplicates(ids = []) {
