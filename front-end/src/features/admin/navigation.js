@@ -34,6 +34,7 @@ export const ADMIN_NAV_GROUPS = [
   {
     label: 'System',
     items: [
+      { key: 'trash', label: 'Thùng rác', icon: 'trash', path: '/admin/trash', adminOnly: true },
       { key: 'categories', label: 'Chuyên mục Blog', icon: 'categories', path: '/admin/categories', permission: 'categories.read' },
       { key: 'accounts', label: 'Tài khoản CMS', icon: 'users', path: '/admin/accounts', permission: 'users.read' },
     ],
