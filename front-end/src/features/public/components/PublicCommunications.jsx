@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { API_URL, apiRequest, getStudentToken } from '../../../services/httpClient.js';
 import {
+  clearAllStudentNotifications,
   dismissStudentNotification,
   listStudentNotifications,
+  markAllStudentNotificationsRead,
   markStudentNotificationRead,
 } from '../../student/services/studentLearningService.js';
 import '../../../styles/public-communications.css';
@@ -145,6 +147,33 @@ export default function PublicCommunications() {
     }
   }
 
+  async function markAllRead() {
+    try {
+      await markAllStudentNotificationsRead();
+      setStudentUnread(0);
+      setData((current) => ({
+        ...current,
+        notifications: current.notifications.map((item) => ({ ...item, read: true })),
+      }));
+    } catch {
+      // Preserve the current list when the owned update fails.
+    }
+  }
+
+  async function clearAll() {
+    if (!window.confirm('Ẩn tất cả thông báo hiện có khỏi tài khoản của bạn?')) return;
+    try {
+      await clearAllStudentNotifications();
+      setStudentUnread(0);
+      setStudentPage(1);
+      setStudentTotalPages(1);
+      setData((current) => ({ ...current, notifications: [] }));
+      setOpen(false);
+    } catch {
+      // Preserve the current list when the owned update fails.
+    }
+  }
+
   return (
     <>
       {banner && (
@@ -193,6 +222,14 @@ export default function PublicCommunications() {
                 </div>
                 <button aria-label="Đóng thông báo" onClick={() => setOpen(false)} type="button">×</button>
               </header>
+              {signedIn && (
+                <div className="public-notification-center__bulk-actions">
+                  <button disabled={!studentUnread} onClick={markAllRead} type="button">
+                    Đánh dấu tất cả đã đọc
+                  </button>
+                  <button onClick={clearAll} type="button">Xóa tất cả</button>
+                </div>
+              )}
               <div className="public-notification-center__list">
                 {notifications.map((item, index) => (
                   <article

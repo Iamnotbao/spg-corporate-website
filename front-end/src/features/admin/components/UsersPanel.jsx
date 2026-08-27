@@ -5,9 +5,10 @@ import {
   listAdminUsers,
   updateAdminUser,
 } from '../../../services/adminService.js';
-import { PERMISSION_GROUPS } from '../constants.js';
+import { ADMIN_DEFAULT_PAGE_SIZE, PERMISSION_GROUPS } from '../constants.js';
 import AdminIcon from './AdminIcon.jsx';
 import { AdminAlert } from './AdminFeedback.jsx';
+import AdminFilterToolbar from './AdminFilterToolbar.jsx';
 
 const DEFAULT_EMPLOYEE_PERMISSIONS = [
   'posts.read', 'posts.create', 'posts.update', 'posts.import',
@@ -18,8 +19,8 @@ const PERMISSION_PAGE_SIZE = 3;
 
 export default function UsersPanel({ currentUser, onNotify, onUnauthorized }) {
   const [users, setUsers] = useState([]);
-  const [pagination, setPagination] = useState({ page: 1, pageSize: 10, total: 0, totalPages: 1 });
-  const [filters, setFilters] = useState({ search: '', role: '' });
+  const [pagination, setPagination] = useState({ page: 1, pageSize: ADMIN_DEFAULT_PAGE_SIZE, total: 0, totalPages: 1 });
+  const [filters, setFilters] = useState({ search: '', role: '', from: '', to: '' });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -46,19 +47,19 @@ export default function UsersPanel({ currentUser, onNotify, onUnauthorized }) {
   const load = useCallback(async (page = pagination.page) => {
     setLoading(true); setError('');
     try {
-      const payload = await listAdminUsers({ page, pageSize: pagination.pageSize, search: filters.search.trim(), role: filters.role });
+      const payload = await listAdminUsers({ page, pageSize: pagination.pageSize, search: filters.search.trim(), role: filters.role, from: filters.from, to: filters.to });
       setUsers(payload?.data || []);
       setPagination((current) => ({ ...current, ...(payload?.pagination || {}), page }));
     } catch (requestError) {
       if (onUnauthorized(requestError)) return;
       setError(requestError?.message || 'Không thể tải danh sách người dùng.');
     } finally { setLoading(false); }
-  }, [filters.role, filters.search, onUnauthorized, pagination.page, pagination.pageSize]);
+  }, [filters.from, filters.role, filters.search, filters.to, onUnauthorized, pagination.page, pagination.pageSize]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => load(1), 250);
     return () => window.clearTimeout(timer);
-  }, [filters.search, filters.role, pagination.pageSize]);
+  }, [filters.from, filters.search, filters.role, filters.to, pagination.pageSize]);
 
   function updateField(name, value) { setForm((current) => ({ ...current, [name]: value })); }
   function beginEdit(user) {
@@ -100,7 +101,7 @@ export default function UsersPanel({ currentUser, onNotify, onUnauthorized }) {
       <div className="admin-panel__heading"><div><h2>Tài khoản</h2><p>Quản lý tài khoản Mandora. Employee chỉ còn là vai trò CMS tương thích cho tài khoản cũ.</p></div><button className="admin-button admin-button--secondary" disabled={loading} onClick={() => load()} type="button"><AdminIcon name="refresh" size={17} /> Làm mới</button></div>
       {error && <AdminAlert>{error}</AdminAlert>}
 
-      <div className="admin-users-toolbar"><label><AdminIcon name="search" size={17} /><input onChange={(event) => setFilters((current) => ({ ...current, search: event.target.value }))} placeholder="Tìm tên đăng nhập hoặc tên hiển thị…" value={filters.search} /></label><select onChange={(event) => setFilters((current) => ({ ...current, role: event.target.value }))} value={filters.role}><option value="">Tất cả vai trò</option><option value="admin">Admin</option><option value="student">Student</option><option value="employee">Employee (cũ)</option></select><select aria-label="Số người dùng mỗi trang" onChange={(event) => setPagination((current) => ({ ...current, pageSize: Number(event.target.value), page: 1 }))} value={pagination.pageSize}>{[5, 10, 20, 50].map((size) => <option key={size} value={size}>{size}/trang</option>)}</select></div>
+      <AdminFilterToolbar search={filters.search} onSearchChange={(search) => setFilters((current) => ({ ...current, search }))} searchPlaceholder="Tìm tên đăng nhập hoặc tên hiển thị…" filters={[{ key: 'role', label: 'Vai trò', value: filters.role, onChange: (role) => setFilters((current) => ({ ...current, role })), options: [{ value: '', label: 'Tất cả vai trò' }, { value: 'admin', label: 'Admin' }, { value: 'student', label: 'Student' }, { value: 'employee', label: 'Employee (cũ)' }] }]} from={filters.from} to={filters.to} onFromChange={(from) => setFilters((current) => ({ ...current, from }))} onToChange={(to) => setFilters((current) => ({ ...current, to }))} pageSize={pagination.pageSize} onPageSizeChange={(pageSize) => setPagination((current) => ({ ...current, pageSize, page: 1 }))} />
 
       <div className="admin-users-layout">
         <div className="admin-users-list"><div className="admin-users-list__head"><span>Tài khoản</span><span>Vai trò</span><span>Trạng thái</span><span /></div>{loading ? <div className="admin-users-empty"><span className="admin-spinner" /> Đang tải người dùng…</div> : users.length ? users.map((user) => <article className={`admin-user-row${editingId === user.id ? ' is-editing' : ''}`} key={user.id}><div><strong>{user.displayName || user.username}</strong><small>@{user.username}{user.id === currentUser?.id ? ' · Bạn' : ''} · {user.role === 'admin' ? 'Toàn quyền' : `${user.permissions?.length || 0} quyền`}</small></div><span className={`admin-user-role admin-user-role--${user.role}`}>{user.role}</span><span className={`admin-user-status${user.active ? ' is-active' : ''}`}><i /> {user.active ? 'Hoạt động' : 'Đã khóa'}</span><div className="admin-user-row__actions"><button className="admin-icon-button" onClick={() => beginEdit(user)} type="button" aria-label={`Sửa ${user.username}`}><AdminIcon name="edit" size={17} /></button><button className="admin-icon-button" disabled={user.id === currentUser?.id} onClick={() => handleDelete(user)} type="button" aria-label={`Xóa ${user.username}`}><AdminIcon name="trash" size={17} /></button></div></article>) : <div className="admin-users-empty">Không tìm thấy tài khoản phù hợp.</div>}<div className="admin-users-pagination"><span>{pagination.total} tài khoản</span><div><button disabled={pagination.page <= 1 || loading} onClick={() => load(pagination.page - 1)} type="button">←</button><strong>{pagination.page} / {pagination.totalPages}</strong><button disabled={pagination.page >= pagination.totalPages || loading} onClick={() => load(pagination.page + 1)} type="button">→</button></div></div></div>

@@ -10,7 +10,7 @@ import {
   uploadAdminImage,
 } from '../../../services/adminService.js';
 import { useDebouncedValue } from '../hooks/useDebouncedValue.js';
-import { PAGE_SIZE_OPTIONS } from '../constants.js';
+import { ADMIN_DEFAULT_PAGE_SIZE } from '../constants.js';
 import {
   AdminAlert,
   AdminConfirmDialog,
@@ -20,8 +20,9 @@ import {
 import AdminIcon from './AdminIcon.jsx';
 import AdminPageHeader from './AdminPageHeader.jsx';
 import AdminPagination from './AdminPagination.jsx';
+import AdminFilterToolbar from './AdminFilterToolbar.jsx';
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = ADMIN_DEFAULT_PAGE_SIZE;
 const SECTION_COPY = {
   courses: {
     title: 'Khóa học',
@@ -297,6 +298,7 @@ export default function AdminLearningPanel({ onNotify, onUnauthorized, section }
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebouncedValue(search, 350);
   const [filter, setFilter] = useState('');
+  const [dateRange, setDateRange] = useState({ from: '', to: '' });
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(PAGE_SIZE);
   const [pagination, setPagination] = useState({
@@ -324,6 +326,8 @@ export default function AdminLearningPanel({ onNotify, onUnauthorized, section }
           status: section === 'courses' ? filter : '',
           courseId: section === 'units' ? filter : '',
           type: section === 'lessons' ? filter : '',
+          from: dateRange.from,
+          to: dateRange.to,
           signal,
         });
         if (signal?.aborted) return;
@@ -344,7 +348,7 @@ export default function AdminLearningPanel({ onNotify, onUnauthorized, section }
         setStatus('error');
       }
     },
-    [debouncedSearch, filter, onUnauthorized, page, pageSize, section],
+    [dateRange.from, dateRange.to, debouncedSearch, filter, onUnauthorized, page, pageSize, section],
   );
 
   useEffect(() => {
@@ -666,71 +670,28 @@ export default function AdminLearningPanel({ onNotify, onUnauthorized, section }
         />
       )}
       <section className="admin-panel admin-learning-list">
-        <div className="admin-learning-toolbar">
-          <label>
-            <span className="admin-sr-only">Tìm kiếm</span>
-            <AdminIcon name="search" size={18} />
-            <input
-              onChange={(event) => changeSearch(event.target.value)}
-              placeholder="Tìm tiêu đề, mô tả, slug, cấp độ, nội dung…"
-              type="search"
-              value={search}
-            />
-          </label>
-          {section === 'courses' && (
-            <select
-              aria-label="Lọc trạng thái"
-              onChange={(event) => changeFilter(event.target.value)}
-              value={filter}
-            >
-              <option value="">Tất cả trạng thái</option>
-              <option value="draft">Bản nháp</option>
-              <option value="published">Đã xuất bản</option>
-            </select>
-          )}
-          {section === 'units' && (
-            <select
-              aria-label="Lọc khóa học"
-              onChange={(event) => changeFilter(event.target.value)}
-              value={filter}
-            >
-              <option value="">Tất cả khóa học</option>
-              {parents.courses.map((course) => (
-                <option key={course.id} value={course.id}>
-                  {course.title}
-                </option>
-              ))}
-            </select>
-          )}
-          {section === 'lessons' && (
-            <select
-              aria-label="Lọc loại bài học"
-              onChange={(event) => changeFilter(event.target.value)}
-              value={filter}
-            >
-              <option value="">Tất cả loại bài</option>
-              {LESSON_TYPES.map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          )}
-          <select
-            aria-label="Số nội dung mỗi trang"
-            onChange={(event) => {
-              setPageSize(Number(event.target.value));
-              setPage(1);
-            }}
-            value={pageSize}
-          >
-            {PAGE_SIZE_OPTIONS.map((size) => (
-              <option key={size} value={size}>
-                {size}/trang
-              </option>
-            ))}
-          </select>
-        </div>
+        <AdminFilterToolbar
+          search={search}
+          onSearchChange={changeSearch}
+          searchPlaceholder="Tìm tiêu đề, mô tả, slug, cấp độ, nội dung…"
+          filters={[{
+            key: section,
+            label: section === 'courses' ? 'Trạng thái' : section === 'units' ? 'Khóa học' : 'Loại bài học',
+            value: filter,
+            onChange: changeFilter,
+            options: section === 'courses'
+              ? [{ value: '', label: 'Tất cả trạng thái' }, { value: 'draft', label: 'Bản nháp' }, { value: 'published', label: 'Đã xuất bản' }]
+              : section === 'units'
+                ? [{ value: '', label: 'Tất cả khóa học' }, ...parents.courses.map((course) => ({ value: course.id, label: course.title }))]
+                : [{ value: '', label: 'Tất cả loại bài' }, ...LESSON_TYPES.map(([value, label]) => ({ value, label }))],
+          }]}
+          from={dateRange.from}
+          to={dateRange.to}
+          onFromChange={(from) => { setDateRange((current) => ({ ...current, from })); setPage(1); }}
+          onToChange={(to) => { setDateRange((current) => ({ ...current, to })); setPage(1); }}
+          pageSize={pageSize}
+          onPageSizeChange={(value) => { setPageSize(value); setPage(1); }}
+        />
 
         {selectedItems.length > 0 && (
           <div className="admin-learning-selection-bar">

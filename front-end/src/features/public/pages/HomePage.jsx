@@ -13,6 +13,7 @@ import { listPublicCourses } from '../../courses/services/courseCatalogService.j
 import HskLevelCard from '../../learning/components/HskLevelCard.jsx';
 import { HSK_LEVELS } from '../../learning/data/demoLearningContent.js';
 import { usePublicCollection } from '../hooks/usePublicContent.js';
+import HomeProductSections from '../components/HomeProductSections.jsx';
 import '../styles/home.css';
 
 const LEARNING_FEATURES = [
@@ -358,6 +359,8 @@ export default function HomePage() {
           )}
         </div>
       </section>
+
+      <HomeProductSections />
 
       <section
         className="home-section home-features"

@@ -57,21 +57,25 @@ export default function VocabularyPage() {
     return () => window.clearTimeout(timer);
   }, [query]);
 
-  const loadFeatured = useCallback(() => {
+  const loadFeatured = useCallback((signal) => {
     if (savedOnly) return;
     setFeatured((current) => ({ ...current, status: 'loading' }));
-    listPublicVocabulary({ page: 1, pageSize: FEATURED_SIZE })
+    listPublicVocabulary({ page: 1, pageSize: FEATURED_SIZE, signal })
       .then((result) =>
         setFeatured({ status: 'ready', data: result.data || [], error: '' }),
       )
-      .catch((error) => setFeatured({ status: 'error', data: [], error: error.message }));
+      .catch((error) => {
+        if (error.name !== 'AbortError') setFeatured({ status: 'error', data: [], error: error.message });
+      });
   }, [savedOnly]);
 
   useEffect(() => {
-    loadFeatured();
+    const controller = new AbortController();
+    loadFeatured(controller.signal);
+    return () => controller.abort();
   }, [loadFeatured]);
 
-  const load = useCallback(() => {
+  const load = useCallback((signal) => {
     if (savedOnly) {
       if (auth.status !== 'signed-in') {
         setState({ status: 'ready', data: [], pagination: null, error: '' });
@@ -83,6 +87,7 @@ export default function VocabularyPage() {
         hskLevel: level === 'Tất cả' ? '' : level,
         page,
         pageSize: PAGE_SIZE,
+        signal,
       })
         .then((result) => {
           setState({
@@ -92,9 +97,9 @@ export default function VocabularyPage() {
             error: '',
           });
         })
-        .catch((error) =>
-          setState({ status: 'error', data: [], pagination: null, error: error.message }),
-        );
+        .catch((error) => {
+          if (error.name !== 'AbortError') setState({ status: 'error', data: [], pagination: null, error: error.message });
+        });
       return;
     }
 
@@ -109,6 +114,7 @@ export default function VocabularyPage() {
       hskLevel: level === 'Tất cả' ? '' : level,
       page,
       pageSize: PAGE_SIZE,
+      signal,
     })
       .then((result) =>
         setState({
@@ -118,13 +124,15 @@ export default function VocabularyPage() {
           error: '',
         }),
       )
-      .catch((error) =>
-        setState({ status: 'error', data: [], pagination: null, error: error.message }),
-      );
+      .catch((error) => {
+        if (error.name !== 'AbortError') setState({ status: 'error', data: [], pagination: null, error: error.message });
+      });
   }, [auth.status, debouncedQuery, level, page, savedOnly, searching]);
 
   useEffect(() => {
-    load();
+    const controller = new AbortController();
+    load(controller.signal);
+    return () => controller.abort();
   }, [load]);
 
   useEffect(() => {
@@ -322,7 +330,7 @@ export default function VocabularyPage() {
                     />
                   ))}
                 </div>
-                {!savedOnly && state.pagination && state.pagination.total > PAGE_SIZE && (
+                {state.pagination && state.pagination.total > PAGE_SIZE && (
                   <PublicPagination
                     onPageChange={setPage}
                     page={state.pagination.page}

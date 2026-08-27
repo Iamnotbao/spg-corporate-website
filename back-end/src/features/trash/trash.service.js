@@ -2,6 +2,12 @@ import { randomUUID } from "node:crypto";
 import { getCollection } from "../../config/db.js";
 import { destroyAsset } from "../../utils/cloudinary.js";
 import { toObjectId } from "../../utils/objectId.js";
+import {
+  escapeRegex,
+  paginationResult,
+  parseAdminPagination,
+  parseDateRange,
+} from "../../utils/pagination.js";
 
 const TYPES = Object.freeze({
   course: { collection: "courses", label: "Khóa học" },
@@ -479,42 +485,44 @@ export const trashService = {
   async list(filters = {}) {
     const type = String(filters.type || "").trim();
     if (type) requireType(type);
-    const search = String(filters.search || "")
-      .trim()
-      .toLocaleLowerCase("vi");
-    const pageSize = Math.min(50, Math.max(1, Number(filters.pageSize) || 10));
-    const requestedPage = Math.max(1, Number(filters.page) || 1);
-    const rows = [];
-
-    for (const [itemType, config] of Object.entries(TYPES)) {
-      if (type && type !== itemType) continue;
-      const items = await (await getCollection(config.collection))
-        .find({ trashRoot: true, deletedAt: { $exists: true } })
-        .sort({ deletedAt: -1, _id: -1 })
-        .toArray();
-      for (const item of items) {
-        const label = item.trashLabel || titleOf(item, itemType);
-        if (search && !label.toLocaleLowerCase("vi").includes(search)) continue;
-        rows.push({
-          id: String(item._id),
-          type: itemType,
-          typeLabel: config.label,
-          label,
-          deletedAt: item.deletedAt,
-          deletedBy: item.deletedBy ? String(item.deletedBy) : null,
-          batchId: item.trashBatchId,
-          impact: item.trashImpact || {},
-        });
-      }
-    }
-
-    rows.sort((a, b) => new Date(b.deletedAt) - new Date(a.deletedAt));
-    const total = rows.length;
-    const totalPages = Math.max(1, Math.ceil(total / pageSize));
-    const page = Math.min(requestedPage, totalPages);
+    const search = String(filters.search || "").trim();
+    const paging = parseAdminPagination(filters);
+    const dateFilter = parseDateRange(filters, "deletedAt");
+    const entries = Object.entries(TYPES).filter(([itemType]) => !type || type === itemType);
+    const projectFor = (itemType, config) => ({
+      $project: {
+        id: { $toString: "$_id" },
+        _id: 1,
+        type: { $literal: itemType },
+        typeLabel: { $literal: config.label },
+        label: { $ifNull: ["$trashLabel", { $ifNull: ["$title", { $ifNull: ["$simplified", itemType] }] }] },
+        deletedAt: 1,
+        deletedBy: { $cond: [{ $ifNull: ["$deletedBy", false] }, { $toString: "$deletedBy" }, null] },
+        batchId: "$trashBatchId",
+        impact: { $ifNull: ["$trashImpact", {}] },
+      },
+    });
+    const match = { trashRoot: true, deletedAt: { $exists: true }, ...dateFilter };
+    const [firstType, firstConfig] = entries[0];
+    const pipeline = [
+      { $match: match },
+      projectFor(firstType, firstConfig),
+      ...entries.slice(1).map(([itemType, config]) => ({
+        $unionWith: {
+          coll: config.collection,
+          pipeline: [{ $match: match }, projectFor(itemType, config)],
+        },
+      })),
+      ...(search ? [{ $match: { label: { $regex: escapeRegex(search), $options: "i" } } }] : []),
+      { $sort: { deletedAt: -1, _id: -1 } },
+      { $facet: { data: [{ $skip: paging.skip }, { $limit: paging.pageSize }], metadata: [{ $count: "total" }] } },
+    ];
+    const [result] = await (await getCollection(firstConfig.collection)).aggregate(pipeline).toArray();
+    const rows = result?.data || [];
+    const total = result?.metadata?.[0]?.total || 0;
     return {
-      data: rows.slice((page - 1) * pageSize, page * pageSize),
-      pagination: { page, pageSize, total, totalPages },
+      data: rows,
+      pagination: paginationResult(paging, total),
     };
   },
 

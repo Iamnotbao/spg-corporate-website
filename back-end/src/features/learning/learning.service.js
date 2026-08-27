@@ -2,6 +2,8 @@ import { learningRepository } from "./learning.repository.js";
 import { learningIntegrityRepository } from "./learning-integrity.repository.js";
 import {
   paginationResult,
+  ADMIN_DEFAULT_PAGE_SIZE,
+  parseDateRange,
   parsePagination,
   parseSearch,
   searchFilter,
@@ -148,7 +150,7 @@ export function createLearningService(
     return normalized;
   }
 
-  async function listPage({ input, query, list, count, serializer, defaultPageSize = 10 }) {
+  async function listPage({ input, query, list, count, serializer, defaultPageSize = ADMIN_DEFAULT_PAGE_SIZE }) {
     const paging = parsePagination(input, { defaultPageSize, maxPageSize: 100 });
     const [items, total] = await Promise.all([
       list(query, { skip: paging.skip, limit: paging.pageSize }),
@@ -227,7 +229,7 @@ export function createLearningService(
     },
 
     async listCourses(filters = {}) {
-      const query = {};
+      const query = { ...parseDateRange(filters) };
       const search = parseSearch(filters.search);
       const status = enumFilter(filters.status, COURSE_STATUSES, "status");
       if (search) Object.assign(query, searchFilter(search, ["title", "slug", "description", "level"]));
@@ -313,7 +315,7 @@ export function createLearningService(
     },
 
     async listUnits(filters = {}) {
-      const query = {};
+      const query = { ...parseDateRange(filters) };
       if (filters.courseId)
         query.courseId = requireId(repository, filters.courseId, "courseId");
       const search = parseSearch(filters.search);
@@ -386,7 +388,7 @@ export function createLearningService(
     },
 
     async listLessons(filters = {}) {
-      const query = {};
+      const query = { ...parseDateRange(filters) };
       if (filters.unitId)
         query.unitId = requireId(repository, filters.unitId, "unitId");
       const search = parseSearch(filters.search);

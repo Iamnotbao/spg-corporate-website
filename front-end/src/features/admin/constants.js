@@ -56,7 +56,9 @@ export const DEFAULT_FILTERS = {
   category: '',
   jobType: '',
   location: '',
-  pageSize: 10,
+  from: '',
+  to: '',
+  pageSize: 5,
 };
 export const JOB_TYPES = ['Full-time', 'Part-time', 'Intern', 'Contract', 'Freelance'];
 export const NEWS_CATEGORIES = [
@@ -100,6 +102,7 @@ export const PERMISSION_GROUPS = [
   ['Cài đặt & trang chủ', ['settings.read', 'settings.update']],
 ];
 export const PAGE_SIZE_OPTIONS = [5, 10, 20, 50];
+export const ADMIN_DEFAULT_PAGE_SIZE = 5;
 
 const EMPTY_TRANSLATIONS = {
   en: {

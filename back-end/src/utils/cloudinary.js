@@ -16,6 +16,7 @@ if (configured) {
 
 const getResourceType = (file) => {
   const mime = String(file?.mimetype || "").toLowerCase();
+  if (mime.startsWith("video/")) return "video";
   const originalName = String(file?.originalname || "").toLowerCase();
   const isDocument =
     mime === "application/pdf" ||

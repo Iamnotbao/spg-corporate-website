@@ -1,0 +1,19 @@
+import { useCallback, useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { EmptyState, ErrorState, LoadingState } from '../../../components/ui/ContentState.jsx';
+import PageHeader from '../../../components/ui/PageHeader.jsx';
+import PublicPagination from '../../../components/ui/PublicPagination.jsx';
+import { usePageTitle } from '../../../hooks/usePageTitle.js';
+import { useStudentAuth } from '../../auth/StudentAuthContext.jsx';
+import { listHskMockExams, startHskMockAttempt } from '../services/hskExamService.js';
+import '../styles/hsk-exams.css';
+
+export default function HskMockExamsPage() {
+  usePageTitle('Thi thử HSK'); const auth = useStudentAuth(); const navigate = useNavigate();
+  const [level, setLevel] = useState(''); const [page, setPage] = useState(1); const [busy, setBusy] = useState('');
+  const [state, setState] = useState({ status: 'loading', data: [], pagination: null, error: '' });
+  const load = useCallback((signal) => { setState((current) => ({ ...current, status: 'loading' })); listHskMockExams({ level, page, pageSize: 9, signal }).then((response) => setState({ status: 'ready', data: response.data || [], pagination: response.pagination, error: '' })).catch((error) => { if (error.name !== 'AbortError') setState({ status: 'error', data: [], pagination: null, error: error.message }); }); }, [level, page]);
+  useEffect(() => { const controller = new AbortController(); load(controller.signal); return () => controller.abort(); }, [load]);
+  async function start(exam) { if (auth.status !== 'signed-in') { navigate('/login', { state: { from: '/hsk-mock-tests' } }); return; } setBusy(exam.id); try { const response = await startHskMockAttempt(exam.id); navigate(`/hsk-mock-tests/${exam.id}/attempt/${response.data.id}`, { state: { attempt: response.data } }); } catch (error) { setState((current) => ({ ...current, error: error.message })); } finally { setBusy(''); } }
+  return <><PageHeader eyebrow="HSK Mock Test" title="Thi thử HSK" description="Đề luyện tập do Mandora biên soạn để tự đánh giá; không phải đề thi HSK chính thức." /><section className="hsk-exam-catalog"><div className="public-container"><div className="filter-chips" role="group" aria-label="Lọc đề thi theo cấp HSK">{['',1,2,3,4,5,6].map((value) => <button aria-pressed={String(level) === String(value)} className={String(level) === String(value) ? 'is-active' : ''} key={value || 'all'} onClick={() => { setLevel(value); setPage(1); }} type="button">{value ? `HSK ${value}` : 'Tất cả'}</button>)}</div>{state.error && state.status !== 'error' && <p className="quiz-page__error">{state.error}</p>}{state.status === 'loading' && <LoadingState count={6} label="Đang tải đề thi" />}{state.status === 'error' && <ErrorState message={state.error} onRetry={() => load()} />}{state.status === 'ready' && !state.data.length && <EmptyState icon="试" title="Chưa có đề thi" description="Đề thi thử đã xuất bản sẽ xuất hiện tại đây." />}{state.status === 'ready' && state.data.length > 0 && <><div className="hsk-exam-grid">{state.data.map((exam) => <article key={exam.id}><span>HSK {exam.level}</span><h2>{exam.title}</h2><p>{exam.description}</p><dl><div><dt>Thời lượng</dt><dd>{exam.durationMinutes} phút</dd></div><div><dt>Điểm đạt</dt><dd>{exam.passingScore}%</dd></div></dl><button className="button button--primary" disabled={busy === exam.id} onClick={() => start(exam)} type="button">{busy === exam.id ? 'Đang bắt đầu…' : 'Bắt đầu thi thử'}</button>{auth.status === 'signed-in' && <Link to={`/hsk-mock-tests/${exam.id}/history`}>Lịch sử kết quả</Link>}</article>)}</div>{state.pagination?.totalPages > 1 && <PublicPagination page={state.pagination.page} pageSize={state.pagination.pageSize} total={state.pagination.total} onPageChange={setPage} />}</>}</div></section></>;
+}

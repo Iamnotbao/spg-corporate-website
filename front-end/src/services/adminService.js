@@ -6,6 +6,12 @@ import {
   getAdminToken,
   setAdminToken,
 } from './httpClient.js';
+import { ADMIN_DEFAULT_PAGE_SIZE } from '../features/admin/constants.js';
+
+function addAdminDateRange(params, options) {
+  if (options.from) params.set('from', options.from);
+  if (options.to) params.set('to', options.to);
+}
 
 const CONTENT_TYPES = new Set(['posts', 'jobs']);
 const LEARNING_TYPES = new Set(['courses', 'units', 'lessons']);
@@ -46,10 +52,11 @@ export async function verifyAdminSession(options = {}) {
 export async function listAdminUsers(options = {}) {
   const params = new URLSearchParams({
     page: String(options.page || 1),
-    pageSize: String(options.pageSize || 10),
+    pageSize: String(options.pageSize || ADMIN_DEFAULT_PAGE_SIZE),
   });
   if (options.search) params.set('search', options.search);
   if (options.role) params.set('role', options.role);
+  addAdminDateRange(params, options);
 
   return apiRequest(`/admin/users?${params.toString()}`, {
     method: 'GET',
@@ -85,13 +92,14 @@ export function listAdminLearning(type, options = {}) {
   assertLearningType(type);
   const params = new URLSearchParams({
     page: String(options.page || 1),
-    pageSize: String(options.pageSize || 10),
+    pageSize: String(options.pageSize || ADMIN_DEFAULT_PAGE_SIZE),
   });
   if (options.search) params.set('search', options.search);
   if (options.status) params.set('status', options.status);
   if (options.type) params.set('type', options.type);
   if (options.courseId) params.set('courseId', options.courseId);
   if (options.unitId) params.set('unitId', options.unitId);
+  addAdminDateRange(params, options);
   const query = params.toString();
   return apiRequest(`/admin/${type}${query ? `?${query}` : ''}`, {
     method: 'GET',
@@ -168,7 +176,7 @@ export function getAdminLearningSummary(options = {}) {
 export function listAdminProgress(options = {}) {
   const params = new URLSearchParams({
     page: String(options.page || 1),
-    pageSize: String(options.pageSize || 10),
+    pageSize: String(options.pageSize || ADMIN_DEFAULT_PAGE_SIZE),
   });
   if (options.search) params.set('search', options.search);
   if (options.courseId) params.set('courseId', options.courseId);
@@ -198,12 +206,13 @@ export async function updateAdminBanner(payload) {
 export async function listAdminNotifications(options = {}) {
   const params = new URLSearchParams({
     page: String(options.page || 1),
-    pageSize: String(options.pageSize || 10),
+    pageSize: String(options.pageSize || ADMIN_DEFAULT_PAGE_SIZE),
   });
   if (options.search) params.set('search', options.search);
   if (options.published !== '' && options.published != null) {
     params.set('published', String(options.published));
   }
+  addAdminDateRange(params, options);
 
   return apiRequest(`/admin/communications/notifications?${params.toString()}`, {
     method: 'GET',
@@ -239,7 +248,7 @@ export async function listAdminContent(type, options = {}) {
   assertContentType(type);
   const params = new URLSearchParams({
     page: String(options.page || 1),
-    pageSize: String(options.pageSize || 10),
+    pageSize: String(options.pageSize || ADMIN_DEFAULT_PAGE_SIZE),
   });
 
   if (options.search) params.set('search', options.search);
@@ -251,6 +260,7 @@ export async function listAdminContent(type, options = {}) {
   if (type === 'jobs' && options.location) {
     params.set('location', options.location);
   }
+  addAdminDateRange(params, options);
 
   return apiRequest(`/admin/${type}?${params.toString()}`, {
     method: 'GET',
@@ -313,9 +323,10 @@ export async function importAdminContent(type, files, commit = false) {
 export async function listAdminApplications(options = {}) {
   const params = new URLSearchParams({
     page: String(options.page || 1),
-    pageSize: String(options.pageSize || 10),
+    pageSize: String(options.pageSize || ADMIN_DEFAULT_PAGE_SIZE),
   });
   if (options.search) params.set('search', options.search);
+  addAdminDateRange(params, options);
 
   return apiRequest(`/admin/applications?${params.toString()}`, {
     auth: true,

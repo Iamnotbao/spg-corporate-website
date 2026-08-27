@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { listAdminLessonOptions } from '../../../services/adminService.js';
 import { useDebouncedValue } from '../hooks/useDebouncedValue.js';
-import { PAGE_SIZE_OPTIONS } from '../constants.js';
+import { ADMIN_DEFAULT_PAGE_SIZE } from '../constants.js';
 import {
   createAdminQuestion,
   createAdminQuiz,
@@ -23,8 +23,9 @@ import AdminPageHeader from './AdminPageHeader.jsx';
 import AdminPagination from './AdminPagination.jsx';
 import AdminQuestionEditor from './AdminQuestionEditor.jsx';
 import AdminQuizForm from './AdminQuizForm.jsx';
+import AdminFilterToolbar from './AdminFilterToolbar.jsx';
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = ADMIN_DEFAULT_PAGE_SIZE;
 const EMPTY_QUIZ = {
   lessonId: '',
   title: '',
@@ -46,6 +47,7 @@ export default function AdminQuizPanel({ onNotify, onUnauthorized }) {
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebouncedValue(search, 350);
   const [statusFilter, setStatusFilter] = useState('');
+  const [dateRange, setDateRange] = useState({ from: '', to: '' });
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(PAGE_SIZE);
   const [pagination, setPagination] = useState({
@@ -68,6 +70,8 @@ export default function AdminQuizPanel({ onNotify, onUnauthorized }) {
           pageSize,
           search: debouncedSearch,
           status: statusFilter,
+          from: dateRange.from,
+          to: dateRange.to,
           signal,
         });
         if (signal?.aborted) return;
@@ -91,7 +95,7 @@ export default function AdminQuizPanel({ onNotify, onUnauthorized }) {
         setStatus('error');
       }
     },
-    [debouncedSearch, onUnauthorized, page, pageSize, statusFilter],
+    [dateRange.from, dateRange.to, debouncedSearch, onUnauthorized, page, pageSize, statusFilter],
   );
 
   useEffect(() => {
@@ -464,41 +468,7 @@ export default function AdminQuizPanel({ onNotify, onUnauthorized }) {
         </section>
       )}
       <section className="admin-panel admin-learning-list">
-        <div className="admin-learning-toolbar">
-          <label>
-            <AdminIcon name="search" size={18} />
-            <span className="admin-sr-only">Tìm Quiz</span>
-            <input
-              onChange={(event) => updateSearch(event.target.value)}
-              placeholder="Tìm tiêu đề, mô tả, bài học, điểm đạt…"
-              type="search"
-              value={search}
-            />
-          </label>
-          <select
-            aria-label="Lọc trạng thái Quiz"
-            onChange={(event) => updateStatusFilter(event.target.value)}
-            value={statusFilter}
-          >
-            <option value="">Tất cả trạng thái</option>
-            <option value="draft">Bản nháp</option>
-            <option value="published">Đã xuất bản</option>
-          </select>
-          <select
-            aria-label="Số Quiz mỗi trang"
-            onChange={(event) => {
-              setPageSize(Number(event.target.value));
-              setPage(1);
-            }}
-            value={pageSize}
-          >
-            {PAGE_SIZE_OPTIONS.map((size) => (
-              <option key={size} value={size}>
-                {size}/trang
-              </option>
-            ))}
-          </select>
-        </div>
+        <AdminFilterToolbar search={search} onSearchChange={updateSearch} searchPlaceholder="Tìm tiêu đề, mô tả, bài học, điểm đạt…" filters={[{ key: 'status', label: 'Trạng thái Quiz', value: statusFilter, onChange: updateStatusFilter, options: [{ value: '', label: 'Tất cả trạng thái' }, { value: 'draft', label: 'Bản nháp' }, { value: 'published', label: 'Đã xuất bản' }] }]} from={dateRange.from} to={dateRange.to} onFromChange={(from) => { setDateRange((current) => ({ ...current, from })); setPage(1); }} onToChange={(to) => { setDateRange((current) => ({ ...current, to })); setPage(1); }} pageSize={pageSize} onPageSizeChange={(value) => { setPageSize(value); setPage(1); }} />
         {selectedQuizzes.length > 0 && (
           <div className="admin-learning-selection-bar">
             <div>

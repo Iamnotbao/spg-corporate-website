@@ -21,6 +21,8 @@ import * as vocabularyController from "../features/vocabulary/vocabulary.control
 import * as quizController from "../features/quiz/quiz.controller.js";
 import * as characterController from "../features/character/character.controller.js";
 import * as searchController from "../features/search/search.controller.js";
+import * as hskExamController from "../features/hsk-exam/hsk-exam.controller.js";
+import * as videoController from "../features/video/video.controller.js";
 import { auth, requireRole } from "../middleware/auth.js";
 
 const router = Router();
@@ -122,6 +124,9 @@ router.get(
 );
 router.get("/vocabulary", asyncHandler(vocabularyController.listPublic));
 router.get("/characters", asyncHandler(characterController.listPublic));
+router.get("/hsk-mock-exams", asyncHandler(hskExamController.listPublished));
+router.get("/hsk-mock-exams/:id", asyncHandler(hskExamController.getPublished));
+router.get("/videos", asyncHandler(videoController.listPublished));
 router.post(
   "/characters/recognize",
   searchLimiter,

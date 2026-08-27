@@ -1,10 +1,17 @@
 import { getCollection } from "../config/db.js";
 import { broadcastRealtime } from "../utils/realtime.js";
 import { toObjectId } from "../utils/objectId.js";
+import {
+  paginationResult,
+  parseAdminPagination,
+  parseDateRange,
+} from "../utils/pagination.js";
 
 const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const STUDENT_NOTIFICATION_STATE = "student_notification_state";
+const STUDENT_NOTIFICATION_PREFERENCES = "student_notification_preferences";
 let notificationStateIndexPromise;
+let notificationPreferencesIndexPromise;
 
 async function notificationStateCollection() {
   const collection = await getCollection(STUDENT_NOTIFICATION_STATE);
@@ -17,6 +24,20 @@ async function notificationStateCollection() {
       });
   }
   await notificationStateIndexPromise;
+  return collection;
+}
+
+async function notificationPreferencesCollection() {
+  const collection = await getCollection(STUDENT_NOTIFICATION_PREFERENCES);
+  if (!notificationPreferencesIndexPromise) {
+    notificationPreferencesIndexPromise = collection
+      .createIndex({ userId: 1 }, { unique: true })
+      .catch((error) => {
+        notificationPreferencesIndexPromise = undefined;
+        throw error;
+      });
+  }
+  await notificationPreferencesIndexPromise;
   return collection;
 }
 
@@ -102,7 +123,11 @@ export async function listStudentNotifications(req, res) {
   const pageSize = Math.min(20, Math.max(1, Number(req.query.pageSize) || 5));
   const notifications = await getCollection("notifications");
   const stateCollection = await notificationStateCollection();
-  const states = await stateCollection.find({ userId }).toArray();
+  const preferencesCollection = await notificationPreferencesCollection();
+  const [states, preferences] = await Promise.all([
+    stateCollection.find({ userId }).toArray(),
+    preferencesCollection.findOne({ userId }),
+  ]);
   const statesById = stateByNotification(states);
   const hiddenIds = states
     .filter((item) => item.hiddenAt)
@@ -113,11 +138,26 @@ export async function listStudentNotifications(req, res) {
 
   const visibleFilter = {
     published: { $ne: false },
+    ...(preferences?.hiddenAllBefore
+      ? { createdAt: { $gt: preferences.hiddenAllBefore } }
+      : {}),
     ...(hiddenIds.length ? { _id: { $nin: hiddenIds } } : {}),
   };
   const unreadExcluded = [...new Map([...hiddenIds, ...readIds].map((id) => [String(id), id])).values()];
   const unreadFilter = {
     published: { $ne: false },
+    ...(preferences?.hiddenAllBefore || preferences?.readAllBefore
+      ? {
+          createdAt: {
+            $gt: new Date(
+              Math.max(
+                preferences?.hiddenAllBefore?.getTime?.() || 0,
+                preferences?.readAllBefore?.getTime?.() || 0,
+              ),
+            ),
+          },
+        }
+      : {}),
     ...(unreadExcluded.length ? { _id: { $nin: unreadExcluded } } : {}),
   };
 
@@ -139,13 +179,66 @@ export async function listStudentNotifications(req, res) {
       const state = statesById.get(String(item._id));
       return {
         ...item,
-        read: Boolean(state?.readAt),
-        readAt: state?.readAt || null,
+        read: Boolean(
+          state?.readAt ||
+            (preferences?.readAllBefore &&
+              item.createdAt <= preferences.readAllBefore),
+        ),
+        readAt:
+          state?.readAt ||
+          (preferences?.readAllBefore && item.createdAt <= preferences.readAllBefore
+            ? preferences.readAllBefore
+            : null),
       };
     }),
     pagination: { page, pageSize, total, totalPages },
     unreadTotal,
   });
+}
+
+export async function persistStudentNotificationThreshold(
+  preferences,
+  userId,
+  values,
+  now = new Date(),
+) {
+  await preferences.updateOne(
+    { userId },
+    {
+      $setOnInsert: { userId, createdAt: now },
+      $set: { ...values, updatedAt: now },
+    },
+    { upsert: true },
+  );
+  return now;
+}
+
+async function updateStudentNotificationThreshold(userId, update) {
+  const now = new Date();
+  const preferences = await notificationPreferencesCollection();
+  return persistStudentNotificationThreshold(
+    preferences,
+    userId,
+    update(now),
+    now,
+  );
+}
+
+export async function markAllStudentNotificationsRead(req, res) {
+  const userId = studentId(req);
+  const readAllBefore = await updateStudentNotificationThreshold(userId, (now) => ({
+    readAllBefore: now,
+  }));
+  return res.json({ ok: true, data: { readAllBefore } });
+}
+
+export async function clearAllStudentNotifications(req, res) {
+  const userId = studentId(req);
+  const hiddenAllBefore = await updateStudentNotificationThreshold(userId, (now) => ({
+    hiddenAllBefore: now,
+    readAllBefore: now,
+  }));
+  return res.json({ ok: true, data: { hiddenAllBefore } });
 }
 
 export async function markStudentNotificationRead(req, res) {
@@ -218,10 +311,9 @@ export async function updateBanner(req, res) {
 }
 
 export async function listNotifications(req, res) {
-  const requestedPage = Math.max(1, Number(req.query.page) || 1);
-  const pageSize = Math.min(50, Math.max(1, Number(req.query.pageSize) || 10));
+  const paging = parseAdminPagination(req.query);
   const search = String(req.query.search || "").trim();
-  const filter = {};
+  const filter = { ...parseDateRange(req.query) };
 
   if (search) {
     const safe = escapeRegex(search);
@@ -234,15 +326,13 @@ export async function listNotifications(req, res) {
 
   const collection = await getCollection("notifications");
   const total = await collection.countDocuments(filter);
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  const page = Math.min(requestedPage, totalPages);
   const items = await collection
     .find(filter)
-    .sort({ createdAt: -1 })
-    .skip((page - 1) * pageSize)
-    .limit(pageSize)
+    .sort({ createdAt: -1, _id: -1 })
+    .skip(paging.skip)
+    .limit(paging.pageSize)
     .toArray();
-  return res.json({ data: items, pagination: { page, pageSize, total, totalPages } });
+  return res.json({ data: items, pagination: paginationResult(paging, total) });
 }
 
 export async function createNotification(req, res) {

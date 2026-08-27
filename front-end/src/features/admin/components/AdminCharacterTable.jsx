@@ -1,6 +1,7 @@
 import { AdminEmpty, AdminSkeletonRows } from './AdminFeedback.jsx';
 import AdminIcon from './AdminIcon.jsx';
 import AdminPagination from './AdminPagination.jsx';
+import AdminFilterToolbar from './AdminFilterToolbar.jsx';
 
 export default function AdminCharacterTable({
   allPageSelected,
@@ -10,7 +11,6 @@ export default function AdminCharacterTable({
   filters,
   hskLevels,
   lessonNames,
-  pageSizeOptions,
   searchDraft,
   selectedIds,
   setConfirmDelete,
@@ -19,7 +19,6 @@ export default function AdminCharacterTable({
   setSearchDraft,
   setSelectedIds,
   state,
-  submitSearch,
   togglePage,
   toggleSelected,
   updateFilter,
@@ -33,51 +32,7 @@ export default function AdminCharacterTable({
 
   return (
     <section className="admin-panel admin-learning-list">
-      <form className="admin-learning-toolbar" onSubmit={submitSearch}>
-        <label>
-          <AdminIcon name="search" size={18} />
-          <span className="admin-sr-only">Tìm Hán tự</span>
-          <input
-            type="search"
-            value={searchDraft}
-            onChange={(event) => setSearchDraft(event.target.value)}
-            placeholder="Tìm chữ, Pinyin, nghĩa hoặc bộ thủ…"
-          />
-        </label>
-        <select
-          aria-label="Lọc theo HSK"
-          value={filters.hskLevel}
-          onChange={(event) => updateFilter('hskLevel', event.target.value)}
-        >
-          <option value="">Tất cả HSK</option>
-          {hskLevels.map((level) => (
-            <option key={level}>{level}</option>
-          ))}
-        </select>
-        <select
-          aria-label="Lọc theo trạng thái"
-          value={filters.status}
-          onChange={(event) => updateFilter('status', event.target.value)}
-        >
-          <option value="">Tất cả trạng thái</option>
-          <option value="draft">Bản nháp</option>
-          <option value="published">Đã xuất bản</option>
-        </select>
-        <button className="admin-button admin-button--secondary" type="submit">
-          Tìm
-        </button>
-        <select
-          aria-label="Số Hán tự mỗi trang"
-          onChange={(event) => setPageSize(Number(event.target.value))}
-          value={state.pagination?.pageSize || pageSizeOptions[1]}
-        >
-          {pageSizeOptions.map((size) => (
-            <option key={size} value={size}>
-              {size}/trang
-            </option>
-          ))}
-        </select>
-      </form>
+      <AdminFilterToolbar search={searchDraft} onSearchChange={setSearchDraft} searchPlaceholder="Tìm chữ, Pinyin, nghĩa hoặc bộ thủ…" filters={[{ key: 'hsk', label: 'Cấp HSK', value: filters.hskLevel, onChange: (value) => updateFilter('hskLevel', value), options: [{ value: '', label: 'Tất cả HSK' }, ...hskLevels.map((value) => ({ value, label: value }))] }, { key: 'status', label: 'Trạng thái', value: filters.status, onChange: (value) => updateFilter('status', value), options: [{ value: '', label: 'Tất cả trạng thái' }, { value: 'draft', label: 'Bản nháp' }, { value: 'published', label: 'Đã xuất bản' }] }]} from={filters.from} to={filters.to} onFromChange={(value) => updateFilter('from', value)} onToChange={(value) => updateFilter('to', value)} pageSize={state.pagination?.pageSize || 5} onPageSizeChange={setPageSize} />
 
       {selectedIds.size > 0 && (
         <div className="admin-learning-selection-bar">

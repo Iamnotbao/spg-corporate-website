@@ -30,7 +30,7 @@ function initialForm(question) {
       };
 }
 
-function questionPayload(form) {
+function questionPayload(form, allowMedia) {
   const payload = {
     question: form.question,
     type: form.type,
@@ -38,6 +38,10 @@ function questionPayload(form) {
     points: Number(form.points),
     order: Number(form.order),
   };
+  if (allowMedia) {
+    payload.audioUrl = form.audioUrl || '';
+    payload.imageUrl = form.imageUrl || '';
+  }
   if (['multiple_choice', 'true_false'].includes(form.type)) {
     payload.options = form.options.map((option, index) => ({
       ...(option.id ? { id: option.id } : {}),
@@ -59,7 +63,7 @@ function questionPayload(form) {
   return payload;
 }
 
-export default function AdminQuestionEditor({ onCancel, onSave, question, saving }) {
+export default function AdminQuestionEditor({ allowMedia = false, onCancel, onSave, question, saving }) {
   const [form, setForm] = useState(() => initialForm(question));
   useEffect(() => setForm(initialForm(question)), [question]);
 
@@ -95,7 +99,7 @@ export default function AdminQuestionEditor({ onCancel, onSave, question, saving
       className="admin-form-section admin-question-form"
       onSubmit={(event) => {
         event.preventDefault();
-        onSave(questionPayload(form));
+        onSave(questionPayload(form, allowMedia));
       }}
     >
       <div className="admin-form-section__heading">
@@ -119,6 +123,18 @@ export default function AdminQuestionEditor({ onCancel, onSave, question, saving
             value={form.question}
           />
         </label>
+        {allowMedia && (
+          <>
+            <label className="admin-form-field">
+              <span>Audio URL (phần nghe)</span>
+              <input type="url" value={form.audioUrl || ''} onChange={(event) => setForm({ ...form, audioUrl: event.target.value })} />
+            </label>
+            <label className="admin-form-field">
+              <span>Image URL (tùy chọn)</span>
+              <input type="url" value={form.imageUrl || ''} onChange={(event) => setForm({ ...form, imageUrl: event.target.value })} />
+            </label>
+          </>
+        )}
         <label className="admin-form-field">
           <span>
             Loại câu hỏi <b>*</b>

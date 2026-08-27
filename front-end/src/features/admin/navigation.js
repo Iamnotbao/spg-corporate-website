@@ -12,6 +12,8 @@ export const ADMIN_NAV_GROUPS = [
       { key: 'vocabulary', label: 'Từ vựng', icon: 'vocabulary', path: '/admin/vocabulary', adminOnly: true },
       { key: 'characters', label: 'Hán tự', icon: 'characters', path: '/admin/characters', adminOnly: true },
       { key: 'quizzes', label: 'Quiz', icon: 'quizzes', path: '/admin/quizzes', adminOnly: true },
+      { key: 'hsk-exams', label: 'Thi thử HSK', icon: 'quizzes', path: '/admin/hsk-mock-exams', adminOnly: true },
+      { key: 'videos', label: 'Video học tập', icon: 'media', path: '/admin/videos', adminOnly: true },
     ],
   },
   {

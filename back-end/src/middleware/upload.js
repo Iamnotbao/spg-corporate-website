@@ -2,6 +2,7 @@ import multer from "multer";
 
 const MAX_CV_FILE_SIZE = 5 * 1024 * 1024;
 const MAX_IMPORT_FILE_SIZE = 10 * 1024 * 1024;
+export const MAX_VIDEO_FILE_SIZE = 100 * 1024 * 1024;
 
 const allowedCvTypes = new Set([
   "application/pdf",
@@ -13,6 +14,11 @@ const allowedImageTypes = new Set([
   "image/png",
   "image/webp",
   "image/gif",
+]);
+export const allowedVideoTypes = new Set([
+  "video/mp4",
+  "video/webm",
+  "video/quicktime",
 ]);
 const allowedImportTypes = new Set([
   "application/pdf",
@@ -121,6 +127,45 @@ export function validateImageSignature(req, _res, next) {
   const error = new Error("Image content does not match its declared type");
   error.status = 415;
   error.code = "INVALID_IMAGE_SIGNATURE";
+  return next(error);
+}
+
+const validateVideoType = (_, file, callback) => {
+  if (!allowedVideoTypes.has(file.mimetype)) {
+    const error = new Error("Unsupported video file type");
+    error.status = 415;
+    error.code = "UNSUPPORTED_VIDEO_FILE_TYPE";
+    callback(error);
+    return;
+  }
+  callback(null, true);
+};
+
+export const videoUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: MAX_VIDEO_FILE_SIZE,
+    files: 1,
+    fields: 1,
+    parts: 3,
+    fieldNameSize: 100,
+    fieldSize: 200,
+  },
+  fileFilter: validateVideoType,
+});
+
+export function validateVideoSignature(req, _res, next) {
+  if (!req.file) return next();
+  const { buffer, mimetype } = req.file;
+  const isWebm =
+    mimetype === "video/webm" && startsWith(buffer, [0x1a, 0x45, 0xdf, 0xa3]);
+  const isIsoMedia =
+    ["video/mp4", "video/quicktime"].includes(mimetype) &&
+    buffer.subarray(4, 8).toString("ascii") === "ftyp";
+  if (isWebm || isIsoMedia) return next();
+  const error = new Error("Video content does not match its declared type");
+  error.status = 415;
+  error.code = "INVALID_VIDEO_SIGNATURE";
   return next(error);
 }
 

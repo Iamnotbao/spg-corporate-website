@@ -9,6 +9,8 @@ import {
   uploadAdminImage,
 } from '../../../services/adminService.js';
 import MediaPicker from './MediaPicker.jsx';
+import { ADMIN_DEFAULT_PAGE_SIZE } from '../constants.js';
+import AdminFilterToolbar from './AdminFilterToolbar.jsx';
 
 const EMPTY_BANNER = {
   title: '', message: '', link: '', backgroundImageUrl: '', backgroundImagePublicId: '', enabled: false, style: 'event', startsAt: '', endsAt: '',
@@ -17,9 +19,10 @@ const EMPTY_BANNER = {
 export default function CommunicationsPanel({ onNotify, onUnauthorized }) {
   const [banner, setBanner] = useState(EMPTY_BANNER);
   const [items, setItems] = useState([]);
-  const [pagination, setPagination] = useState({ page: 1, pageSize: 10, total: 0, totalPages: 1 });
+  const [pagination, setPagination] = useState({ page: 1, pageSize: ADMIN_DEFAULT_PAGE_SIZE, total: 0, totalPages: 1 });
   const [search, setSearch] = useState('');
   const [published, setPublished] = useState('');
+  const [dateRange, setDateRange] = useState({ from: '', to: '' });
   const [draft, setDraft] = useState({ title: '', message: '', link: '', type: 'info', published: true });
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -38,16 +41,16 @@ export default function CommunicationsPanel({ onNotify, onUnauthorized }) {
   const loadNotifications = useCallback(async (page = 1) => {
     setLoading(true);
     try {
-      const payload = await listAdminNotifications({ page, pageSize: pagination.pageSize, search: search.trim(), published });
+      const payload = await listAdminNotifications({ page, pageSize: pagination.pageSize, search: search.trim(), published, from: dateRange.from, to: dateRange.to });
       setItems(payload?.data || []);
       setPagination((current) => ({ ...current, ...(payload?.pagination || {}), page }));
     } catch (error) {
       if (!onUnauthorized(error)) onNotify(error?.message || 'Không thể tải thông báo.', 'error');
     } finally { setLoading(false); }
-  }, [onNotify, onUnauthorized, pagination.pageSize, published, search]);
+  }, [dateRange.from, dateRange.to, onNotify, onUnauthorized, pagination.pageSize, published, search]);
 
   useEffect(() => { loadBanner(); }, [loadBanner]);
-  useEffect(() => { const timer = window.setTimeout(() => loadNotifications(1), 250); return () => window.clearTimeout(timer); }, [search, published, pagination.pageSize]);
+  useEffect(() => { const timer = window.setTimeout(() => loadNotifications(1), 350); return () => window.clearTimeout(timer); }, [dateRange.from, dateRange.to, search, published, pagination.pageSize]);
 
   async function uploadBackground(file) {
     if (!file) return;
@@ -132,7 +135,7 @@ export default function CommunicationsPanel({ onNotify, onUnauthorized }) {
           <select value={draft.type} onChange={(e) => setDraft((v) => ({ ...v, type: e.target.value }))}><option value="info">Thông tin</option><option value="event">Sự kiện</option><option value="warning">Lưu ý</option></select>
           <button className="admin-button admin-button--primary" type="submit">Thêm</button>
         </form>
-        <div className="admin-communications__toolbar"><input placeholder="Tìm thông báo…" value={search} onChange={(e) => setSearch(e.target.value)} /><select value={published} onChange={(e) => setPublished(e.target.value)}><option value="">Tất cả</option><option value="true">Đang hiện</option><option value="false">Đang ẩn</option></select><select value={pagination.pageSize} onChange={(e) => setPagination((v) => ({ ...v, pageSize: Number(e.target.value) }))}>{[5, 10, 20, 50].map((size) => <option key={size} value={size}>{size}/trang</option>)}</select></div>
+        <AdminFilterToolbar search={search} onSearchChange={setSearch} searchPlaceholder="Tìm thông báo…" filters={[{ key: 'published', label: 'Trạng thái', value: published, onChange: setPublished, options: [{ value: '', label: 'Tất cả trạng thái' }, { value: 'true', label: 'Đang hiện' }, { value: 'false', label: 'Đang ẩn' }] }]} from={dateRange.from} to={dateRange.to} onFromChange={(from) => setDateRange((current) => ({ ...current, from }))} onToChange={(to) => setDateRange((current) => ({ ...current, to }))} pageSize={pagination.pageSize} onPageSizeChange={(pageSize) => setPagination((current) => ({ ...current, page: 1, pageSize }))} />
         <div className="admin-communications__list">{loading ? <p>Đang tải…</p> : items.map((item) => <article key={item?._id?.$oid || item?._id}><div><strong>{item.title}</strong><p>{item.message}</p></div><div className="admin-communications__actions"><button className="admin-button admin-button--secondary" type="button" onClick={() => toggleNotification(item)}>{item.published === false ? 'Hiện' : 'Ẩn'}</button><button className="admin-button admin-button--secondary" type="button" onClick={() => removeNotification(item)}>Xóa</button></div></article>)}{!loading && !items.length && <p>Không có thông báo phù hợp.</p>}</div>
         <div className="admin-communications__pagination"><span>{pagination.total} thông báo</span><div><button type="button" disabled={pagination.page <= 1 || loading} onClick={() => loadNotifications(pagination.page - 1)}>←</button><strong>{pagination.page}/{pagination.totalPages}</strong><button type="button" disabled={pagination.page >= pagination.totalPages || loading} onClick={() => loadNotifications(pagination.page + 1)}>→</button></div></div>
       </div>

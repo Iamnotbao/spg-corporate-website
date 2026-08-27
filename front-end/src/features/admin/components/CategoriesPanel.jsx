@@ -7,6 +7,7 @@ import {
 } from '../../../services/categoryService.js';
 import AdminIcon from './AdminIcon.jsx';
 import { AdminAlert } from './AdminFeedback.jsx';
+import { ADMIN_DEFAULT_PAGE_SIZE } from '../constants.js';
 
 const EMPTY = { name: '', slug: '', description: '', order: 100, active: true };
 
@@ -16,7 +17,7 @@ function idOf(item) {
 
 export default function CategoriesPanel({ onNotify, onUnauthorized }) {
   const [items, setItems] = useState([]);
-  const [pagination, setPagination] = useState({ page: 1, pageSize: 10, total: 0, totalPages: 1 });
+  const [pagination, setPagination] = useState({ page: 1, pageSize: ADMIN_DEFAULT_PAGE_SIZE, total: 0, totalPages: 1 });
   const [search, setSearch] = useState('');
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(EMPTY);

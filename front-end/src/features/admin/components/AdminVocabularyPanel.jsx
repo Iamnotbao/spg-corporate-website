@@ -5,7 +5,7 @@ import {
   listAdminLessonOptions,
 } from '../../../services/adminService.js';
 import { useDebouncedValue } from '../hooks/useDebouncedValue.js';
-import { PAGE_SIZE_OPTIONS } from '../constants.js';
+import { ADMIN_DEFAULT_PAGE_SIZE } from '../constants.js';
 import {
   analyzeAdminVocabularyDuplicates,
   cleanupAdminVocabularyDuplicates,
@@ -29,8 +29,9 @@ import AdminIcon from './AdminIcon.jsx';
 import AdminPageHeader from './AdminPageHeader.jsx';
 import AdminPagination from './AdminPagination.jsx';
 import AdminVocabularyImportDialog from './AdminVocabularyImportDialog.jsx';
+import AdminFilterToolbar from './AdminFilterToolbar.jsx';
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = ADMIN_DEFAULT_PAGE_SIZE;
 const HSK_LEVELS = ['HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5', 'HSK 6', 'NgoÃ i HSK'];
 const EDITABLE_FIELDS = [
   'simplified',
@@ -79,6 +80,7 @@ export default function AdminVocabularyPanel({ onNotify, onUnauthorized }) {
   const debouncedSearch = useDebouncedValue(search, 350);
   const [level, setLevel] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [dateRange, setDateRange] = useState({ from: '', to: '' });
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(PAGE_SIZE);
   const [pagination, setPagination] = useState({
@@ -108,6 +110,8 @@ export default function AdminVocabularyPanel({ onNotify, onUnauthorized }) {
           search: debouncedSearch,
           hskLevel: level,
           status: statusFilter,
+          from: dateRange.from,
+          to: dateRange.to,
           signal,
         });
         if (signal?.aborted) return;
@@ -128,7 +132,7 @@ export default function AdminVocabularyPanel({ onNotify, onUnauthorized }) {
         setStatus('error');
       }
     },
-    [debouncedSearch, level, onUnauthorized, page, pageSize, statusFilter],
+    [dateRange.from, dateRange.to, debouncedSearch, level, onUnauthorized, page, pageSize, statusFilter],
   );
 
   useEffect(() => {
@@ -617,53 +621,7 @@ export default function AdminVocabularyPanel({ onNotify, onUnauthorized }) {
       )}
 
       <section className="admin-panel admin-learning-list">
-        <div className="admin-learning-toolbar">
-          <label>
-            <AdminIcon name="search" size={18} />
-            <span className="admin-sr-only">Tìm từ vựng</span>
-            <input
-              type="search"
-              value={search}
-              onChange={(e) => changeFilter('search', e.target.value)}
-              placeholder="Tìm chữ, Pinyin, nghĩa, ví dụ hoặc bài học…"
-            />
-          </label>
-          <select
-            aria-label="Lọc theo HSK"
-            value={level}
-            onChange={(e) => changeFilter('level', e.target.value)}
-          >
-            <option value="">Tất cả cấp độ</option>
-            {levels.map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
-          <select
-            aria-label="Lọc trạng thái"
-            value={statusFilter}
-            onChange={(e) => changeFilter('status', e.target.value)}
-          >
-            <option value="">Tất cả trạng thái</option>
-            <option value="draft">Bản nháp</option>
-            <option value="published">Đã xuất bản</option>
-          </select>
-          <select
-            aria-label="Số từ vựng mỗi trang"
-            onChange={(event) => {
-              setPageSize(Number(event.target.value));
-              setPage(1);
-            }}
-            value={pageSize}
-          >
-            {PAGE_SIZE_OPTIONS.map((size) => (
-              <option key={size} value={size}>
-                {size}/trang
-              </option>
-            ))}
-          </select>
-        </div>
+        <AdminFilterToolbar search={search} onSearchChange={(value) => changeFilter('search', value)} searchPlaceholder="Tìm chữ, Pinyin, nghĩa, ví dụ hoặc bài học…" filters={[{ key: 'level', label: 'Cấp HSK', value: level, onChange: (value) => changeFilter('level', value), options: [{ value: '', label: 'Tất cả cấp độ' }, ...levels.map((value) => ({ value, label: value }))] }, { key: 'status', label: 'Trạng thái', value: statusFilter, onChange: (value) => changeFilter('status', value), options: [{ value: '', label: 'Tất cả trạng thái' }, { value: 'draft', label: 'Bản nháp' }, { value: 'published', label: 'Đã xuất bản' }] }]} from={dateRange.from} to={dateRange.to} onFromChange={(from) => { setDateRange((current) => ({ ...current, from })); setPage(1); }} onToChange={(to) => { setDateRange((current) => ({ ...current, to })); setPage(1); }} pageSize={pageSize} onPageSizeChange={(value) => { setPageSize(value); setPage(1); }} />
 
         {selectedItems.length > 0 && (
           <div className="admin-learning-selection-bar">

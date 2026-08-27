@@ -9,6 +9,8 @@ import {
 } from "./quiz.validation.js";
 import {
   paginationResult,
+  parseAdminPagination,
+  parseDateRange,
   parsePagination,
   parseSearch,
   searchFilter,
@@ -290,8 +292,8 @@ export function createQuizService(
 
   return {
     async listAdmin(filters = {}) {
-      const query = {};
-      const paging = parsePagination(filters, { defaultPageSize: 10, maxPageSize: 100 });
+      const query = { ...parseDateRange(filters) };
+      const paging = parseAdminPagination(filters);
       const search = parseSearch(filters.search);
       const status = String(filters.status || "").trim();
       if (status && !["draft", "published"].includes(status)) {

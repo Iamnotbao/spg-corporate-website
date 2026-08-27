@@ -11,6 +11,11 @@ import {
   MANDORA_ROLES,
 } from "../utils/roles.js";
 import { countUserLearningHistory } from "../features/progress/progress.repository.js";
+import {
+  paginationResult,
+  parseAdminPagination,
+  parseDateRange,
+} from "../utils/pagination.js";
 
 const FILTERABLE_ROLES = AUTHENTICATED_ROLES;
 const ASSIGNABLE_ROLES = new Set(MANDORA_ROLES);
@@ -109,11 +114,10 @@ export function listPermissions(_req, res) {
 }
 
 export async function listUsers(req, res) {
-  const requestedPage = Math.max(1, Number(req.query.page) || 1);
-  const pageSize = Math.min(50, Math.max(1, Number(req.query.pageSize) || 10));
+  const paging = parseAdminPagination(req.query);
   const search = String(req.query.search || "").trim();
   const role = String(req.query.role || "").trim();
-  const filter = {};
+  const filter = { ...parseDateRange(req.query) };
 
   if (search) {
     filter.$or = ["username", "displayName"].map((field) => ({
@@ -127,18 +131,16 @@ export async function listUsers(req, res) {
 
   const collection = await getCollection("users");
   const total = await collection.countDocuments(filter);
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  const page = Math.min(requestedPage, totalPages);
   const users = await collection
     .find(filter)
-    .sort({ createdAt: -1 })
-    .skip((page - 1) * pageSize)
-    .limit(pageSize)
+    .sort({ createdAt: -1, _id: -1 })
+    .skip(paging.skip)
+    .limit(paging.pageSize)
     .toArray();
 
   return res.json({
     data: users.map(publicUser),
-    pagination: { page, pageSize, total, totalPages },
+    pagination: paginationResult(paging, total),
   });
 }
 

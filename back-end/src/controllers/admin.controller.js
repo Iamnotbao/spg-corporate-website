@@ -15,6 +15,11 @@ import {
   streamCvDownload,
 } from "../utils/cvDownload.js";
 import { toObjectId } from "../utils/objectId.js";
+import {
+  parseAdminPagination,
+  parseDateRange,
+  paginationResult,
+} from "../utils/pagination.js";
 
 const escapeRegex = (value) =>
   String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -89,7 +94,10 @@ export function verify(req, res) {
 }
 
 function queryFor(type, query) {
-  const filter = { deletedAt: { $exists: false } };
+  const filter = {
+    deletedAt: { $exists: false },
+    ...parseDateRange(query),
+  };
   const search = String(query.search || "").trim();
   if (search) {
     const safeSearch = escapeRegex(search);
@@ -114,23 +122,17 @@ function queryFor(type, query) {
 }
 
 export async function list(type, req, res) {
-  const requestedPage = Math.max(1, Math.trunc(Number(req.query.page)) || 1);
-  const pageSize = Math.min(
-    50,
-    Math.max(1, Math.trunc(Number(req.query.pageSize)) || 10),
-  );
+  const paging = parseAdminPagination(req.query);
   const filter = queryFor(type, req.query);
   const collection = await getCollection(type);
   const total = await collection.countDocuments(filter);
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  const page = Math.min(requestedPage, totalPages);
   const items = await collection
     .find(filter)
     .sort({ createdAt: -1, _id: -1 })
-    .skip((page - 1) * pageSize)
-    .limit(pageSize)
+    .skip(paging.skip)
+    .limit(paging.pageSize)
     .toArray();
-  res.json({ data: items, pagination: { page, pageSize, total, totalPages } });
+  res.json({ data: items, pagination: paginationResult(paging, total) });
 }
 
 export async function create(type, req, res) {
@@ -218,25 +220,23 @@ export const deleteJob = (req, res) => remove("jobs", req, res);
 export const bulkDeleteJobs = (req, res) => bulkRemove("jobs", req, res);
 
 export async function listApplications(req, res) {
-  const requestedPage = Math.max(1, Number(req.query.page) || 1);
-  const pageSize = Math.min(50, Math.max(1, Number(req.query.pageSize) || 10));
+  const paging = parseAdminPagination(req.query);
   const search = String(req.query.search || "").trim();
-  const filter = search
+  const searchFilter = search
     ? {
         $or: ["name", "email", "phone", "position"].map((field) => ({
           [field]: { $regex: escapeRegex(search), $options: "i" },
         })),
       }
     : {};
+  const filter = { ...searchFilter, ...parseDateRange(req.query) };
   const collection = await getCollection("applications");
   const total = await collection.countDocuments(filter);
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  const page = Math.min(requestedPage, totalPages);
   const applications = await collection
     .find(filter)
     .sort({ createdAt: -1, _id: -1 })
-    .skip((page - 1) * pageSize)
-    .limit(pageSize)
+    .skip(paging.skip)
+    .limit(paging.pageSize)
     .toArray();
   const safeApplications = applications.map((application) => {
     const safeApplication = { ...application };
@@ -245,7 +245,7 @@ export async function listApplications(req, res) {
   });
   res.json({
     data: safeApplications,
-    pagination: { page, pageSize, total, totalPages },
+    pagination: paginationResult(paging, total),
   });
 }
 
@@ -265,6 +265,25 @@ export async function uploadImage(req, res) {
       publicId: uploaded.public_id,
       width: uploaded.width,
       height: uploaded.height,
+    },
+  });
+}
+
+export async function uploadVideo(req, res) {
+  if (!req.file)
+    return res.status(400).json({ error: "Video file is required" });
+  const uploaded = await uploadFile(req.file, {
+    folder: "mandora/videos",
+    resourceType: "video",
+  });
+  return res.status(201).json({
+    data: {
+      url: uploaded.secure_url,
+      publicId: uploaded.public_id,
+      duration: uploaded.duration || 0,
+      width: uploaded.width,
+      height: uploaded.height,
+      resourceType: uploaded.resource_type,
     },
   });
 }

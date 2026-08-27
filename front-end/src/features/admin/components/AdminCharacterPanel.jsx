@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { listAdminLessonOptions } from '../../../services/adminService.js';
-import { PAGE_SIZE_OPTIONS } from '../constants.js';
+import { ADMIN_DEFAULT_PAGE_SIZE } from '../constants.js';
 import {
   bulkDeleteAdminCharacters,
   bulkUpdateAdminCharacters,
@@ -13,8 +13,9 @@ import AdminIcon from './AdminIcon.jsx';
 import AdminPageHeader from './AdminPageHeader.jsx';
 import AdminCharacterForm from './AdminCharacterForm.jsx';
 import AdminCharacterTable from './AdminCharacterTable.jsx';
+import { useDebouncedValue } from '../hooks/useDebouncedValue.js';
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = ADMIN_DEFAULT_PAGE_SIZE;
 const HSK_LEVELS = ['HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5', 'HSK 6', 'Ngoài HSK'];
 const EMPTY_FORM = {
   id: '',
@@ -79,8 +80,9 @@ export default function AdminCharacterPanel({ onNotify, onUnauthorized }) {
   });
   const [lessons, setLessons] = useState([]);
   const [lessonError, setLessonError] = useState('');
-  const [filters, setFilters] = useState({ search: '', hskLevel: '', status: '' });
+  const [filters, setFilters] = useState({ search: '', hskLevel: '', status: '', from: '', to: '' });
   const [searchDraft, setSearchDraft] = useState('');
+  const debouncedSearch = useDebouncedValue(searchDraft, 350);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(PAGE_SIZE);
   const [form, setForm] = useState(null);
@@ -124,6 +126,12 @@ export default function AdminCharacterPanel({ onNotify, onUnauthorized }) {
     load(controller.signal);
     return () => controller.abort();
   }, [load]);
+
+  useEffect(() => {
+    setFilters((current) => ({ ...current, search: debouncedSearch }));
+    setPage(1);
+    setSelectedIds(new Set());
+  }, [debouncedSearch]);
 
   const loadLessonOptions = useCallback(
     async (signal) => {
@@ -171,11 +179,6 @@ export default function AdminCharacterPanel({ onNotify, onUnauthorized }) {
     setFilters((current) => ({ ...current, [field]: value }));
     setPage(1);
     setSelectedIds(new Set());
-  }
-
-  function submitSearch(event) {
-    event.preventDefault();
-    updateFilter('search', searchDraft.trim());
   }
 
   function toggleSelected(id) {
@@ -307,7 +310,6 @@ export default function AdminCharacterPanel({ onNotify, onUnauthorized }) {
         filters={filters}
         hskLevels={HSK_LEVELS}
         lessonNames={lessonNames}
-        pageSizeOptions={PAGE_SIZE_OPTIONS}
         searchDraft={searchDraft}
         selectedIds={selectedIds}
         setConfirmDelete={setConfirmDelete}
@@ -319,7 +321,6 @@ export default function AdminCharacterPanel({ onNotify, onUnauthorized }) {
         setSearchDraft={setSearchDraft}
         setSelectedIds={setSelectedIds}
         state={state}
-        submitSearch={submitSearch}
         togglePage={togglePage}
         toggleSelected={toggleSelected}
         updateFilter={updateFilter}

@@ -8,9 +8,12 @@ import * as quizController from "../features/quiz/quiz.controller.js";
 import * as progressController from "../features/progress/progress.controller.js";
 import * as characterController from "../features/character/character.controller.js";
 import * as dashboardController from "../features/dashboard/dashboard.controller.js";
+import * as hskExamController from "../features/hsk-exam/hsk-exam.controller.js";
 import {
   dismissStudentNotification,
   listStudentNotifications,
+  markAllStudentNotificationsRead,
+  clearAllStudentNotifications,
   markStudentNotificationRead,
 } from "../controllers/communications.controller.js";
 import { auth, requireRole } from "../middleware/auth.js";
@@ -51,6 +54,11 @@ router.post("/ai/chat", aiChatLimiter, asyncHandler(aiTutorController.chat));
 router.get("/progress", asyncHandler(progressController.getStudentProgress));
 router.get("/notifications", asyncHandler(listStudentNotifications));
 router.put(
+  "/notifications/read-all",
+  asyncHandler(markAllStudentNotificationsRead),
+);
+router.delete("/notifications", asyncHandler(clearAllStudentNotifications));
+router.put(
   "/notifications/:id/read",
   asyncHandler(markStudentNotificationRead),
 );
@@ -86,6 +94,10 @@ router.post(
   asyncHandler(vocabularyReviewController.review),
 );
 router.post("/quizzes/:quizId/attempts", asyncHandler(quizController.submit));
+router.post("/hsk-mock-exams/:examId/attempts", asyncHandler(hskExamController.startAttempt));
+router.get("/hsk-mock-exams/:examId/attempts", asyncHandler(hskExamController.listOwnAttempts));
+router.put("/hsk-mock-attempts/:attemptId/submit", asyncHandler(hskExamController.submitAttempt));
+router.get("/hsk-mock-attempts/:attemptId", asyncHandler(hskExamController.getOwnAttempt));
 router.get(
   "/quizzes/:quizId/attempts",
   asyncHandler(quizController.listOwnAttempts),

@@ -27,6 +27,10 @@ import ProgressPage from '../features/student/pages/ProgressPage.jsx';
 import VocabularyReviewPage from '../features/student/pages/VocabularyReviewPage.jsx';
 import QuizPage from '../features/quizzes/pages/QuizPage.jsx';
 import AiTutorPage from '../features/ai-tutor/pages/AiTutorPage.jsx';
+import HskMockExamsPage from '../features/hsk-exams/pages/HskMockExamsPage.jsx';
+import HskMockAttemptPage from '../features/hsk-exams/pages/HskMockAttemptPage.jsx';
+import HskMockHistoryPage from '../features/hsk-exams/pages/HskMockHistoryPage.jsx';
+import VideosPage from '../features/videos/pages/VideosPage.jsx';
 
 const AdminApp = lazy(() => import('../features/admin/AdminApp.jsx'));
 
@@ -56,6 +60,8 @@ export default function AppRoutes() {
         <Route path="/courses/:courseSlug" element={<CourseDetailPage />} />
         <Route path="/courses/:courseSlug/lessons/:lessonSlug" element={<LessonPage />} />
         <Route path="/hsk" element={<HskPage />} />
+        <Route path="/hsk-mock-tests" element={<HskMockExamsPage />} />
+        <Route path="/videos" element={<VideosPage />} />
         <Route path="/vocabulary" element={<VocabularyPage />} />
         <Route path="/characters" element={<CharactersPage />} />
         <Route
@@ -72,6 +78,8 @@ export default function AppRoutes() {
           <Route path="/progress" element={<ProgressPage />} />
           <Route path="/review" element={<VocabularyReviewPage />} />
           <Route path="/ai-tutor" element={<AiTutorPage />} />
+          <Route path="/hsk-mock-tests/:examId/attempt/:attemptId" element={<HskMockAttemptPage />} />
+          <Route path="/hsk-mock-tests/:examId/history" element={<HskMockHistoryPage />} />
           <Route
             path="/courses/:courseSlug/lessons/:lessonSlug/quiz"
             element={<QuizPage />}

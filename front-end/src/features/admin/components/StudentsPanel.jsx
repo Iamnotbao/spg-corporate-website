@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { listAdminUsers } from '../../../services/adminService.js';
 import { useDebouncedValue } from '../hooks/useDebouncedValue.js';
-import { PAGE_SIZE_OPTIONS } from '../constants.js';
+import { ADMIN_DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '../constants.js';
 import { AdminAlert, AdminEmpty, AdminSkeletonRows } from './AdminFeedback.jsx';
 import AdminIcon from './AdminIcon.jsx';
 import AdminPageHeader from './AdminPageHeader.jsx';
 import AdminPagination from './AdminPagination.jsx';
 
-const EMPTY_PAGINATION = { page: 1, pageSize: 10, total: 0, totalPages: 1 };
+const EMPTY_PAGINATION = { page: 1, pageSize: ADMIN_DEFAULT_PAGE_SIZE, total: 0, totalPages: 1 };
 
 export default function StudentsPanel({ onUnauthorized }) {
   const [students, setStudents] = useState([]);

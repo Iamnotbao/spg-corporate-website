@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { PAGE_SIZE_OPTIONS } from '../constants.js';
+import { ADMIN_DEFAULT_PAGE_SIZE } from '../constants.js';
 import { useDebouncedValue } from '../hooks/useDebouncedValue.js';
 import {
   emptyAdminTrash,
@@ -16,6 +16,7 @@ import {
 import AdminIcon from './AdminIcon.jsx';
 import AdminPageHeader from './AdminPageHeader.jsx';
 import AdminPagination from './AdminPagination.jsx';
+import AdminFilterToolbar from './AdminFilterToolbar.jsx';
 
 const TYPES = [
   ['', 'Tất cả loại'],
@@ -70,11 +71,12 @@ export default function AdminTrashPanel({ onNotify, onUnauthorized }) {
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebouncedValue(search, 350);
   const [type, setType] = useState('');
+  const [dateRange, setDateRange] = useState({ from: '', to: '' });
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(ADMIN_DEFAULT_PAGE_SIZE);
   const [pagination, setPagination] = useState({
     page: 1,
-    pageSize: 10,
+    pageSize: ADMIN_DEFAULT_PAGE_SIZE,
     total: 0,
     totalPages: 1,
   });
@@ -93,6 +95,8 @@ export default function AdminTrashPanel({ onNotify, onUnauthorized }) {
           pageSize,
           search: debouncedSearch,
           type,
+          from: dateRange.from,
+          to: dateRange.to,
           signal,
         });
         if (signal?.aborted) return;
@@ -114,7 +118,7 @@ export default function AdminTrashPanel({ onNotify, onUnauthorized }) {
         setStatus('error');
       }
     },
-    [debouncedSearch, onUnauthorized, page, pageSize, type],
+    [dateRange.from, dateRange.to, debouncedSearch, onUnauthorized, page, pageSize, type],
   );
 
   useEffect(() => {
@@ -258,43 +262,7 @@ export default function AdminTrashPanel({ onNotify, onUnauthorized }) {
       )}
 
       <section className="admin-panel admin-learning-list">
-        <div className="admin-learning-toolbar">
-          <label>
-            <AdminIcon name="search" size={18} />
-            <span className="admin-sr-only">Tìm trong Thùng rác</span>
-            <input
-              onChange={(event) => changeFilter('search', event.target.value)}
-              placeholder="Tìm tên nội dung đã xóa..."
-              type="search"
-              value={search}
-            />
-          </label>
-          <select
-            aria-label="Lọc loại nội dung trong Thùng rác"
-            onChange={(event) => changeFilter('type', event.target.value)}
-            value={type}
-          >
-            {TYPES.map(([value, label]) => (
-              <option key={value || 'all'} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-          <select
-            aria-label="Số mục mỗi trang"
-            onChange={(event) => {
-              setPageSize(Number(event.target.value));
-              setPage(1);
-            }}
-            value={pageSize}
-          >
-            {PAGE_SIZE_OPTIONS.map((size) => (
-              <option key={size} value={size}>
-                {size}/trang
-              </option>
-            ))}
-          </select>
-        </div>
+        <AdminFilterToolbar search={search} onSearchChange={(value) => changeFilter('search', value)} searchPlaceholder="Tìm tên nội dung đã xóa…" filters={[{ key: 'type', label: 'Loại nội dung', value: type, onChange: (value) => changeFilter('type', value), options: TYPES.map(([value, label]) => ({ value, label })) }]} from={dateRange.from} to={dateRange.to} onFromChange={(from) => { setDateRange((current) => ({ ...current, from })); setPage(1); }} onToChange={(to) => { setDateRange((current) => ({ ...current, to })); setPage(1); }} pageSize={pageSize} onPageSizeChange={(value) => { setPageSize(value); setPage(1); }} />
 
         {selectedItems.length > 0 && (
           <div className="admin-learning-selection-bar">

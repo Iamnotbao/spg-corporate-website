@@ -34,6 +34,63 @@
   gap: 10px;
 }
 
+.admin-filter-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+  padding: 12px;
+  border: 1px solid var(--admin-line);
+  border-radius: 13px;
+  background: var(--admin-surface-soft);
+}
+
+.admin-filter-toolbar__search,
+.admin-filter-toolbar__control,
+.admin-filter-toolbar__date {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  border: 1px solid var(--admin-line-strong);
+  border-radius: 10px;
+  background: #fff;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.admin-filter-toolbar__search {
+  min-width: min(100%, 270px);
+  flex: 1 1 270px;
+  gap: 8px;
+  padding: 0 12px;
+}
+
+.admin-filter-toolbar__search input,
+.admin-filter-toolbar__control select,
+.admin-filter-toolbar__date input {
+  min-height: 40px;
+  border: 0;
+  outline: 0;
+  color: var(--admin-text);
+  background: transparent;
+}
+
+.admin-filter-toolbar__search input { width: 100%; }
+.admin-filter-toolbar__control select { padding: 0 34px 0 12px; }
+.admin-filter-toolbar__date { gap: 8px; padding-left: 11px; }
+.admin-filter-toolbar__date span { color: var(--admin-muted); font-size: .7rem; font-weight: 700; white-space: nowrap; }
+.admin-filter-toolbar__date input { padding-right: 9px; }
+.admin-filter-toolbar__search:focus-within,
+.admin-filter-toolbar__control:focus-within,
+.admin-filter-toolbar__date:focus-within {
+  border-color: var(--admin-accent);
+  box-shadow: 0 0 0 3px rgba(203, 93, 39, .13);
+}
+
+.admin-filter-toolbar__search:hover,
+.admin-filter-toolbar__control:hover,
+.admin-filter-toolbar__date:hover { border-color: #a8bbb1; }
+
 .admin-learning-toolbar label {
   position: relative;
   display: flex;
@@ -753,3 +810,4 @@
     animation: none;
   }
 }
+.admin-hsk-section-list{display:grid;gap:16px;margin-top:18px}.admin-hsk-question-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border:1px solid var(--admin-line);border-radius:10px}.admin-hsk-question-row span:first-child{display:grid;gap:3px}.admin-hsk-question-row small{color:var(--admin-muted)}.admin-hsk-question-row span:last-child{display:flex;gap:6px}

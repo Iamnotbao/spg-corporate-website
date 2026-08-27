@@ -3,7 +3,9 @@ import { listAdminApplications } from '../../../services/adminService.js';
 import { getErrorMessage } from '../utils.js';
 import { useDebouncedValue } from './useDebouncedValue.js';
 
-const PAGE_SIZE = 10;
+import { ADMIN_DEFAULT_PAGE_SIZE } from '../constants.js';
+
+const PAGE_SIZE = ADMIN_DEFAULT_PAGE_SIZE;
 const EMPTY_PAGINATION = {
   page: 1,
   pageSize: PAGE_SIZE,

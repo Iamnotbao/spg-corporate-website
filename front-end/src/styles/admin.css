@@ -246,7 +246,8 @@
 .admin-shell {
   display: grid;
   min-width: 320px;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   grid-template-columns: 268px minmax(0, 1fr);
   background: var(--admin-bg);
 }
@@ -257,6 +258,7 @@
   z-index: 30;
   display: flex;
   height: 100vh;
+  overflow-y: auto;
   flex-direction: column;
   padding: 30px 18px 22px;
   color: #edf5f1;
@@ -343,6 +345,8 @@
 
 .admin-workspace {
   min-width: 0;
+  height: 100vh;
+  overflow-y: auto;
 }
 
 .admin-header {
@@ -1895,13 +1899,19 @@
 @media (max-width: 1024px) {
   .admin-shell {
     display: block;
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
   }
+
+  .admin-workspace { height: auto; overflow: visible; }
 
   .admin-sidebar {
     position: sticky;
     display: grid;
     width: 100%;
     height: auto;
+    overflow: visible;
     grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
     gap: 16px;
@@ -2325,3 +2335,25 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+.admin-sidebar,
+.admin-workspace,
+.admin-detail-modal {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(64, 91, 81, .42) transparent;
+}
+
+.admin-sidebar { scrollbar-color: rgba(255, 255, 255, .2) transparent; }
+.admin-sidebar::-webkit-scrollbar,
+.admin-workspace::-webkit-scrollbar,
+.admin-detail-modal::-webkit-scrollbar { width: 7px; height: 7px; }
+.admin-sidebar::-webkit-scrollbar-track,
+.admin-workspace::-webkit-scrollbar-track,
+.admin-detail-modal::-webkit-scrollbar-track { background: transparent; }
+.admin-sidebar::-webkit-scrollbar-thumb,
+.admin-workspace::-webkit-scrollbar-thumb,
+.admin-detail-modal::-webkit-scrollbar-thumb { border-radius: 999px; background: rgba(64, 91, 81, .35); }
+.admin-sidebar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .16); }
+.admin-sidebar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, .3); }
+.admin-workspace::-webkit-scrollbar-thumb:hover,
+.admin-detail-modal::-webkit-scrollbar-thumb:hover { background: rgba(64, 91, 81, .55); }

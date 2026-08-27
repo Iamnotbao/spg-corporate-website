@@ -20,7 +20,9 @@ export default function ContentToolbar({
       filters.published ||
       filters.category ||
       filters.jobType ||
-      filters.location,
+      filters.location ||
+      filters.from ||
+      filters.to,
   );
 
   return (
@@ -147,6 +149,15 @@ export default function ContentToolbar({
               </option>
             ))}
           </select>
+        </label>
+
+        <label className="admin-filter-field">
+          <span>Từ ngày</span>
+          <input type="date" value={filters.from} onChange={(event) => onFilterChange('from', event.target.value)} />
+        </label>
+        <label className="admin-filter-field">
+          <span>Đến ngày</span>
+          <input type="date" value={filters.to} onChange={(event) => onFilterChange('to', event.target.value)} />
         </label>
 
         {hasFilters && (

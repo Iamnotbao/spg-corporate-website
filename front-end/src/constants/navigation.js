@@ -2,6 +2,8 @@ export const PUBLIC_NAVIGATION = [
   { label: 'Trang chủ', to: '/', end: true },
   { label: 'Khóa học', to: '/courses' },
   { label: 'HSK', to: '/hsk' },
+  { label: 'Thi thử', to: '/hsk-mock-tests' },
+  { label: 'Video', to: '/videos' },
   { label: 'Từ vựng', to: '/vocabulary' },
   { label: 'Hán tự', to: '/characters' },
   { label: 'Luyện tập', to: '/practice' },

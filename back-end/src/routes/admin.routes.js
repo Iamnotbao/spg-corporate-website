@@ -4,8 +4,10 @@ import { auth, requireAdmin, requirePermission } from "../middleware/auth.js";
 import {
   contentImportUpload,
   imageUpload,
+  videoUpload,
   validateContentImportSignature,
   validateImageSignature,
+  validateVideoSignature,
 } from "../middleware/upload.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import * as controller from "../controllers/admin.controller.js";
@@ -22,6 +24,8 @@ import * as vocabularyController from "../features/vocabulary/vocabulary.control
 import * as quizController from "../features/quiz/quiz.controller.js";
 import * as progressController from "../features/progress/progress.controller.js";
 import * as characterController from "../features/character/character.controller.js";
+import * as hskExamController from "../features/hsk-exam/hsk-exam.controller.js";
+import * as videoController from "../features/video/video.controller.js";
 
 const router = Router();
 const loginLimiter = rateLimit({
@@ -75,6 +79,23 @@ router.delete(
   requireAdmin,
   asyncHandler(learningController.deleteCourse),
 );
+
+router.get("/hsk-mock-exams", requireAdmin, asyncHandler(hskExamController.listAdmin));
+router.get("/hsk-mock-exams/:id", requireAdmin, asyncHandler(hskExamController.getAdmin));
+router.post("/hsk-mock-exams", requireAdmin, asyncHandler(hskExamController.createExam));
+router.put("/hsk-mock-exams/:id", requireAdmin, asyncHandler(hskExamController.updateExam));
+router.delete("/hsk-mock-exams/:id", requireAdmin, asyncHandler(hskExamController.deleteExam));
+router.post("/hsk-mock-exams/:examId/sections", requireAdmin, asyncHandler(hskExamController.createSection));
+router.put("/hsk-mock-sections/:id", requireAdmin, asyncHandler(hskExamController.updateSection));
+router.delete("/hsk-mock-sections/:id", requireAdmin, asyncHandler(hskExamController.deleteSection));
+router.post("/hsk-mock-sections/:sectionId/questions", requireAdmin, asyncHandler(hskExamController.createQuestion));
+router.put("/hsk-mock-questions/:id", requireAdmin, asyncHandler(hskExamController.updateQuestion));
+router.delete("/hsk-mock-questions/:id", requireAdmin, asyncHandler(hskExamController.deleteQuestion));
+router.get("/videos", requireAdmin, asyncHandler(videoController.listAdmin));
+router.get("/videos/:id", requireAdmin, asyncHandler(videoController.getAdmin));
+router.post("/videos", requireAdmin, asyncHandler(videoController.create));
+router.put("/videos/:id", requireAdmin, asyncHandler(videoController.update));
+router.delete("/videos/:id", requireAdmin, asyncHandler(videoController.remove));
 
 router.get("/units", requireAdmin, asyncHandler(learningController.listUnits));
 router.get(
@@ -352,6 +373,15 @@ router.post(
   imageUpload.single("image"),
   validateImageSignature,
   asyncHandler(controller.uploadImage),
+);
+
+router.post(
+  "/uploads/videos",
+  requireAdmin,
+  uploadLimiter,
+  videoUpload.single("video"),
+  validateVideoSignature,
+  asyncHandler(controller.uploadVideo),
 );
 
 router.post(

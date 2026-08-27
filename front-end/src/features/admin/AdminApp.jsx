@@ -21,6 +21,8 @@ import AdminRouteState from './components/AdminRouteState.jsx';
 import AdminTrashPanel from './components/AdminTrashPanel.jsx';
 import AdminVocabularyPanel from './components/AdminVocabularyPanel.jsx';
 import AdminCharacterPanel from './components/AdminCharacterPanel.jsx';
+import AdminHskExamPanel from './components/AdminHskExamPanel.jsx';
+import AdminVideoPanel from './components/AdminVideoPanel.jsx';
 import CategoriesPanel from './components/CategoriesPanel.jsx';
 import ChatPanel from './components/ChatPanel.jsx';
 import CommunicationsPanel from './components/CommunicationsPanel.jsx';
@@ -97,6 +99,8 @@ export default function AdminApp() {
   else if (section === 'vocabulary') page = <AdminVocabularyPanel onNotify={notify} onUnauthorized={auth.handleUnauthorized} />;
   else if (section === 'characters') page = <AdminCharacterPanel onNotify={notify} onUnauthorized={auth.handleUnauthorized} />;
   else if (section === 'quizzes') page = <AdminQuizPanel onNotify={notify} onUnauthorized={auth.handleUnauthorized} />;
+  else if (section === 'hsk-exams') page = <AdminHskExamPanel onNotify={notify} onUnauthorized={auth.handleUnauthorized} />;
+  else if (section === 'videos') page = <AdminVideoPanel onNotify={notify} onUnauthorized={auth.handleUnauthorized} />;
   else if (section === 'progress') page = <AdminProgressPanel onUnauthorized={auth.handleUnauthorized} />;
   else if (section === 'students') page = <StudentsPanel onUnauthorized={auth.handleUnauthorized} />;
   else if (section === 'homepage') page = <SiteProfilePanel onNotify={notify} onUnauthorized={auth.handleUnauthorized} />;

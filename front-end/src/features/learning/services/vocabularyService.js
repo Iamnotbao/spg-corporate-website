@@ -8,7 +8,9 @@ export function listPublicVocabulary(filters = {}) {
   if (filters.page) params.set('page', String(filters.page));
   if (filters.pageSize) params.set('pageSize', String(filters.pageSize));
   const query = params.toString();
-  return apiRequest(`/vocabulary${query ? `?${query}` : ''}`);
+  return apiRequest(`/vocabulary${query ? `?${query}` : ''}`, {
+    signal: filters.signal,
+  });
 }
 
 export function listSavedVocabulary(filters = {}) {

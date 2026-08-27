@@ -1,4 +1,5 @@
 import { loadCharacterData } from "./character-data.service.js";
+import { parseDateRange } from "../../utils/pagination.js";
 import { characterRepository } from "./character.repository.js";
 import {
   normalizeHanziMedians,
@@ -238,8 +239,11 @@ export function createCharacterService(
       };
     },
     async listAdmin(input = {}) {
-      const query = validateCharacterListQuery(input);
-      const filter = {};
+      const query = validateCharacterListQuery(input, {
+        defaultPageSize: 5,
+        allowDates: true,
+      });
+      const filter = { ...parseDateRange(query) };
       if (query.status) filter.status = query.status;
       if (query.hskLevel) filter.hskLevel = query.hskLevel;
       if (query.search) {

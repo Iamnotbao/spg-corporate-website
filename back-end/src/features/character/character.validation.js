@@ -232,7 +232,10 @@ export function validateCharacterAttempt(input = {}) {
   };
 }
 
-export function validateCharacterListQuery(input = {}) {
+export function validateCharacterListQuery(
+  input = {},
+  { defaultPageSize = 12, allowDates = false } = {},
+) {
   const allowed = [
     "page",
     "pageSize",
@@ -240,6 +243,7 @@ export function validateCharacterListQuery(input = {}) {
     "hskLevel",
     "status",
     "lessonId",
+    ...(allowDates ? ["from", "to"] : []),
   ];
   const unknown = Object.keys(input).filter((key) => !allowed.includes(key));
   if (unknown.length) {
@@ -248,7 +252,7 @@ export function validateCharacterListQuery(input = {}) {
     );
   }
   const page = Number(input.page || 1);
-  const pageSize = Number(input.pageSize || 12);
+  const pageSize = Number(input.pageSize || defaultPageSize);
   if (!Number.isInteger(page) || page < 1) {
     throw new CharacterValidationError("page must be a positive integer");
   }
@@ -268,5 +272,13 @@ export function validateCharacterListQuery(input = {}) {
   if (lessonId && !/^[a-f\d]{24}$/i.test(lessonId)) {
     throw new CharacterValidationError("lessonId must be a valid id");
   }
-  return { page, pageSize, search, hskLevel, status, lessonId };
+  return {
+    page,
+    pageSize,
+    search,
+    hskLevel,
+    status,
+    lessonId,
+    ...(allowDates ? { from: input.from, to: input.to } : {}),
+  };
 }

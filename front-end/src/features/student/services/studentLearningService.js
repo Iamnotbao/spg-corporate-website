@@ -35,6 +35,20 @@ export function dismissStudentNotification(id) {
   });
 }
 
+export function markAllStudentNotificationsRead() {
+  return apiRequest('/student/notifications/read-all', {
+    auth: 'student',
+    method: 'PUT',
+  });
+}
+
+export function clearAllStudentNotifications() {
+  return apiRequest('/student/notifications', {
+    auth: 'student',
+    method: 'DELETE',
+  });
+}
+
 export function archiveEnrollment(courseId) {
   return apiRequest(`/student/enrollments/${encodeURIComponent(courseId)}`, {
     auth: 'student',
