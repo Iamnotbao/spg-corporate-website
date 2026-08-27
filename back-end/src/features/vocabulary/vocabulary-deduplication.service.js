@@ -58,9 +58,6 @@ function manualReason(reason) {
   if (reason === "pending-review") {
     return "Có lượt ôn tập đang chờ đồng bộ nên hệ thống chưa gộp tự động.";
   }
-  if (reason === "overlapping-progress") {
-    return "Có học viên đã có tiến độ ở cả bản chính và bản trùng.";
-  }
   return "Cần kiểm tra dữ liệu học tập trước khi gộp.";
 }
 
@@ -84,9 +81,6 @@ export function createVocabularyDeduplicationService(
       const redundant = sorted.slice(1);
       const canonicalId = idOf(canonical);
       const canonicalRows = progressMap.get(canonicalId) || [];
-      const accumulatedUsers = new Set(
-        canonicalRows.map((row) => String(row.userId || "")),
-      );
       const pendingInCanonical = hasPendingReview(canonicalRows);
       const deletableIds = [];
       const mergeableIds = [];
@@ -107,18 +101,8 @@ export function createVocabularyDeduplicationService(
           reason = "pending-review";
           manualItems.push({ id: duplicateId, reason, message: manualReason(reason) });
         } else {
-          const overlaps = rows.some((row) =>
-            accumulatedUsers.has(String(row.userId || "")),
-          );
-          if (overlaps) {
-            mergeStatus = "manual";
-            reason = "overlapping-progress";
-            manualItems.push({ id: duplicateId, reason, message: manualReason(reason) });
-          } else {
-            mergeStatus = "merge";
-            mergeableIds.push(duplicateId);
-            rows.forEach((row) => accumulatedUsers.add(String(row.userId || "")));
-          }
+          mergeStatus = "merge";
+          mergeableIds.push(duplicateId);
         }
 
         duplicateSummaries.push({
@@ -183,6 +167,7 @@ export function createVocabularyDeduplicationService(
       const deleteResult = await repository.deleteDuplicates(deletableIds);
       let merged = 0;
       let movedProgress = 0;
+      let combinedProgress = 0;
       let movedReviewHistory = 0;
       const mergeFailures = [];
 
@@ -195,6 +180,7 @@ export function createVocabularyDeduplicationService(
             );
             if (result.deletedCount) merged += 1;
             movedProgress += result.movedProgress || 0;
+            combinedProgress += result.combinedProgress || 0;
             movedReviewHistory += result.movedReviewHistory || 0;
           } catch (error) {
             mergeFailures.push({
@@ -215,6 +201,7 @@ export function createVocabularyDeduplicationService(
         deleted: processed,
         merged,
         movedProgress,
+        combinedProgress,
         movedReviewHistory,
         mergeFailures,
         summary: {
