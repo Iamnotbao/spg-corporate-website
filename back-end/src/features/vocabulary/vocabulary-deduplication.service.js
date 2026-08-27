@@ -5,8 +5,10 @@ function idOf(item) {
 }
 
 function createdAtValue(item) {
-  const value = new Date(item?.createdAt || 0).getTime();
-  return Number.isFinite(value) ? value : 0;
+  const raw = item?.createdAt;
+  if (!raw) return Number.POSITIVE_INFINITY;
+  const value = new Date(raw).getTime();
+  return Number.isFinite(value) ? value : Number.POSITIVE_INFINITY;
 }
 
 function summarizeItem(item, references = {}) {
@@ -38,13 +40,41 @@ function compareCandidates(left, right, referenceCounts) {
   return idOf(left).localeCompare(idOf(right));
 }
 
+function progressByVocabulary(rows = []) {
+  const result = new Map();
+  for (const row of rows) {
+    const key = String(row.vocabularyId || "");
+    if (!result.has(key)) result.set(key, []);
+    result.get(key).push(row);
+  }
+  return result;
+}
+
+function hasPendingReview(rows = []) {
+  return rows.some((row) => row?.pendingReviewHistory?.reviewId);
+}
+
+function manualReason(reason) {
+  if (reason === "pending-review") {
+    return "Có lượt ôn tập đang chờ đồng bộ nên hệ thống chưa gộp tự động.";
+  }
+  if (reason === "overlapping-progress") {
+    return "Có học viên đã có tiến độ ở cả bản chính và bản trùng.";
+  }
+  return "Cần kiểm tra dữ liệu học tập trước khi gộp.";
+}
+
 export function createVocabularyDeduplicationService(
   repository = vocabularyDeduplicationRepository,
 ) {
   async function analyze() {
     const groups = await repository.listDuplicateGroups();
     const ids = groups.flatMap((group) => group.items.map(idOf));
-    const referenceCounts = await repository.countLearningReferences(ids);
+    const [referenceCounts, progressRows] = await Promise.all([
+      repository.countLearningReferences(ids),
+      repository.listProgressRows(ids),
+    ]);
+    const progressMap = progressByVocabulary(progressRows);
 
     const analyzedGroups = groups.map((group) => {
       const sorted = [...group.items].sort((left, right) =>
@@ -52,12 +82,51 @@ export function createVocabularyDeduplicationService(
       );
       const canonical = sorted[0];
       const redundant = sorted.slice(1);
-      const deletable = redundant.filter(
-        (item) => (referenceCounts[idOf(item)]?.total || 0) === 0,
+      const canonicalId = idOf(canonical);
+      const canonicalRows = progressMap.get(canonicalId) || [];
+      const accumulatedUsers = new Set(
+        canonicalRows.map((row) => String(row.userId || "")),
       );
-      const protectedItems = redundant.filter(
-        (item) => (referenceCounts[idOf(item)]?.total || 0) > 0,
-      );
+      let pendingInCanonical = hasPendingReview(canonicalRows);
+      const deletableIds = [];
+      const mergeableIds = [];
+      const manualItems = [];
+      const duplicateSummaries = [];
+
+      for (const item of redundant) {
+        const duplicateId = idOf(item);
+        const references = referenceCounts[duplicateId] || {};
+        const rows = progressMap.get(duplicateId) || [];
+        let mergeStatus = "delete";
+        let reason = "";
+
+        if ((references.total || 0) === 0) {
+          deletableIds.push(duplicateId);
+        } else if (pendingInCanonical || hasPendingReview(rows)) {
+          mergeStatus = "manual";
+          reason = "pending-review";
+          manualItems.push({ id: duplicateId, reason, message: manualReason(reason) });
+        } else {
+          const overlaps = rows.some((row) =>
+            accumulatedUsers.has(String(row.userId || "")),
+          );
+          if (overlaps) {
+            mergeStatus = "manual";
+            reason = "overlapping-progress";
+            manualItems.push({ id: duplicateId, reason, message: manualReason(reason) });
+          } else {
+            mergeStatus = "merge";
+            mergeableIds.push(duplicateId);
+            rows.forEach((row) => accumulatedUsers.add(String(row.userId || "")));
+          }
+        }
+
+        duplicateSummaries.push({
+          ...summarizeItem(item, references),
+          mergeStatus,
+          manualReason: reason ? manualReason(reason) : "",
+        });
+      }
 
       return {
         key: {
@@ -65,34 +134,37 @@ export function createVocabularyDeduplicationService(
           simplified: group._id?.simplified || "",
           pinyin: group._id?.pinyin || "",
         },
-        canonical: summarizeItem(canonical, referenceCounts[idOf(canonical)]),
-        duplicates: redundant.map((item) =>
-          summarizeItem(item, referenceCounts[idOf(item)]),
-        ),
-        deletableIds: deletable.map(idOf),
-        protectedIds: protectedItems.map(idOf),
+        canonical: summarizeItem(canonical, referenceCounts[canonicalId]),
+        duplicates: duplicateSummaries,
+        deletableIds,
+        mergeableIds,
+        manualItems,
+        manualIds: manualItems.map((item) => item.id),
       };
     });
 
-    const deletableCount = analyzedGroups.reduce(
-      (sum, group) => sum + group.deletableIds.length,
-      0,
-    );
-    const protectedCount = analyzedGroups.reduce(
-      (sum, group) => sum + group.protectedIds.length,
-      0,
+    const summary = analyzedGroups.reduce(
+      (result, group) => {
+        result.redundantRecords += group.duplicates.length;
+        result.deletableRecords += group.deletableIds.length;
+        result.mergeableRecords += group.mergeableIds.length;
+        result.manualRecords += group.manualIds.length;
+        return result;
+      },
+      {
+        duplicateGroups: analyzedGroups.length,
+        redundantRecords: 0,
+        deletableRecords: 0,
+        mergeableRecords: 0,
+        manualRecords: 0,
+      },
     );
 
     return {
       groups: analyzedGroups,
       summary: {
-        duplicateGroups: analyzedGroups.length,
-        redundantRecords: analyzedGroups.reduce(
-          (sum, group) => sum + group.duplicates.length,
-          0,
-        ),
-        deletableRecords: deletableCount,
-        protectedRecords: protectedCount,
+        ...summary,
+        protectedRecords: summary.manualRecords,
       },
     };
   }
@@ -103,15 +175,42 @@ export function createVocabularyDeduplicationService(
     async cleanup() {
       const report = await analyze();
       const deletableIds = report.groups.flatMap((group) => group.deletableIds);
-      const result = await repository.deleteDuplicates(deletableIds);
+      const deleteResult = await repository.deleteDuplicates(deletableIds);
+      let merged = 0;
+      let movedProgress = 0;
+      let movedReviewHistory = 0;
+      const mergeFailures = [];
+
+      for (const group of report.groups) {
+        for (const duplicateId of group.mergeableIds) {
+          try {
+            const result = await repository.mergeLearningReferences(
+              group.canonical.id,
+              duplicateId,
+            );
+            if (result.deletedCount) merged += 1;
+            movedProgress += result.movedProgress || 0;
+            movedReviewHistory += result.movedReviewHistory || 0;
+          } catch (error) {
+            mergeFailures.push({
+              id: duplicateId,
+              message: error?.message || "Không thể gộp bản ghi trùng.",
+            });
+          }
+        }
+      }
 
       return {
         ...report,
-        deleted: result.deletedCount || 0,
+        deleted: deleteResult.deletedCount || 0,
+        merged,
+        movedProgress,
+        movedReviewHistory,
+        mergeFailures,
         message:
-          report.summary.protectedRecords > 0
-            ? "Deleted unreferenced duplicates. Referenced duplicates were kept to protect student learning history."
-            : "Deleted duplicate vocabulary records.",
+          report.summary.manualRecords > 0 || mergeFailures.length > 0
+            ? "Đã xử lý các bản trùng an toàn. Một số bản ghi cần kiểm tra thủ công."
+            : "Đã gộp dữ liệu học tập và xóa các bản ghi từ vựng trùng.",
       };
     },
   };
