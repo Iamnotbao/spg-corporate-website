@@ -110,6 +110,14 @@ test("Quiz administration routes require authentication", async () => {
   assert.deepEqual(await response.json(), { error: "Missing access token" });
 });
 
+test("chat conversation deletion requires admin authentication", async () => {
+  const response = await fetch(`${baseUrl}/api/admin/chat/sessions/session-1`, {
+    method: "DELETE",
+  });
+  assert.equal(response.status, 401);
+  assert.deepEqual(await response.json(), { error: "Missing access token" });
+});
+
 test("Character administration routes require authentication", async () => {
   for (const [path, method] of [
     ["/api/admin/characters", "GET"],

@@ -53,13 +53,14 @@ export const CONTENT_LABELS = {
 export const DEFAULT_FILTERS = {
   search: '',
   published: '',
-  category: 'hoc-tieng-trung',
+  category: '',
   jobType: '',
   location: '',
   pageSize: 10,
 };
 export const JOB_TYPES = ['Full-time', 'Part-time', 'Intern', 'Contract', 'Freelance'];
 export const NEWS_CATEGORIES = [
+  { value: '', label: 'Tất cả chuyên mục' },
   { value: 'hoc-tieng-trung', label: 'Học tiếng Trung' },
   { value: 'hsk', label: 'HSK' },
   { value: 'tu-vung', label: 'Từ vựng' },

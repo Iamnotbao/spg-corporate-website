@@ -2,10 +2,15 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   createAdminLearning,
   deleteAdminLearning,
+  getAdminLearning,
+  listAdminCourseOptions,
   listAdminLearning,
+  listAdminUnitOptions,
   updateAdminLearning,
   uploadAdminImage,
 } from '../../../services/adminService.js';
+import { useDebouncedValue } from '../hooks/useDebouncedValue.js';
+import { PAGE_SIZE_OPTIONS } from '../constants.js';
 import {
   AdminAlert,
   AdminConfirmDialog,
@@ -80,7 +85,9 @@ function emptyForm(section, parents) {
 }
 
 function payloadFor(section, form) {
-  const payload = Object.fromEntries(Object.entries(form).filter(([key]) => key !== 'id'));
+  const payload = Object.fromEntries(
+    Object.entries(form).filter(([key]) => key !== 'id'),
+  );
   payload.order = Number(form.order);
   if (section === 'courses') {
     payload.estimatedDuration =
@@ -89,7 +96,9 @@ function payloadFor(section, form) {
   if (section === 'lessons') {
     payload.duration = form.duration === '' ? undefined : Number(form.duration);
   }
-  Object.keys(payload).forEach((key) => payload[key] === undefined && delete payload[key]);
+  Object.keys(payload).forEach(
+    (key) => payload[key] === undefined && delete payload[key],
+  );
   return payload;
 }
 
@@ -259,7 +268,11 @@ function LearningForm({
           })}
       </div>
       <div className="admin-learning-form__actions">
-        <button className="admin-button admin-button--secondary" onClick={onCancel} type="button">
+        <button
+          className="admin-button admin-button--secondary"
+          onClick={onCancel}
+          type="button"
+        >
           Hủy
         </button>
         <button
@@ -280,9 +293,18 @@ export default function AdminLearningPanel({ onNotify, onUnauthorized, section }
   const [parents, setParents] = useState({ courses: [], units: [] });
   const [status, setStatus] = useState('loading');
   const [loadError, setLoadError] = useState('');
+  const [parentError, setParentError] = useState('');
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebouncedValue(search, 350);
   const [filter, setFilter] = useState('');
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(PAGE_SIZE);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    pageSize: PAGE_SIZE,
+    total: 0,
+    totalPages: 1,
+  });
   const [form, setForm] = useState(null);
   const [saving, setSaving] = useState(false);
   const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
@@ -290,32 +312,96 @@ export default function AdminLearningPanel({ onNotify, onUnauthorized, section }
   const [bulkBusy, setBulkBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
 
-  const load = useCallback(async () => {
-    setStatus('loading');
-    setLoadError('');
-    try {
-      const [current, courses, units] = await Promise.all([
-        listAdminLearning(section),
-        section === 'courses' ? Promise.resolve({ data: [] }) : listAdminLearning('courses'),
-        section === 'lessons' ? listAdminLearning('units') : Promise.resolve({ data: [] }),
-      ]);
-      setItems(current.data || []);
-      setParents({ courses: courses.data || [], units: units.data || [] });
-      setStatus('ready');
-    } catch (requestError) {
-      if (onUnauthorized(requestError)) return;
-      setLoadError(requestError.message);
-      setStatus('error');
-    }
-  }, [onUnauthorized, section]);
+  const load = useCallback(
+    async (signal) => {
+      setStatus('loading');
+      setLoadError('');
+      try {
+        const current = await listAdminLearning(section, {
+          page,
+          pageSize,
+          search: debouncedSearch,
+          status: section === 'courses' ? filter : '',
+          courseId: section === 'units' ? filter : '',
+          type: section === 'lessons' ? filter : '',
+          signal,
+        });
+        if (signal?.aborted) return;
+        setItems(current.data || []);
+        setPagination(
+          current.pagination || {
+            page,
+            pageSize,
+            total: 0,
+            totalPages: 1,
+          },
+        );
+        setStatus('ready');
+      } catch (requestError) {
+        if (requestError?.name === 'AbortError') return;
+        if (onUnauthorized(requestError)) return;
+        setLoadError(requestError.message);
+        setStatus('error');
+      }
+    },
+    [debouncedSearch, filter, onUnauthorized, page, pageSize, section],
+  );
+
+  useEffect(() => {
+    const controller = new AbortController();
+    load(controller.signal);
+    return () => controller.abort();
+  }, [load]);
+
+  const loadParentOptions = useCallback(
+    async (signal) => {
+      setParentError('');
+      if (section === 'courses') {
+        setParents({ courses: [], units: [] });
+        return;
+      }
+
+      try {
+        const [coursesResult, unitsResult] = await Promise.allSettled([
+          listAdminCourseOptions({ pageSize: 100, signal }),
+          section === 'lessons'
+            ? listAdminUnitOptions({ pageSize: 100, signal })
+            : Promise.resolve({ data: [] }),
+        ]);
+        if (signal?.aborted) return;
+
+        const optionError = [coursesResult, unitsResult].find(
+          (result) => result.status === 'rejected' && result.reason?.name !== 'AbortError',
+        );
+        if (optionError) throw optionError.reason;
+
+        setParents({
+          courses: coursesResult.value.data || [],
+          units: unitsResult.value.data || [],
+        });
+      } catch (requestError) {
+        if (requestError?.name === 'AbortError') return;
+        if (onUnauthorized(requestError)) return;
+        setParentError(
+          requestError?.message || 'Không thể tải dữ liệu cho bộ lọc và biểu mẫu.',
+        );
+      }
+    },
+    [onUnauthorized, section],
+  );
+
+  useEffect(() => {
+    const controller = new AbortController();
+    loadParentOptions(controller.signal);
+    return () => controller.abort();
+  }, [loadParentOptions]);
 
   useEffect(() => {
     setPage(1);
     setFilter('');
     setSearch('');
     setSelectedIds(new Set());
-    load();
-  }, [load]);
+  }, [section]);
 
   const courseNames = useMemo(
     () => new Map(parents.courses.map((item) => [item.id, item.title])),
@@ -325,30 +411,10 @@ export default function AdminLearningPanel({ onNotify, onUnauthorized, section }
     () => new Map(parents.units.map((item) => [item.id, item.title])),
     [parents.units],
   );
-  const visibleItems = useMemo(() => {
-    const query = search.trim().toLocaleLowerCase('vi');
-    return items.filter((item) => {
-      const parentTitle =
-        section === 'units'
-          ? courseNames.get(item.courseId)
-          : section === 'lessons'
-            ? unitNames.get(item.unitId)
-            : '';
-      const haystack = `${item.title || ''} ${item.slug || ''} ${item.description || ''} ${item.content || ''} ${item.level || ''} ${item.status || ''} ${item.type || ''} ${item.order ?? ''} ${parentTitle || ''}`.toLocaleLowerCase('vi');
-      const matchesSearch = !query || haystack.includes(query);
-      const matchesFilter =
-        !filter ||
-        (section === 'courses'
-          ? item.status === filter
-          : section === 'units'
-            ? item.courseId === filter
-            : item.type === filter);
-      return matchesSearch && matchesFilter;
-    });
-  }, [courseNames, filter, items, search, section, unitNames]);
-  const totalPages = Math.max(1, Math.ceil(visibleItems.length / PAGE_SIZE));
-  const safePage = Math.min(page, totalPages);
-  const pagedItems = visibleItems.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const visibleItems = { length: pagination.total };
+  const totalPages = pagination.totalPages;
+  const safePage = pagination.page;
+  const pagedItems = items;
   const selectedItems = useMemo(
     () => items.filter((item) => selectedIds.has(item.id)),
     [items, selectedIds],
@@ -363,7 +429,25 @@ export default function AdminLearningPanel({ onNotify, onUnauthorized, section }
     setForm(emptyForm(section, parents));
   }
 
-  function beginEdit(item) {
+  async function beginEdit(item) {
+    const parentType =
+      section === 'units' ? 'courses' : section === 'lessons' ? 'units' : '';
+    const parentId =
+      section === 'units' ? item.courseId : section === 'lessons' ? item.unitId : '';
+    const parentList = section === 'units' ? parents.courses : parents.units;
+    if (parentType && parentId && !parentList.some((parent) => parent.id === parentId)) {
+      try {
+        const response = await getAdminLearning(parentType, parentId);
+        if (response?.data) {
+          setParents((current) => ({
+            ...current,
+            [parentType]: [...current[parentType], response.data],
+          }));
+        }
+      } catch {
+        // Keep the stored parent id; the backend remains the source of validation.
+      }
+    }
     const next = emptyForm(section, parents);
     Object.keys(next).forEach((key) => {
       if (item[key] != null) next[key] = String(item[key]);
@@ -485,7 +569,6 @@ export default function AdminLearningPanel({ onNotify, onUnauthorized, section }
       }
     }
     await load();
-    setSelectedIds(new Set(failures.map(({ item }) => item.id)));
     setBulkBusy(false);
     if (successCount) {
       onNotify(`Đã gỡ xuất bản ${successCount} ${copy.singular}.`);
@@ -558,13 +641,21 @@ export default function AdminLearningPanel({ onNotify, onUnauthorized, section }
         eyebrow="Learning content"
         title={copy.title}
       />
-      {status === 'error' && loadError && <AdminAlert onRetry={load}>{loadError}</AdminAlert>}
+      {status === 'error' && loadError && (
+        <AdminAlert onRetry={() => load()}>{loadError}</AdminAlert>
+      )}
+      {parentError && (
+        <AdminAlert onRetry={() => loadParentOptions()}>{parentError}</AdminAlert>
+      )}
       {form && (
         <LearningForm
           form={form}
           onCancel={() => setForm(null)}
           onChange={(event) =>
-            setForm((current) => ({ ...current, [event.target.name]: event.target.value }))
+            setForm((current) => ({
+              ...current,
+              [event.target.name]: event.target.value,
+            }))
           }
           onSubmit={submit}
           onUploadThumbnail={uploadThumbnail}
@@ -625,6 +716,20 @@ export default function AdminLearningPanel({ onNotify, onUnauthorized, section }
               ))}
             </select>
           )}
+          <select
+            aria-label="Số nội dung mỗi trang"
+            onChange={(event) => {
+              setPageSize(Number(event.target.value));
+              setPage(1);
+            }}
+            value={pageSize}
+          >
+            {PAGE_SIZE_OPTIONS.map((size) => (
+              <option key={size} value={size}>
+                {size}/trang
+              </option>
+            ))}
+          </select>
         </div>
 
         {selectedItems.length > 0 && (
@@ -642,7 +747,9 @@ export default function AdminLearningPanel({ onNotify, onUnauthorized, section }
                   type="button"
                 >
                   <AdminIcon name="check" size={16} />
-                  {bulkBusy ? 'Đang xử lý…' : `Xuất bản đã chọn (${selectedDrafts.length})`}
+                  {bulkBusy
+                    ? 'Đang xử lý…'
+                    : `Xuất bản đã chọn (${selectedDrafts.length})`}
                 </button>
               )}
               {canBulkPublish && (
@@ -653,7 +760,9 @@ export default function AdminLearningPanel({ onNotify, onUnauthorized, section }
                   type="button"
                 >
                   <AdminIcon name="refresh" size={16} />
-                  {bulkBusy ? 'Đang xử lý…' : `Gỡ xuất bản đã chọn (${selectedPublished.length})`}
+                  {bulkBusy
+                    ? 'Đang xử lý…'
+                    : `Gỡ xuất bản đã chọn (${selectedPublished.length})`}
                 </button>
               )}
               <button
@@ -705,7 +814,10 @@ export default function AdminLearningPanel({ onNotify, onUnauthorized, section }
                 </thead>
                 <tbody>
                   {pagedItems.map((item) => (
-                    <tr className={selectedIds.has(item.id) ? 'is-selected' : undefined} key={item.id}>
+                    <tr
+                      className={selectedIds.has(item.id) ? 'is-selected' : undefined}
+                      key={item.id}
+                    >
                       <td className="admin-learning-select-cell">
                         <input
                           aria-label={`Chọn ${item.title}`}
@@ -726,7 +838,9 @@ export default function AdminLearningPanel({ onNotify, onUnauthorized, section }
                             : item.level}
                       </td>
                       <td>
-                        <span className={`admin-learning-badge is-${item.status || item.type}`}>
+                        <span
+                          className={`admin-learning-badge is-${item.status || item.type}`}
+                        >
                           {item.status || item.type || '—'}
                         </span>
                       </td>
@@ -756,7 +870,7 @@ export default function AdminLearningPanel({ onNotify, onUnauthorized, section }
               onPageChange={setPage}
               pagination={{
                 page: safePage,
-                pageSize: PAGE_SIZE,
+                pageSize,
                 total: visibleItems.length,
                 totalPages,
               }}
@@ -766,7 +880,9 @@ export default function AdminLearningPanel({ onNotify, onUnauthorized, section }
       </section>
 
       <AdminConfirmDialog
-        confirmLabel={confirmDelete?.length > 1 ? `Xóa ${confirmDelete.length} mục` : 'Xóa nội dung'}
+        confirmLabel={
+          confirmDelete?.length > 1 ? `Xóa ${confirmDelete.length} mục` : 'Xóa nội dung'
+        }
         description={
           confirmDelete?.length > 1
             ? 'Các mục đang xuất bản hoặc có dữ liệu học tập liên quan có thể bị backend từ chối. Những mục xóa được sẽ bị xóa vĩnh viễn.'
@@ -778,7 +894,11 @@ export default function AdminLearningPanel({ onNotify, onUnauthorized, section }
         onCancel={() => setConfirmDelete(null)}
         onConfirm={confirmDeletion}
         open={Boolean(confirmDelete?.length)}
-        title={confirmDelete?.length > 1 ? 'Xác nhận xóa các mục đã chọn?' : 'Xác nhận xóa nội dung?'}
+        title={
+          confirmDelete?.length > 1
+            ? 'Xác nhận xóa các mục đã chọn?'
+            : 'Xác nhận xóa nội dung?'
+        }
       />
     </div>
   );

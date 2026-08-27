@@ -60,6 +60,32 @@ bulk controls where their lifecycle supports publish/delete behavior; each opera
 passes through the existing resource service or controller guards. Vocabulary Lessons show
 six cards initially and reveal six more per click in a responsive three/two/one-column grid.
 
+### Pagination and admin chat lifecycle update
+
+Public Course and Vocabulary catalogs, their admin Course/Unit/Lesson/Vocabulary/Quiz
+lists, saved Vocabulary, Quiz attempt history, and lightweight learning option endpoints
+now apply bounded MongoDB queries with deterministic ordering. The shared page contract is
+`{ data, pagination: { page, pageSize, total, totalPages } }`; search input is length-capped
+and regex-escaped before repository filters are built. Public Vocabulary totals are
+calculated only after the published Vocabulary, Lesson, Unit, and Course hierarchy has
+been enforced. Supporting compound indexes cover the hierarchy, status/filter, and stable
+sort paths introduced by these queries.
+
+Visitor-support chat message history now uses an opaque cursor based on `createdAt` plus
+`_id`, returns the latest bounded page in chronological display order, and supports loading
+older pages without overlap when timestamps tie. Admins can permanently delete a
+conversation through an admin-only route; messages are deleted before the session so a
+partial failure does not leave orphan message records. The admin UI confirms that action,
+preserves independent list/thread scrolling, avoids forced scroll when reading older
+messages, and merges matching SSE events into the active thread instead of refetching the
+entire history.
+
+Owner-scoped My Courses/progress aggregates, dashboard streak activity, notification
+state joins, media reference scans, and explicit import duplicate checks remain separate
+scalability follow-ups. Arbitrary substring search still uses escaped case-insensitive
+MongoDB regex matching; larger datasets may require prefix, text, or dedicated search
+indexes based on measured query plans.
+
 ### Phase 7 Character and handwriting implementation
 
 Phase 7 adds a separate `character` feature boundary without reusing or duplicating

@@ -12,6 +12,8 @@ export async function createPublicChatSession(payload = {}) {
 
 export async function getPublicChatMessages(sessionId, clientToken, options = {}) {
   const params = new URLSearchParams({ sessionId, clientToken });
+  if (options.limit) params.set('limit', String(options.limit));
+  if (options.before) params.set('before', options.before);
   return apiRequest(`/chat/messages?${params.toString()}`, {
     method: 'GET',
     signal: options.signal,
@@ -47,24 +49,53 @@ export async function listAdminChatSessions(options = {}) {
   if (options.search) params.set('search', options.search);
   if (options.status) params.set('status', options.status);
   return apiRequest(`/admin/chat/sessions?${params.toString()}`, {
-    method: 'GET', auth: true, signal: options.signal,
+    method: 'GET',
+    auth: true,
+    signal: options.signal,
   });
 }
 
 export async function getAdminChatMessages(sessionId, options = {}) {
-  return apiRequest(`/admin/chat/sessions/${encodeURIComponent(sessionId)}/messages`, {
-    method: 'GET', auth: true, signal: options.signal,
+  const params = new URLSearchParams();
+  if (options.limit) params.set('limit', String(options.limit));
+  if (options.before) params.set('before', options.before);
+  const query = params.toString();
+  return apiRequest(
+    `/admin/chat/sessions/${encodeURIComponent(sessionId)}/messages${query ? `?${query}` : ''}`,
+    {
+      method: 'GET',
+      auth: true,
+      signal: options.signal,
+    },
+  );
+}
+
+export async function getAdminChatMessage(sessionId, messageId) {
+  return apiRequest(
+    `/admin/chat/sessions/${encodeURIComponent(sessionId)}/messages/${encodeURIComponent(messageId)}`,
+    { method: 'GET', auth: true },
+  );
+}
+
+export async function deleteAdminChatSession(sessionId) {
+  return apiRequest(`/admin/chat/sessions/${encodeURIComponent(sessionId)}`, {
+    method: 'DELETE',
+    auth: true,
   });
 }
 
 export async function sendAdminChatMessage(sessionId, text) {
   return apiRequest(`/admin/chat/sessions/${encodeURIComponent(sessionId)}/messages`, {
-    method: 'POST', auth: true, body: { text },
+    method: 'POST',
+    auth: true,
+    body: { text },
   });
 }
 
 export async function updateAdminChatSession(sessionId, status) {
   return apiRequest(`/admin/chat/sessions/${encodeURIComponent(sessionId)}`, {
-    method: 'PUT', auth: true, body: { status },
+    method: 'PUT',
+    auth: true,
+    body: { status },
   });
 }

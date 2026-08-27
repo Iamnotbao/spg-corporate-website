@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { listAdminUsers } from '../../../services/adminService.js';
 import { useDebouncedValue } from '../hooks/useDebouncedValue.js';
+import { PAGE_SIZE_OPTIONS } from '../constants.js';
 import { AdminAlert, AdminEmpty, AdminSkeletonRows } from './AdminFeedback.jsx';
 import AdminIcon from './AdminIcon.jsx';
 import AdminPageHeader from './AdminPageHeader.jsx';
@@ -83,7 +84,7 @@ export default function StudentsPanel({ onUnauthorized }) {
             }
             value={pagination.pageSize}
           >
-            {[10, 20, 50].map((size) => (
+            {PAGE_SIZE_OPTIONS.map((size) => (
               <option key={size} value={size}>{size}/trang</option>
             ))}
           </select>

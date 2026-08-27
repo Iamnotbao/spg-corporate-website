@@ -7,6 +7,12 @@ import {
   validateQuiz,
   validateSubmission,
 } from "./quiz.validation.js";
+import {
+  paginationResult,
+  parsePagination,
+  parseSearch,
+  searchFilter,
+} from "../../utils/pagination.js";
 
 export class QuizServiceError extends Error {
   constructor(status, message) {
@@ -283,19 +289,27 @@ export function createQuizService(
   }
 
   return {
-    async listAdmin() {
-      const quizzes = await repository.listQuizzes();
-      const questions = quizzes.length
-        ? await repository.listQuestions({
-            quizId: { $in: quizzes.map((quiz) => quiz._id) },
-          })
-        : [];
-      return quizzes.map((quiz) => ({
-        ...serializeQuiz(quiz),
-        questionCount: questions.filter(
-          (question) => String(question.quizId) === String(quiz._id),
-        ).length,
-      }));
+    async listAdmin(filters = {}) {
+      const query = {};
+      const paging = parsePagination(filters, { defaultPageSize: 10, maxPageSize: 100 });
+      const search = parseSearch(filters.search);
+      const status = String(filters.status || "").trim();
+      if (status && !["draft", "published"].includes(status)) {
+        throw new QuizValidationError("status must be one of: draft, published");
+      }
+      if (search) Object.assign(query, searchFilter(search, ["title", "description"]));
+      if (status) query.status = status;
+      const [quizzes, total] = await Promise.all([
+        repository.listQuizzesPage(query, { skip: paging.skip, limit: paging.pageSize }),
+        repository.countQuizzes(query),
+      ]);
+      return {
+        data: quizzes.map((quiz) => ({
+          ...serializeQuiz(quiz),
+          questionCount: quiz.questionCount || 0,
+        })),
+        pagination: paginationResult(paging, total),
+      };
     },
 
     async getAdmin(id) {
@@ -556,11 +570,21 @@ export function createQuizService(
       return { attempt: serializeAttempt(attempt), courseState };
     },
 
-    async listOwnAttempts(user, quizId) {
+    async listOwnAttempts(user, quizId, filters = {}) {
       const userId = requireStudent(user);
       requireId(repository, quizId, "quizId");
-      const attempts = await repository.listAttempts(userId, quizId);
-      return attempts.map(serializeAttempt);
+      const paging = parsePagination(filters, { defaultPageSize: 20, maxPageSize: 100 });
+      const [attempts, total] = await Promise.all([
+        repository.listAttemptsPage(userId, quizId, {
+          skip: paging.skip,
+          limit: paging.pageSize,
+        }),
+        repository.countOwnAttempts(userId, quizId),
+      ]);
+      return {
+        data: attempts.map(serializeAttempt),
+        pagination: paginationResult(paging, total),
+      };
     },
   };
 }

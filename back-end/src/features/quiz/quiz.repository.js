@@ -21,7 +21,7 @@ export async function ensureQuizIndexes() {
       getCollection(QUIZ_COLLECTIONS.quizzes).then((collection) =>
         Promise.all([
           collection.createIndex({ lessonId: 1 }, { unique: true }),
-          collection.createIndex({ status: 1, updatedAt: -1 }),
+          collection.createIndex({ status: 1, updatedAt: -1, _id: -1 }),
         ]),
       ),
       getCollection(QUIZ_COLLECTIONS.questions).then((collection) =>
@@ -64,8 +64,38 @@ export const quizRepository = {
   async listQuizzes(filter = {}) {
     return (await collection(QUIZ_COLLECTIONS.quizzes))
       .find(filter)
-      .sort({ updatedAt: -1, title: 1 })
+      .sort({ updatedAt: -1, title: 1, _id: -1 })
       .toArray();
+  },
+  async listQuizzesPage(filter = {}, { skip = 0, limit = 10 } = {}) {
+    return (await collection(QUIZ_COLLECTIONS.quizzes))
+      .aggregate([
+        { $match: filter },
+        { $sort: { updatedAt: -1, title: 1, _id: -1 } },
+        { $skip: skip },
+        { $limit: limit },
+        {
+          $lookup: {
+            from: QUIZ_COLLECTIONS.questions,
+            localField: "_id",
+            foreignField: "quizId",
+            pipeline: [{ $count: "total" }],
+            as: "questionMetadata",
+          },
+        },
+        {
+          $set: {
+            questionCount: {
+              $ifNull: [{ $arrayElemAt: ["$questionMetadata.total", 0] }, 0],
+            },
+          },
+        },
+        { $unset: "questionMetadata" },
+      ])
+      .toArray();
+  },
+  async countQuizzes(filter = {}) {
+    return (await collection(QUIZ_COLLECTIONS.quizzes)).countDocuments(filter);
   },
   async findQuiz(id, filter = {}) {
     return (await collection(QUIZ_COLLECTIONS.quizzes)).findOne({
@@ -143,6 +173,20 @@ export const quizRepository = {
       .find({ userId: toObjectId(userId), quizId: toObjectId(quizId) })
       .sort({ submittedAt: -1 })
       .toArray();
+  },
+  async listAttemptsPage(userId, quizId, { skip = 0, limit = 20 } = {}) {
+    return (await collection(QUIZ_COLLECTIONS.attempts))
+      .find({ userId: toObjectId(userId), quizId: toObjectId(quizId) })
+      .sort({ submittedAt: -1, _id: -1 })
+      .skip(skip)
+      .limit(limit)
+      .toArray();
+  },
+  async countOwnAttempts(userId, quizId) {
+    return (await collection(QUIZ_COLLECTIONS.attempts)).countDocuments({
+      userId: toObjectId(userId),
+      quizId: toObjectId(quizId),
+    });
   },
   async findLesson(identifier, filter = {}) {
     return (await collection(LEARNING_COLLECTIONS.lessons)).findOne({

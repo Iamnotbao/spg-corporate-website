@@ -1,7 +1,7 @@
 import { quizService } from "./quiz.service.js";
 
-export async function listAdmin(_req, res) {
-  return res.json({ data: await quizService.listAdmin() });
+export async function listAdmin(req, res) {
+  return res.json(await quizService.listAdmin(req.query));
 }
 
 export async function getAdmin(req, res) {
@@ -53,7 +53,7 @@ export async function submit(req, res) {
 }
 
 export async function listOwnAttempts(req, res) {
-  return res.json({
-    data: await quizService.listOwnAttempts(req.user, req.params.quizId),
-  });
+  return res.json(
+    await quizService.listOwnAttempts(req.user, req.params.quizId, req.query),
+  );
 }

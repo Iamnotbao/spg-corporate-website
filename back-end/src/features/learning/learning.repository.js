@@ -10,16 +10,16 @@ export async function ensureLearningIndexes() {
       getCollection(LEARNING_COLLECTIONS.courses).then((collection) =>
         Promise.all([
           collection.createIndex({ slug: 1 }, { unique: true }),
-          collection.createIndex({ status: 1, order: 1 }),
+          collection.createIndex({ status: 1, order: 1, _id: 1 }),
         ]),
       ),
       getCollection(LEARNING_COLLECTIONS.units).then((collection) =>
-        collection.createIndex({ courseId: 1, order: 1 }),
+        collection.createIndex({ courseId: 1, order: 1, _id: 1 }),
       ),
       getCollection(LEARNING_COLLECTIONS.lessons).then((collection) =>
         Promise.all([
           collection.createIndex({ slug: 1 }, { unique: true }),
-          collection.createIndex({ unitId: 1, status: 1, order: 1 }),
+          collection.createIndex({ unitId: 1, status: 1, order: 1, _id: 1 }),
         ]),
       ),
     ]).catch((error) => {
@@ -51,8 +51,19 @@ export const learningRepository = {
   async listCourses(filter = {}) {
     return (await collection(LEARNING_COLLECTIONS.courses))
       .find(filter)
-      .sort({ order: 1, title: 1 })
+      .sort({ order: 1, title: 1, _id: 1 })
       .toArray();
+  },
+  async listCoursesPage(filter = {}, { skip = 0, limit = 10 } = {}) {
+    return (await collection(LEARNING_COLLECTIONS.courses))
+      .find(filter)
+      .sort({ order: 1, title: 1, _id: 1 })
+      .skip(skip)
+      .limit(limit)
+      .toArray();
+  },
+  async countCourses(filter = {}) {
+    return (await collection(LEARNING_COLLECTIONS.courses)).countDocuments(filter);
   },
   async findCourse(identifier, filter = {}) {
     return (await collection(LEARNING_COLLECTIONS.courses)).findOne({
@@ -81,7 +92,15 @@ export const learningRepository = {
   async listUnits(filter = {}) {
     return (await collection(LEARNING_COLLECTIONS.units))
       .find(filter)
-      .sort({ order: 1, title: 1 })
+      .sort({ order: 1, title: 1, _id: 1 })
+      .toArray();
+  },
+  async listUnitsPage(filter = {}, { skip = 0, limit = 10 } = {}) {
+    return (await collection(LEARNING_COLLECTIONS.units))
+      .find(filter)
+      .sort({ order: 1, title: 1, _id: 1 })
+      .skip(skip)
+      .limit(limit)
       .toArray();
   },
   async findUnit(id) {
@@ -113,13 +132,13 @@ export const learningRepository = {
   async listLessons(filter = {}) {
     return (await collection(LEARNING_COLLECTIONS.lessons))
       .find(filter)
-      .sort({ order: 1, title: 1 })
+      .sort({ order: 1, title: 1, _id: 1 })
       .toArray();
   },
   async listLessonsPage(filter = {}, { skip = 0, limit = 10 } = {}) {
     return (await collection(LEARNING_COLLECTIONS.lessons))
       .find(filter)
-      .sort({ order: 1, title: 1 })
+      .sort({ order: 1, title: 1, _id: 1 })
       .skip(skip)
       .limit(limit)
       .toArray();

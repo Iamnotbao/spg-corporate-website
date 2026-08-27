@@ -150,6 +150,20 @@ function fakeRepository(overrides = {}) {
         )
         .sort((a, b) => b.createdAt - a.createdAt);
     },
+    async getOwnAttemptSummary(userId, characterId) {
+      const owned = attempts
+        .filter(
+          (item) =>
+            String(item.userId) === String(userId) &&
+            String(item.characterId) === String(characterId),
+        )
+        .sort((a, b) => b.createdAt - a.createdAt);
+      return {
+        count: owned.length,
+        latest: owned[0] || null,
+        best: [...owned].sort((a, b) => b.score - a.score)[0] || null,
+      };
+    },
     async findOwnAttempt(userId, attemptId) {
       return (
         attempts.find(

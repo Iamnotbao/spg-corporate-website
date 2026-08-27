@@ -1,23 +1,15 @@
 import { learningRepository } from "./learning.repository.js";
 import { learningService } from "./learning.service.js";
+import { LESSON_TYPES } from "./learning.constants.js";
+import {
+  paginationResult,
+  parsePagination,
+  parseSearch,
+  searchFilter,
+} from "../../utils/pagination.js";
 
-function escapeRegex(value) {
-  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function serializeLessonOption(document) {
-  return {
-    id: String(document._id),
-    unitId: String(document.unitId),
-    title: document.title,
-    slug: document.slug,
-    type: document.type,
-    status: document.status,
-  };
-}
-
-export async function listPublishedCourses(_req, res) {
-  return res.json({ data: await learningService.listPublishedCourses() });
+export async function listPublishedCourses(req, res) {
+  return res.json(await learningService.listPublishedCourses(req.query));
 }
 
 export async function getPublishedCourse(req, res) {
@@ -32,8 +24,8 @@ export async function getPublishedLesson(req, res) {
   });
 }
 
-export async function listCourses(_req, res) {
-  return res.json({ data: await learningService.listCourses() });
+export async function listCourses(req, res) {
+  return res.json(await learningService.listCourses(req.query));
 }
 
 export async function getCourse(req, res) {
@@ -58,7 +50,7 @@ export async function deleteCourse(req, res) {
 }
 
 export async function listUnits(req, res) {
-  return res.json({ data: await learningService.listUnits(req.query) });
+  return res.json(await learningService.listUnits(req.query));
 }
 
 export async function getUnit(req, res) {
@@ -83,38 +75,69 @@ export async function deleteUnit(req, res) {
 }
 
 export async function listLessons(req, res) {
-  return res.json({ data: await learningService.listLessons(req.query) });
+  return res.json(await learningService.listLessons(req.query));
+}
+
+async function listOptions(req, res, { kind, parentField, fields }) {
+  const paging = parsePagination(req.query, { defaultPageSize: 20, maxPageSize: 100 });
+  const search = parseSearch(req.query.search);
+  const query = {};
+
+  if (parentField && req.query[parentField]) {
+    const parentId = learningRepository.toObjectId(req.query[parentField]);
+    if (!parentId) return res.status(400).json({ error: `${parentField} must be a valid id` });
+    query[parentField] = parentId;
+  }
+  if (kind === "lessons" && req.query.type) {
+    const type = String(req.query.type).trim();
+    if (!LESSON_TYPES.includes(type)) {
+      return res.status(400).json({ error: `type must be one of: ${LESSON_TYPES.join(", ")}` });
+    }
+    query.type = type;
+  }
+  if (search) Object.assign(query, searchFilter(search, fields));
+
+  const methods = {
+    courses: [learningRepository.listCoursesPage, learningRepository.countCourses],
+    units: [learningRepository.listUnitsPage, learningRepository.countUnits],
+    lessons: [learningRepository.listLessonsPage, learningRepository.countLessons],
+  };
+  const [list, count] = methods[kind];
+  const [items, total] = await Promise.all([
+    list(query, { skip: paging.skip, limit: paging.pageSize }),
+    count(query),
+  ]);
+  return res.json({
+    data: items.map((document) => ({
+      id: String(document._id),
+      title: document.title,
+      ...(document.courseId ? { courseId: String(document.courseId) } : {}),
+      ...(document.unitId ? { unitId: String(document.unitId) } : {}),
+      ...(document.slug ? { slug: document.slug } : {}),
+      ...(document.type ? { type: document.type } : {}),
+      ...(document.status ? { status: document.status } : {}),
+    })),
+    pagination: paginationResult(paging, total),
+  });
+}
+
+export async function listCourseOptions(req, res) {
+  return listOptions(req, res, { kind: "courses", fields: ["title", "slug", "level"] });
+}
+
+export async function listUnitOptions(req, res) {
+  return listOptions(req, res, {
+    kind: "units",
+    parentField: "courseId",
+    fields: ["title", "description"],
+  });
 }
 
 export async function listLessonOptions(req, res) {
-  const requestedPage = Math.max(1, Number(req.query.page) || 1);
-  const pageSize = Math.min(20, Math.max(1, Number(req.query.pageSize) || 8));
-  const search = String(req.query.search || "").trim();
-  const query = {};
-
-  if (req.query.unitId) {
-    const unitId = learningRepository.toObjectId(req.query.unitId);
-    if (!unitId) return res.status(400).json({ error: "unitId must be a valid id" });
-    query.unitId = unitId;
-  }
-  if (search) {
-    const safe = escapeRegex(search);
-    query.$or = ["title", "slug", "type", "status"].map((field) => ({
-      [field]: { $regex: safe, $options: "i" },
-    }));
-  }
-
-  const total = await learningRepository.countLessons(query);
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  const page = Math.min(requestedPage, totalPages);
-  const items = await learningRepository.listLessonsPage(query, {
-    skip: (page - 1) * pageSize,
-    limit: pageSize,
-  });
-
-  return res.json({
-    data: items.map(serializeLessonOption),
-    pagination: { page, pageSize, total, totalPages },
+  return listOptions(req, res, {
+    kind: "lessons",
+    parentField: "unitId",
+    fields: ["title", "slug", "type", "status"],
   });
 }
 

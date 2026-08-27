@@ -1,6 +1,17 @@
 import { learningRepository } from "./learning.repository.js";
 import { learningIntegrityRepository } from "./learning-integrity.repository.js";
 import {
+  paginationResult,
+  parsePagination,
+  parseSearch,
+  searchFilter,
+} from "../../utils/pagination.js";
+import {
+  COURSE_STATUSES,
+  LESSON_STATUSES,
+  LESSON_TYPES,
+} from "./learning.constants.js";
+import {
   LearningValidationError,
   validateCourse,
   validateLesson,
@@ -126,11 +137,43 @@ export function createLearningService(
     return Object.values(dependencies).some(Boolean);
   }
 
-  return {
-    async listPublishedCourses() {
-      return (await repository.listCourses({ status: "published" })).map(
-        serializeCourse,
+  function enumFilter(value, allowed, field) {
+    const normalized = String(value || "").trim();
+    if (!normalized) return "";
+    if (!allowed.includes(normalized)) {
+      throw new LearningValidationError(
+        `${field} must be one of: ${allowed.join(", ")}`,
       );
+    }
+    return normalized;
+  }
+
+  async function listPage({ input, query, list, count, serializer, defaultPageSize = 10 }) {
+    const paging = parsePagination(input, { defaultPageSize, maxPageSize: 100 });
+    const [items, total] = await Promise.all([
+      list(query, { skip: paging.skip, limit: paging.pageSize }),
+      count(query),
+    ]);
+    return {
+      data: items.map(serializer),
+      pagination: paginationResult(paging, total),
+    };
+  }
+
+  return {
+    async listPublishedCourses(filters = {}) {
+      const query = { status: "published" };
+      const search = parseSearch(filters.search);
+      if (search) Object.assign(query, searchFilter(search, ["title", "slug", "description", "level"]));
+      if (filters.level) query.level = parseSearch(filters.level, 80);
+      return listPage({
+        input: filters,
+        query,
+        list: repository.listCoursesPage,
+        count: repository.countCourses,
+        serializer: serializeCourse,
+        defaultPageSize: 9,
+      });
     },
 
     async getPublishedCourse(identifier) {
@@ -183,8 +226,19 @@ export function createLearningService(
       };
     },
 
-    async listCourses() {
-      return (await repository.listCourses()).map(serializeCourse);
+    async listCourses(filters = {}) {
+      const query = {};
+      const search = parseSearch(filters.search);
+      const status = enumFilter(filters.status, COURSE_STATUSES, "status");
+      if (search) Object.assign(query, searchFilter(search, ["title", "slug", "description", "level"]));
+      if (status) query.status = status;
+      return listPage({
+        input: filters,
+        query,
+        list: repository.listCoursesPage,
+        count: repository.countCourses,
+        serializer: serializeCourse,
+      });
     },
 
     async getCourse(id) {
@@ -262,7 +316,15 @@ export function createLearningService(
       const query = {};
       if (filters.courseId)
         query.courseId = requireId(repository, filters.courseId, "courseId");
-      return (await repository.listUnits(query)).map(serializeUnit);
+      const search = parseSearch(filters.search);
+      if (search) Object.assign(query, searchFilter(search, ["title", "description"]));
+      return listPage({
+        input: filters,
+        query,
+        list: repository.listUnitsPage,
+        count: repository.countUnits,
+        serializer: serializeUnit,
+      });
     },
 
     async getUnit(id) {
@@ -327,7 +389,19 @@ export function createLearningService(
       const query = {};
       if (filters.unitId)
         query.unitId = requireId(repository, filters.unitId, "unitId");
-      return (await repository.listLessons(query)).map(serializeLesson);
+      const search = parseSearch(filters.search);
+      const type = enumFilter(filters.type, LESSON_TYPES, "type");
+      const status = enumFilter(filters.status, LESSON_STATUSES, "status");
+      if (search) Object.assign(query, searchFilter(search, ["title", "slug", "description", "content", "type"]));
+      if (type) query.type = type;
+      if (status) query.status = status;
+      return listPage({
+        input: filters,
+        query,
+        list: repository.listLessonsPage,
+        count: repository.countLessons,
+        serializer: serializeLesson,
+      });
     },
 
     async getLesson(id) {

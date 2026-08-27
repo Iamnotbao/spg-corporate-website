@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   EmptyState,
@@ -8,7 +8,6 @@ import {
 import PageHeader from '../../../components/ui/PageHeader.jsx';
 import PublicPagination from '../../../components/ui/PublicPagination.jsx';
 import { usePageTitle } from '../../../hooks/usePageTitle.js';
-import { usePublicCollection } from '../../public/hooks/usePublicContent.js';
 import CourseCard from '../components/CourseCard.jsx';
 import { listPublicCourses } from '../services/courseCatalogService.js';
 import '../styles/courses.css';
@@ -20,31 +19,73 @@ export default function CoursesPage() {
   usePageTitle('Khóa học');
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState(searchParams.get('q') || '');
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
   const [page, setPage] = useState(1);
   const level = searchParams.get('level') || ALL_LEVELS;
-  const loadCourses = useCallback(() => listPublicCourses(), []);
-  const courses = usePublicCollection(loadCourses);
+  const [courses, setCourses] = useState({
+    data: [],
+    pagination: { page: 1, pageSize: PAGE_SIZE, total: 0, totalPages: 1 },
+    error: '',
+    status: 'loading',
+  });
 
-  const visibleCourses = useMemo(() => {
-    const query = search.trim().toLocaleLowerCase('vi');
-    return courses.data.filter((course) => {
-      const matchesLevel = level === ALL_LEVELS || course.level === level;
-      const matchesSearch =
-        !query ||
-        `${course.title} ${course.description}`.toLocaleLowerCase('vi').includes(query);
-      return matchesLevel && matchesSearch;
-    });
-  }, [courses.data, level, search]);
-  const pagedCourses = useMemo(
-    () => visibleCourses.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
-    [page, visibleCourses],
-  );
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedSearch(search.trim());
+      setPage(1);
+    }, 350);
+    return () => window.clearTimeout(timer);
+  }, [search]);
+
+  const loadCourses = useCallback(() => {
+    let active = true;
+    setCourses((current) => ({ ...current, error: '', status: 'loading' }));
+    listPublicCourses({
+      page,
+      pageSize: PAGE_SIZE,
+      search: debouncedSearch,
+      level: level === ALL_LEVELS ? '' : level,
+    })
+      .then((payload) => {
+        if (!active) return;
+        setCourses({
+          data: payload?.data || [],
+          pagination: payload?.pagination || {
+            page,
+            pageSize: PAGE_SIZE,
+            total: 0,
+            totalPages: 1,
+          },
+          error: '',
+          status: 'ready',
+        });
+      })
+      .catch((error) => {
+        if (active) {
+          setCourses((current) => ({
+            ...current,
+            error: error.message,
+            status: 'error',
+          }));
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [debouncedSearch, level, page]);
+
+  useEffect(() => loadCourses(), [loadCourses]);
   const levels = useMemo(
     () => [
       ALL_LEVELS,
-      ...new Set(courses.data.map((course) => course.level).filter(Boolean)),
+      ...new Set(
+        [
+          level === ALL_LEVELS ? '' : level,
+          ...courses.data.map((course) => course.level),
+        ].filter(Boolean),
+      ),
     ],
-    [courses.data],
+    [courses.data, level],
   );
 
   function updateSearch(value) {
@@ -97,12 +138,12 @@ export default function CoursesPage() {
 
           {courses.status === 'loading' && <LoadingState label="Đang tải khóa học" />}
           {courses.status === 'error' && (
-            <ErrorState message={courses.error} onRetry={courses.retry} />
+            <ErrorState message={courses.error} onRetry={loadCourses} />
           )}
-          {courses.status === 'ready' && visibleCourses.length === 0 && (
+          {courses.status === 'ready' && courses.data.length === 0 && (
             <EmptyState
               description={
-                courses.data.length
+                debouncedSearch || level !== ALL_LEVELS
                   ? 'Hãy thử từ khóa khác hoặc chọn một cấp độ khác.'
                   : 'Các khóa học đã xuất bản sẽ xuất hiện tại đây.'
               }
@@ -110,10 +151,10 @@ export default function CoursesPage() {
               title="Chưa có khóa học phù hợp"
             />
           )}
-          {courses.status === 'ready' && visibleCourses.length > 0 && (
+          {courses.status === 'ready' && courses.data.length > 0 && (
             <>
               <div className="course-grid">
-                {pagedCourses.map((course) => (
+                {courses.data.map((course) => (
                   <CourseCard course={course} key={course.slug} />
                 ))}
               </div>
@@ -121,7 +162,7 @@ export default function CoursesPage() {
                 onPageChange={setPage}
                 page={page}
                 pageSize={PAGE_SIZE}
-                total={visibleCourses.length}
+                total={courses.pagination.total}
               />
             </>
           )}

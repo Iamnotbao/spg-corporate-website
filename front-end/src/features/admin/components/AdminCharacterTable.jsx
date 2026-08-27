@@ -10,10 +10,12 @@ export default function AdminCharacterTable({
   filters,
   hskLevels,
   lessonNames,
+  pageSizeOptions,
   searchDraft,
   selectedIds,
   setConfirmDelete,
   setPage,
+  setPageSize,
   setSearchDraft,
   setSelectedIds,
   state,
@@ -22,6 +24,13 @@ export default function AdminCharacterTable({
   toggleSelected,
   updateFilter,
 }) {
+  const selectedDraftCount = state.items.filter(
+    (item) => selectedIds.has(item.id) && item.status !== 'published',
+  ).length;
+  const selectedPublishedCount = state.items.filter(
+    (item) => selectedIds.has(item.id) && item.status === 'published',
+  ).length;
+
   return (
     <section className="admin-panel admin-learning-list">
       <form className="admin-learning-toolbar" onSubmit={submitSearch}>
@@ -57,6 +66,17 @@ export default function AdminCharacterTable({
         <button className="admin-button admin-button--secondary" type="submit">
           Tìm
         </button>
+        <select
+          aria-label="Số Hán tự mỗi trang"
+          onChange={(event) => setPageSize(Number(event.target.value))}
+          value={state.pagination?.pageSize || pageSizeOptions[1]}
+        >
+          {pageSizeOptions.map((size) => (
+            <option key={size} value={size}>
+              {size}/trang
+            </option>
+          ))}
+        </select>
       </form>
 
       {selectedIds.size > 0 && (
@@ -68,19 +88,19 @@ export default function AdminCharacterTable({
           <div>
             <button
               className="admin-button admin-button--primary"
-              disabled={bulkBusy}
+              disabled={!selectedDraftCount || bulkBusy}
               onClick={() => changeSelectedStatus('published')}
               type="button"
             >
-              Xuất bản
+              Xuất bản đã chọn ({selectedDraftCount})
             </button>
             <button
               className="admin-button admin-button--secondary"
-              disabled={bulkBusy}
+              disabled={!selectedPublishedCount || bulkBusy}
               onClick={() => changeSelectedStatus('draft')}
               type="button"
             >
-              Ẩn
+              Gỡ xuất bản đã chọn ({selectedPublishedCount})
             </button>
             <button
               className="admin-button admin-button--danger"

@@ -121,14 +121,31 @@ export const characterRepository = {
       userId: toObjectId(userId),
     });
   },
-  async listOwnAttempts(userId, characterId) {
-    return (await collection(CHARACTER_COLLECTIONS.attempts))
-      .find({
-        userId: toObjectId(userId),
-        characterId: toObjectId(characterId),
-      })
-      .sort({ createdAt: -1 })
+  async getOwnAttemptSummary(userId, characterId) {
+    const [result = { count: [], latest: [], best: [] }] = await (
+      await collection(CHARACTER_COLLECTIONS.attempts)
+    )
+      .aggregate([
+        {
+          $match: {
+            userId: toObjectId(userId),
+            characterId: toObjectId(characterId),
+          },
+        },
+        {
+          $facet: {
+            count: [{ $count: "total" }],
+            latest: [{ $sort: { createdAt: -1, _id: -1 } }, { $limit: 1 }],
+            best: [{ $sort: { score: -1, createdAt: -1, _id: -1 } }, { $limit: 1 }],
+          },
+        },
+      ])
       .toArray();
+    return {
+      count: result.count[0]?.total || 0,
+      latest: result.latest[0] || null,
+      best: result.best[0] || null,
+    };
   },
   toObjectId,
 };

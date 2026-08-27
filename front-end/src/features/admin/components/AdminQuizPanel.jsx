@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { listAdminLearning } from '../../../services/adminService.js';
+import { listAdminLessonOptions } from '../../../services/adminService.js';
+import { useDebouncedValue } from '../hooks/useDebouncedValue.js';
+import { PAGE_SIZE_OPTIONS } from '../constants.js';
 import {
   createAdminQuestion,
   createAdminQuiz,
@@ -34,6 +36,7 @@ const EMPTY_QUIZ = {
 export default function AdminQuizPanel({ onNotify, onUnauthorized }) {
   const [quizzes, setQuizzes] = useState([]);
   const [allLessons, setAllLessons] = useState([]);
+  const [lessonError, setLessonError] = useState('');
   const [selected, setSelected] = useState(null);
   const [quizForm, setQuizForm] = useState(null);
   const [questionForm, setQuestionForm] = useState(null);
@@ -41,33 +44,89 @@ export default function AdminQuizPanel({ onNotify, onUnauthorized }) {
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebouncedValue(search, 350);
   const [statusFilter, setStatusFilter] = useState('');
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(PAGE_SIZE);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    pageSize: PAGE_SIZE,
+    total: 0,
+    totalPages: 1,
+  });
   const [selectedIds, setSelectedIds] = useState(() => new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
 
-  const load = useCallback(async () => {
-    setStatus('loading');
-    setError('');
-    try {
-      const [quizResponse, lessonResponse] = await Promise.all([
-        listAdminQuizzes(),
-        listAdminLearning('lessons'),
-      ]);
-      setQuizzes(quizResponse.data || []);
-      setAllLessons(lessonResponse.data || []);
-      setStatus('ready');
-    } catch (caught) {
-      if (caught.status === 401) onUnauthorized();
-      setError(caught.message);
-      setStatus('error');
-    }
-  }, [onUnauthorized]);
+  const load = useCallback(
+    async (signal) => {
+      setStatus('loading');
+      setError('');
+      try {
+        const quizResponse = await listAdminQuizzes({
+          page,
+          pageSize,
+          search: debouncedSearch,
+          status: statusFilter,
+          signal,
+        });
+        if (signal?.aborted) return;
+        setQuizzes(quizResponse.data || []);
+        setPagination(
+          quizResponse.pagination || {
+            page,
+            pageSize,
+            total: 0,
+            totalPages: 1,
+          },
+        );
+        setStatus('ready');
+      } catch (caught) {
+        if (caught?.name === 'AbortError') return;
+        if (caught.status === 401) {
+          onUnauthorized(caught);
+          return;
+        }
+        setError(caught.message);
+        setStatus('error');
+      }
+    },
+    [debouncedSearch, onUnauthorized, page, pageSize, statusFilter],
+  );
 
   useEffect(() => {
-    load();
+    const controller = new AbortController();
+    load(controller.signal);
+    return () => controller.abort();
   }, [load]);
+
+  const loadLessonOptions = useCallback(
+    async (signal) => {
+      setLessonError('');
+      try {
+        const response = await listAdminLessonOptions({
+          pageSize: 100,
+          type: 'quiz',
+          signal,
+        });
+        if (!signal?.aborted) setAllLessons(response.data || []);
+      } catch (caught) {
+        if (caught?.name === 'AbortError') return;
+        if (caught?.status === 401) {
+          onUnauthorized(caught);
+          return;
+        }
+        setLessonError(caught?.message || 'Không thể tải danh sách bài học Quiz.');
+      }
+    },
+    [onUnauthorized],
+  );
+
+  useEffect(() => {
+    const controller = new AbortController();
+    loadLessonOptions(controller.signal);
+    return () => controller.abort();
+  }, [loadLessonOptions]);
 
   const lessons = useMemo(
     () => allLessons.filter((lesson) => lesson.type === 'quiz'),
@@ -77,27 +136,16 @@ export default function AdminQuizPanel({ onNotify, onUnauthorized }) {
     () => new Map(allLessons.map((lesson) => [lesson.id, lesson.title])),
     [allLessons],
   );
-  const visible = useMemo(() => {
-    const normalized = search.trim().toLocaleLowerCase('vi');
-    return quizzes.filter((quiz) => {
-      const lessonTitle = lessonNames.get(quiz.lessonId) || '';
-      const haystack =
-        `${quiz.title || ''} ${quiz.description || ''} ${lessonTitle} ${quiz.passingScore ?? ''} ${quiz.status || ''}`.toLocaleLowerCase(
-          'vi',
-        );
-      const matchesSearch = !normalized || haystack.includes(normalized);
-      const matchesStatus = !statusFilter || quiz.status === statusFilter;
-      return matchesSearch && matchesStatus;
-    });
-  }, [quizzes, search, statusFilter, lessonNames]);
-  const totalPages = Math.max(1, Math.ceil(visible.length / PAGE_SIZE));
-  const safePage = Math.min(page, totalPages);
-  const pagedQuizzes = visible.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const visible = { length: pagination.total };
+  const totalPages = pagination.totalPages;
+  const safePage = pagination.page;
+  const pagedQuizzes = quizzes;
   const selectedQuizzes = useMemo(
     () => quizzes.filter((quiz) => selectedIds.has(quiz.id)),
     [quizzes, selectedIds],
   );
   const selectedDrafts = selectedQuizzes.filter((quiz) => quiz.status !== 'published');
+  const selectedPublished = selectedQuizzes.filter((quiz) => quiz.status === 'published');
   const allPageSelected =
     pagedQuizzes.length > 0 && pagedQuizzes.every((quiz) => selectedIds.has(quiz.id));
 
@@ -191,6 +239,34 @@ export default function AdminQuizPanel({ onNotify, onUnauthorized }) {
     if (failures.length) {
       onNotify(
         `${failures.length} Quiz chưa thể xuất bản. ${failures[0].quiz.title}: ${failures[0].message}`,
+        'error',
+      );
+    }
+  }
+
+  async function unpublishSelected() {
+    if (!selectedPublished.length || bulkBusy) return;
+    setBulkBusy(true);
+    const failures = [];
+    let success = 0;
+    for (const quiz of selectedPublished) {
+      try {
+        await updateAdminQuiz(quiz.id, { status: 'draft' });
+        success += 1;
+      } catch (caught) {
+        if (caught.status === 401 && onUnauthorized(caught)) {
+          setBulkBusy(false);
+          return;
+        }
+        failures.push({ quiz, message: caught.message });
+      }
+    }
+    await load();
+    setBulkBusy(false);
+    if (success) onNotify(`Đã gỡ xuất bản ${success} Quiz.`);
+    if (failures.length) {
+      onNotify(
+        `${failures.length} Quiz chưa thể gỡ xuất bản. ${failures[0].quiz.title}: ${failures[0].message}`,
         'error',
       );
     }
@@ -297,7 +373,12 @@ export default function AdminQuizPanel({ onNotify, onUnauthorized }) {
         </AdminAlert>
       )}
       {error && (
-        <AdminAlert onRetry={status === 'error' ? load : undefined}>{error}</AdminAlert>
+        <AdminAlert onRetry={status === 'error' ? () => load() : undefined}>
+          {error}
+        </AdminAlert>
+      )}
+      {lessonError && (
+        <AdminAlert onRetry={() => loadLessonOptions()}>{lessonError}</AdminAlert>
       )}
       {quizForm && (
         <AdminQuizForm
@@ -403,6 +484,20 @@ export default function AdminQuizPanel({ onNotify, onUnauthorized }) {
             <option value="draft">Bản nháp</option>
             <option value="published">Đã xuất bản</option>
           </select>
+          <select
+            aria-label="Số Quiz mỗi trang"
+            onChange={(event) => {
+              setPageSize(Number(event.target.value));
+              setPage(1);
+            }}
+            value={pageSize}
+          >
+            {PAGE_SIZE_OPTIONS.map((size) => (
+              <option key={size} value={size}>
+                {size}/trang
+              </option>
+            ))}
+          </select>
         </div>
         {selectedQuizzes.length > 0 && (
           <div className="admin-learning-selection-bar">
@@ -418,6 +513,16 @@ export default function AdminQuizPanel({ onNotify, onUnauthorized }) {
                 type="button"
               >
                 {bulkBusy ? 'Đang xử lý…' : `Xuất bản đã chọn (${selectedDrafts.length})`}
+              </button>
+              <button
+                className="admin-button admin-button--secondary"
+                disabled={!selectedPublished.length || bulkBusy}
+                onClick={unpublishSelected}
+                type="button"
+              >
+                {bulkBusy
+                  ? 'Đang xử lý…'
+                  : `Gỡ xuất bản đã chọn (${selectedPublished.length})`}
               </button>
               <button
                 className="admin-button admin-button--danger"
@@ -516,7 +621,7 @@ export default function AdminQuizPanel({ onNotify, onUnauthorized }) {
               onPageChange={setPage}
               pagination={{
                 page: safePage,
-                pageSize: PAGE_SIZE,
+                pageSize,
                 total: visible.length,
                 totalPages,
               }}

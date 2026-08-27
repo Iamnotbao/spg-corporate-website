@@ -99,6 +99,16 @@ router.delete(
 );
 
 router.get(
+  "/course-options",
+  requireAdmin,
+  asyncHandler(learningController.listCourseOptions),
+);
+router.get(
+  "/unit-options",
+  requireAdmin,
+  asyncHandler(learningController.listUnitOptions),
+);
+router.get(
   "/lesson-options",
   requireAdmin,
   asyncHandler(learningController.listLessonOptions),
@@ -302,12 +312,24 @@ router.delete(
   asyncHandler(languageController.deleteLanguage),
 );
 
-router.get("/chat", requireAdmin, asyncHandler(chatController.listAdminChats));
-router.get("/chat/config", requireAdmin, asyncHandler(chatController.getChatConfig));
-router.put("/chat/config", requireAdmin, asyncHandler(chatController.updateChatConfig));
-router.get("/chat/:id", requireAdmin, asyncHandler(chatController.getAdminChat));
-router.post("/chat/:id/reply", requireAdmin, asyncHandler(chatController.adminReply));
-router.put("/chat/:id/status", requireAdmin, asyncHandler(chatController.updateChatStatus));
+router.get("/chat", requireAdmin, asyncHandler(chatController.listAdminChatSessions));
+router.get("/chat/config", requireAdmin, asyncHandler(chatController.getAdminChatSettings));
+router.put("/chat/config", requireAdmin, asyncHandler(chatController.updateAdminChatSettings));
+router.get(
+  "/chat/:sessionId",
+  requireAdmin,
+  asyncHandler(chatController.getAdminChatMessages),
+);
+router.post(
+  "/chat/:sessionId/reply",
+  requireAdmin,
+  asyncHandler(chatController.createAdminChatMessage),
+);
+router.put(
+  "/chat/:sessionId/status",
+  requireAdmin,
+  asyncHandler(chatController.updateAdminChatSession),
+);
 
 router.get(
   "/site-profile",

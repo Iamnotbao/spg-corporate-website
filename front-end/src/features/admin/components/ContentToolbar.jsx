@@ -16,7 +16,11 @@ export default function ContentToolbar({
   type,
 }) {
   const hasFilters = Boolean(
-    filters.search || filters.published || filters.jobType || filters.location,
+    filters.search ||
+      filters.published ||
+      filters.category ||
+      filters.jobType ||
+      filters.location,
   );
 
   return (

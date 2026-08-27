@@ -1,7 +1,16 @@
 import { apiRequest } from '../../../services/httpClient.js';
 
-export function listAdminQuizzes() {
-  return apiRequest('/admin/quizzes', { auth: true });
+export function listAdminQuizzes(options = {}) {
+  const params = new URLSearchParams({
+    page: String(options.page || 1),
+    pageSize: String(options.pageSize || 10),
+  });
+  if (options.search) params.set('search', options.search);
+  if (options.status) params.set('status', options.status);
+  return apiRequest(`/admin/quizzes?${params.toString()}`, {
+    auth: true,
+    signal: options.signal,
+  });
 }
 
 export function getAdminQuiz(id) {

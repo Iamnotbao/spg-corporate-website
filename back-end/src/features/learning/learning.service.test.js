@@ -74,6 +74,12 @@ function fakeRepository(overrides = {}) {
     async listCourses(filter) {
       return courses.filter((item) => matches(item, filter));
     },
+    async listCoursesPage(filter, { skip, limit }) {
+      return courses.filter((item) => matches(item, filter)).slice(skip, skip + limit);
+    },
+    async countCourses(filter) {
+      return courses.filter((item) => matches(item, filter)).length;
+    },
     async findCourse(identifier, filter = {}) {
       return courses.find(
         (item) =>
@@ -85,11 +91,23 @@ function fakeRepository(overrides = {}) {
     async listUnits(filter) {
       return units.filter((item) => matches(item, filter));
     },
+    async listUnitsPage(filter, { skip, limit }) {
+      return units.filter((item) => matches(item, filter)).slice(skip, skip + limit);
+    },
+    async countUnits(filter) {
+      return units.filter((item) => matches(item, filter)).length;
+    },
     async findUnit(id) {
       return units.find((item) => String(item._id) === String(id));
     },
     async listLessons(filter) {
       return lessons.filter((item) => matches(item, filter));
+    },
+    async listLessonsPage(filter, { skip, limit }) {
+      return lessons.filter((item) => matches(item, filter)).slice(skip, skip + limit);
+    },
+    async countLessons(filter) {
+      return lessons.filter((item) => matches(item, filter)).length;
     },
     async findLesson(identifier, filter = {}) {
       return lessons.find(
@@ -107,9 +125,75 @@ test("public course list exposes published courses only", async () => {
   const service = createLearningService(fakeRepository());
   const result = await service.listPublishedCourses();
   assert.deepEqual(
-    result.map((course) => course.slug),
+    result.data.map((course) => course.slug),
     ["hsk-1"],
   );
+  assert.deepEqual(result.pagination, {
+    page: 1,
+    pageSize: 9,
+    total: 1,
+    totalPages: 1,
+  });
+});
+
+test("admin Course pagination passes the page-two offset and combines status search", async () => {
+  let received;
+  const service = createLearningService(
+    fakeRepository({
+      async listCoursesPage(filter, options) {
+        received = { filter, options };
+        return [];
+      },
+      async countCourses() {
+        return 15;
+      },
+    }),
+  );
+  const result = await service.listCourses({
+    page: 2,
+    pageSize: 10,
+    search: "HSK (1)",
+    status: "published",
+  });
+  assert.deepEqual(received.options, { skip: 10, limit: 10 });
+  assert.equal(received.filter.status, "published");
+  assert.equal(received.filter.$or[0].title.$regex, "HSK \\(1\\)");
+  assert.equal(result.pagination.totalPages, 2);
+});
+
+test("admin Unit and Lesson pagination apply hierarchy and lifecycle filters", async () => {
+  const received = {};
+  const service = createLearningService(
+    fakeRepository({
+      async listUnitsPage(filter, options) {
+        received.units = { filter, options };
+        return [];
+      },
+      async countUnits() {
+        return 0;
+      },
+      async listLessonsPage(filter, options) {
+        received.lessons = { filter, options };
+        return [];
+      },
+      async countLessons() {
+        return 0;
+      },
+    }),
+  );
+  await service.listUnits({ courseId: String(ids.course), search: "Unit" });
+  await service.listLessons({
+    unitId: String(ids.unit),
+    type: "grammar",
+    status: "published",
+    search: "lesson",
+  });
+  assert.equal(String(received.units.filter.courseId), String(ids.course));
+  assert.ok(received.units.filter.$or);
+  assert.equal(String(received.lessons.filter.unitId), String(ids.unit));
+  assert.equal(received.lessons.filter.type, "grammar");
+  assert.equal(received.lessons.filter.status, "published");
+  assert.ok(received.lessons.filter.$or);
 });
 
 test("published course structure loads units and published lessons without per-unit queries", async () => {

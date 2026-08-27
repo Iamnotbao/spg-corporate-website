@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { listAdminLearning } from '../../../services/adminService.js';
+import { listAdminLessonOptions } from '../../../services/adminService.js';
+import { PAGE_SIZE_OPTIONS } from '../constants.js';
 import {
   bulkDeleteAdminCharacters,
   bulkUpdateAdminCharacters,
@@ -77,9 +78,11 @@ export default function AdminCharacterPanel({ onNotify, onUnauthorized }) {
     error: '',
   });
   const [lessons, setLessons] = useState([]);
+  const [lessonError, setLessonError] = useState('');
   const [filters, setFilters] = useState({ search: '', hskLevel: '', status: '' });
   const [searchDraft, setSearchDraft] = useState('');
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(PAGE_SIZE);
   const [form, setForm] = useState(null);
   const [saving, setSaving] = useState(false);
   const [selectedIds, setSelectedIds] = useState(() => new Set());
@@ -90,10 +93,13 @@ export default function AdminCharacterPanel({ onNotify, onUnauthorized }) {
     async (signal) => {
       setState((current) => ({ ...current, status: 'loading', error: '' }));
       try {
-        const [characters, lessonResponse] = await Promise.all([
-          listAdminCharacters({ ...filters, page, pageSize: PAGE_SIZE, signal }),
-          listAdminLearning('lessons', { signal }),
-        ]);
+        const characters = await listAdminCharacters({
+          ...filters,
+          page,
+          pageSize,
+          signal,
+        });
+        if (signal?.aborted) return;
         if (characters.pagination && page > characters.pagination.totalPages) {
           setPage(characters.pagination.totalPages);
           return;
@@ -104,16 +110,13 @@ export default function AdminCharacterPanel({ onNotify, onUnauthorized }) {
           pagination: characters.pagination,
           error: '',
         });
-        setLessons(
-          (lessonResponse.data || []).filter((lesson) => lesson.type === 'character'),
-        );
       } catch (error) {
         if (error.name === 'AbortError') return;
         if (error.status === 401 && onUnauthorized(error)) return;
         setState({ status: 'error', items: [], pagination: null, error: error.message });
       }
     },
-    [filters, onUnauthorized, page],
+    [filters, onUnauthorized, page, pageSize],
   );
 
   useEffect(() => {
@@ -121,6 +124,31 @@ export default function AdminCharacterPanel({ onNotify, onUnauthorized }) {
     load(controller.signal);
     return () => controller.abort();
   }, [load]);
+
+  const loadLessonOptions = useCallback(
+    async (signal) => {
+      setLessonError('');
+      try {
+        const response = await listAdminLessonOptions({
+          pageSize: 100,
+          type: 'character',
+          signal,
+        });
+        if (!signal?.aborted) setLessons(response.data || []);
+      } catch (error) {
+        if (error?.name === 'AbortError') return;
+        if (error?.status === 401 && onUnauthorized(error)) return;
+        setLessonError(error?.message || 'Không thể tải danh sách bài học Hán tự.');
+      }
+    },
+    [onUnauthorized],
+  );
+
+  useEffect(() => {
+    const controller = new AbortController();
+    loadLessonOptions(controller.signal);
+    return () => controller.abort();
+  }, [loadLessonOptions]);
 
   const lessonNames = useMemo(
     () => new Map(lessons.map((lesson) => [lesson.id, lesson.title])),
@@ -194,7 +222,9 @@ export default function AdminCharacterPanel({ onNotify, onUnauthorized }) {
     try {
       const response = await bulkUpdateAdminCharacters([...selectedIds], status);
       const result = response.data;
-      setSelectedIds(new Set((result.failed || []).map((item) => item.id)));
+      if (status !== 'draft') {
+        setSelectedIds(new Set((result.failed || []).map((item) => item.id)));
+      }
       if (result.succeeded?.length) {
         onNotify(
           `${status === 'published' ? 'Đã xuất bản' : 'Đã ẩn'} ${result.succeeded.length} Hán tự.`,
@@ -256,6 +286,9 @@ export default function AdminCharacterPanel({ onNotify, onUnauthorized }) {
       />
 
       {state.error && <AdminAlert onRetry={() => load()}>{state.error}</AdminAlert>}
+      {lessonError && (
+        <AdminAlert onRetry={() => loadLessonOptions()}>{lessonError}</AdminAlert>
+      )}
 
       <AdminCharacterForm
         form={form}
@@ -274,10 +307,15 @@ export default function AdminCharacterPanel({ onNotify, onUnauthorized }) {
         filters={filters}
         hskLevels={HSK_LEVELS}
         lessonNames={lessonNames}
+        pageSizeOptions={PAGE_SIZE_OPTIONS}
         searchDraft={searchDraft}
         selectedIds={selectedIds}
         setConfirmDelete={setConfirmDelete}
         setPage={setPage}
+        setPageSize={(nextPageSize) => {
+          setPageSize(nextPageSize);
+          setPage(1);
+        }}
         setSearchDraft={setSearchDraft}
         setSelectedIds={setSelectedIds}
         state={state}

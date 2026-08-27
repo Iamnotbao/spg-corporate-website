@@ -361,17 +361,11 @@ export function createCharacterService(
     async getAttemptSummary(user, characterId) {
       requireStudent(user);
       requireId(repository, characterId, "characterId");
-      const attempts = await repository.listOwnAttempts(user._id, characterId);
+      const summary = await repository.getOwnAttemptSummary(user._id, characterId);
       return {
-        count: attempts.length,
-        latest: attempts.length ? serializeAttempt(attempts[0]) : null,
-        best: attempts.length
-          ? serializeAttempt(
-              attempts.reduce((best, item) =>
-                item.score > best.score ? item : best,
-              ),
-            )
-          : null,
+        count: summary.count,
+        latest: summary.latest ? serializeAttempt(summary.latest) : null,
+        best: summary.best ? serializeAttempt(summary.best) : null,
       };
     },
     async getOwnAttempt(user, attemptId) {

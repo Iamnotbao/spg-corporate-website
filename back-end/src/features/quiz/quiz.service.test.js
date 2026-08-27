@@ -131,6 +131,12 @@ function fakeRepository(overrides = {}) {
     async listQuizzes() {
       return [quiz];
     },
+    async listQuizzesPage(_filter, { skip, limit }) {
+      return [{ ...quiz, questionCount: questions.length }].slice(skip, skip + limit);
+    },
+    async countQuizzes() {
+      return 1;
+    },
     async listQuestions() {
       return questions;
     },
@@ -169,6 +175,22 @@ function fakeRepository(overrides = {}) {
           String(attempt.userId) === String(userId) &&
           String(attempt.quizId) === String(quizId),
       );
+    },
+    async listAttemptsPage(userId, quizId, { skip, limit }) {
+      return attempts
+        .filter(
+          (attempt) =>
+            String(attempt.userId) === String(userId) &&
+            String(attempt.quizId) === String(quizId),
+        )
+        .slice(skip, skip + limit);
+    },
+    async countOwnAttempts(userId, quizId) {
+      return attempts.filter(
+        (attempt) =>
+          String(attempt.userId) === String(userId) &&
+          String(attempt.quizId) === String(quizId),
+      ).length;
     },
     ...overrides,
   };
@@ -245,6 +267,31 @@ test("Quiz requires a valid quiz-type Lesson and one Quiz per Lesson", async () 
       }),
     { status: 409, message: "This lesson already has a quiz" },
   );
+});
+
+test("admin Quiz pagination combines search and status in the database query", async () => {
+  let received;
+  const service = createQuizService(
+    fakeRepository({
+      async listQuizzesPage(filter, options) {
+        received = { filter, options };
+        return [];
+      },
+      async countQuizzes() {
+        return 24;
+      },
+    }),
+  );
+  const result = await service.listAdmin({
+    page: 2,
+    pageSize: 10,
+    search: "HSK?",
+    status: "draft",
+  });
+  assert.deepEqual(received.options, { skip: 10, limit: 10 });
+  assert.equal(received.filter.status, "draft");
+  assert.equal(received.filter.$or[0].title.$regex, "HSK\\?");
+  assert.equal(result.pagination.totalPages, 3);
 });
 
 test("invalid question types and empty published Quizzes are rejected", async () => {
@@ -424,7 +471,7 @@ test("attempt history is scoped to the authenticated student", async () => {
         { _id: ids.studentA, role: "student" },
         String(ids.quiz),
       )
-    ).length,
+    ).data.length,
     1,
   );
   assert.equal(
@@ -433,7 +480,7 @@ test("attempt history is scoped to the authenticated student", async () => {
         { _id: ids.studentB, role: "student" },
         String(ids.quiz),
       )
-    ).length,
+    ).data.length,
     0,
   );
 });

@@ -7,6 +7,7 @@ import {
   generateOpenAiChatReply,
   isOpenAiChatConfigured,
 } from "../utils/openaiChat.js";
+import { chatRepository } from "../features/chat/chat.repository.js";
 
 const SETTINGS_ID = "chat-settings";
 const MAX_MESSAGE_LENGTH = 1200;
@@ -162,9 +163,12 @@ export async function getPublicMessages(req, res) {
   const session = await findAuthorizedSession(sessionId, clientToken);
   if (!session) return res.status(404).json({ error: "Chat session not found" });
 
-  const messages = await getCollection("chat_messages");
-  const items = await messages.find({ sessionId }).sort({ createdAt: 1 }).limit(200).toArray();
-  return res.json({ data: items, session: { status: session.status } });
+  const page = await chatRepository.listMessages(sessionId, req.query);
+  return res.json({
+    data: page.items,
+    pagination: page.pagination,
+    session: { status: session.status },
+  });
 }
 
 export async function createPublicMessage(req, res) {
@@ -187,8 +191,6 @@ export async function createPublicMessage(req, res) {
     },
   );
   broadcastChat(sessionId, { action: "created", message });
-  broadcastRealtime("chat-updated", { kind: "visitor-message" });
-
   const settings = await getSettings();
   let botMessage = null;
   if (settings.autoReplyEnabled) {
@@ -199,6 +201,12 @@ export async function createPublicMessage(req, res) {
     });
     broadcastChat(sessionId, { action: "created", message: botMessage });
   }
+
+  broadcastRealtime("chat-updated", {
+    kind: "messages",
+    sessionId,
+    messageIds: [message, botMessage].filter(Boolean).map((item) => String(item._id)),
+  });
 
   return res.status(201).json({ data: message, botMessage });
 }
@@ -261,7 +269,7 @@ export async function listAdminChatSessions(req, res) {
   const resolvedPage = Math.min(page, totalPages);
   const items = await sessions
     .find(filter, { projection: { clientToken: 0 } })
-    .sort({ updatedAt: -1 })
+    .sort({ updatedAt: -1, _id: -1 })
     .skip((resolvedPage - 1) * pageSize)
     .limit(pageSize)
     .toArray();
@@ -274,10 +282,16 @@ export async function getAdminChatMessages(req, res) {
   const session = await sessions.findOne({ sessionId }, { projection: { clientToken: 0 } });
   if (!session) return res.status(404).json({ error: "Chat session not found" });
 
-  const messages = await getCollection("chat_messages");
-  const items = await messages.find({ sessionId }).sort({ createdAt: 1 }).limit(300).toArray();
+  const page = await chatRepository.listMessages(sessionId, req.query);
   await sessions.updateOne({ sessionId }, { $set: { unreadAdmin: 0 } });
-  return res.json({ data: items, session });
+  return res.json({ data: page.items, pagination: page.pagination, session });
+}
+
+export async function getAdminChatMessage(req, res) {
+  const sessionId = safeContact(req.params.sessionId, 80);
+  const message = await chatRepository.findMessage(sessionId, req.params.messageId);
+  if (!message) return res.status(404).json({ error: "Chat message not found" });
+  return res.json({ data: message });
 }
 
 export async function createAdminChatMessage(req, res) {
@@ -299,7 +313,11 @@ export async function createAdminChatMessage(req, res) {
     { $set: { lastMessage: text.slice(0, 180), updatedAt: new Date(), unreadAdmin: 0 } },
   );
   broadcastChat(sessionId, { action: "created", message });
-  broadcastRealtime("chat-updated", { kind: "admin-message" });
+  broadcastRealtime("chat-updated", {
+    kind: "messages",
+    sessionId,
+    messageIds: [String(message._id)],
+  });
   return res.status(201).json({ data: message });
 }
 
@@ -317,4 +335,19 @@ export async function updateAdminChatSession(req, res) {
   broadcastChat(sessionId, { action: "session", status });
   broadcastRealtime("chat-updated", { kind: "status" });
   return res.json({ ok: true });
+}
+
+export async function deleteAdminChatSession(req, res) {
+  const sessionId = safeContact(req.params.sessionId, 80);
+  const sessions = await getCollection("chat_sessions");
+  const session = await sessions.findOne({ sessionId });
+  if (!session) return res.status(404).json({ error: "Chat session not found" });
+
+  const result = await chatRepository.deleteConversation(sessionId);
+  if (!result.deletedSession) {
+    return res.status(409).json({ error: "Chat session changed during deletion" });
+  }
+  broadcastChat(sessionId, { action: "deleted" });
+  broadcastRealtime("chat-updated", { kind: "deleted", sessionId });
+  return res.json({ ok: true, deletedMessages: result.deletedMessages });
 }

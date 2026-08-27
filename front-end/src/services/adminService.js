@@ -83,7 +83,13 @@ export async function deleteAdminUser(id) {
 
 export function listAdminLearning(type, options = {}) {
   assertLearningType(type);
-  const params = new URLSearchParams();
+  const params = new URLSearchParams({
+    page: String(options.page || 1),
+    pageSize: String(options.pageSize || 10),
+  });
+  if (options.search) params.set('search', options.search);
+  if (options.status) params.set('status', options.status);
+  if (options.type) params.set('type', options.type);
   if (options.courseId) params.set('courseId', options.courseId);
   if (options.unitId) params.set('unitId', options.unitId);
   const query = params.toString();
@@ -94,18 +100,36 @@ export function listAdminLearning(type, options = {}) {
   });
 }
 
-export function listAdminLessonOptions(options = {}) {
-  const params = new URLSearchParams({
-    page: String(options.page || 1),
-    pageSize: String(options.pageSize || 8),
-  });
-  if (options.search) params.set('search', options.search);
-  if (options.unitId) params.set('unitId', options.unitId);
-  return apiRequest(`/admin/lesson-options?${params.toString()}`, {
+export function getAdminLearning(type, id, options = {}) {
+  assertLearningType(type);
+  return apiRequest(`/admin/${type}/${encodeURIComponent(id)}`, {
     method: 'GET',
     auth: true,
     signal: options.signal,
   });
+}
+
+function listAdminOptions(type, options = {}) {
+  const params = new URLSearchParams({
+    page: String(options.page || 1),
+    pageSize: String(options.pageSize || 20),
+  });
+  if (options.search) params.set('search', options.search);
+  if (options.type) params.set('type', options.type);
+  if (options.courseId) params.set('courseId', options.courseId);
+  if (options.unitId) params.set('unitId', options.unitId);
+  return apiRequest(`/admin/${type}-options?${params.toString()}`, {
+    method: 'GET',
+    auth: true,
+    signal: options.signal,
+  });
+}
+
+export const listAdminCourseOptions = (options) => listAdminOptions('course', options);
+export const listAdminUnitOptions = (options) => listAdminOptions('unit', options);
+
+export function listAdminLessonOptions(options = {}) {
+  return listAdminOptions('lesson', { pageSize: 8, ...options });
 }
 
 export function createAdminLearning(type, payload) {

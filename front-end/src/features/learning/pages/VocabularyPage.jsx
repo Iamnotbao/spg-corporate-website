@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   EmptyState,
@@ -13,6 +13,7 @@ import { useStudentAuth } from '../../auth/StudentAuthContext.jsx';
 import CharacterPracticeModal from '../components/CharacterPracticeModal.jsx';
 import VocabularyCard from '../components/VocabularyCard.jsx';
 import {
+  getSavedVocabularyStatus,
   listPublicVocabulary,
   listSavedVocabulary,
   saveVocabulary,
@@ -77,13 +78,17 @@ export default function VocabularyPage() {
         return;
       }
       setState((current) => ({ ...current, status: 'loading' }));
-      listSavedVocabulary()
+      listSavedVocabulary({
+        search: debouncedQuery,
+        hskLevel: level === 'Tất cả' ? '' : level,
+        page,
+        pageSize: PAGE_SIZE,
+      })
         .then((result) => {
-          const data = result.data || [];
           setState({
             status: 'ready',
-            data,
-            pagination: { page: 1, pageSize: data.length || 1, total: data.length },
+            data: result.data || [],
+            pagination: result.pagination || null,
             error: '',
           });
         })
@@ -127,35 +132,24 @@ export default function VocabularyPage() {
       setSavedIds(new Set());
       return;
     }
-    listSavedVocabulary()
-      .then((result) => setSavedIds(new Set((result.data || []).map((item) => item.id))))
+    const ids = [...state.data, ...featured.data].map((item) => item.id).filter(Boolean);
+    if (!ids.length) {
+      setSavedIds(new Set());
+      return undefined;
+    }
+    const controller = new AbortController();
+    getSavedVocabularyStatus(ids, { signal: controller.signal })
+      .then((result) => setSavedIds(new Set(result.data || [])))
       .catch(() => setSavedIds(new Set()));
-  }, [auth.status]);
+    return () => controller.abort();
+  }, [auth.status, featured.data, state.data]);
 
   useEffect(() => {
     setPage(1);
   }, [savedOnly, level]);
 
-  const savedItems = useMemo(() => {
-    if (!savedOnly) return state.data;
-    const normalized = query.trim().toLocaleLowerCase('vi');
-    return state.data.filter(
-      (item) =>
-        (level === 'Tất cả' || item.hskLevel === level) &&
-        (!normalized ||
-          `${item.simplified} ${item.traditional || ''} ${item.pinyin} ${item.meaningVietnamese}`
-            .toLocaleLowerCase('vi')
-            .includes(normalized)),
-    );
-  }, [level, query, savedOnly, state.data]);
-
-  const levels = useMemo(() => {
-    if (!savedOnly) return HSK_LEVELS;
-    return [
-      'Tất cả',
-      ...new Set(state.data.map((item) => item.hskLevel).filter(Boolean)),
-    ];
-  }, [savedOnly, state.data]);
+  const savedItems = state.data;
+  const levels = HSK_LEVELS;
 
   function updateLevel(value) {
     setLevel(value);
@@ -179,10 +173,8 @@ export default function VocabularyPage() {
         return next;
       });
       if (savedOnly && wasSaved) {
-        setState((current) => ({
-          ...current,
-          data: current.data.filter((entry) => entry.id !== item.id),
-        }));
+        if (state.data.length === 1 && page > 1) setPage((current) => current - 1);
+        else load();
       }
       setNotice({
         message: wasSaved

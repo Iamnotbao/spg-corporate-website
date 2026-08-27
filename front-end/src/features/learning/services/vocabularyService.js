@@ -11,8 +11,25 @@ export function listPublicVocabulary(filters = {}) {
   return apiRequest(`/vocabulary${query ? `?${query}` : ''}`);
 }
 
-export function listSavedVocabulary() {
-  return apiRequest('/student/vocabulary', { auth: 'student' });
+export function listSavedVocabulary(filters = {}) {
+  const params = new URLSearchParams({
+    page: String(filters.page || 1),
+    pageSize: String(filters.pageSize || 12),
+  });
+  if (filters.search) params.set('search', filters.search);
+  if (filters.hskLevel) params.set('hskLevel', filters.hskLevel);
+  return apiRequest(`/student/vocabulary?${params.toString()}`, {
+    auth: 'student',
+    signal: filters.signal,
+  });
+}
+
+export function getSavedVocabularyStatus(ids, options = {}) {
+  const params = new URLSearchParams({ ids: ids.slice(0, 100).join(',') });
+  return apiRequest(`/student/vocabulary/saved-status?${params.toString()}`, {
+    auth: 'student',
+    signal: options.signal,
+  });
 }
 
 export function saveVocabulary(id) {

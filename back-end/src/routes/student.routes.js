@@ -64,6 +64,10 @@ router.put(
   asyncHandler(studentLearningController.completeLesson),
 );
 router.get("/vocabulary", asyncHandler(vocabularyController.listSaved));
+router.get(
+  "/vocabulary/saved-status",
+  asyncHandler(vocabularyController.savedStatus),
+);
 router.put("/vocabulary/:id/saved", asyncHandler(vocabularyController.save));
 router.delete(
   "/vocabulary/:id/saved",

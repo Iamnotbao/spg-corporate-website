@@ -15,6 +15,10 @@ router.get(
   "/sessions/:sessionId/messages",
   asyncHandler(chatController.getAdminChatMessages),
 );
+router.get(
+  "/sessions/:sessionId/messages/:messageId",
+  asyncHandler(chatController.getAdminChatMessage),
+);
 router.post(
   "/sessions/:sessionId/messages",
   asyncHandler(chatController.createAdminChatMessage),
@@ -22,6 +26,10 @@ router.post(
 router.put(
   "/sessions/:sessionId",
   asyncHandler(chatController.updateAdminChatSession),
+);
+router.delete(
+  "/sessions/:sessionId",
+  asyncHandler(chatController.deleteAdminChatSession),
 );
 
 export default router;

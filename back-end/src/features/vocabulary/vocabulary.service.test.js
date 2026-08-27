@@ -28,6 +28,15 @@ function repository(overrides = {}) {
     async list(filter = {}) {
       return filter._id?.$in?.length === 0 ? [] : [word];
     },
+    async listPage(_filter, { skip, limit }) {
+      return [word].slice(skip, skip + limit);
+    },
+    async count() {
+      return 1;
+    },
+    async listPublicPage(_filter, { skip, limit }) {
+      return { items: [word].slice(skip, skip + limit), total: 1 };
+    },
     async find(id, filter = {}) {
       return String(id) === String(wordId) &&
         (!filter.status || filter.status === word.status)
@@ -63,6 +72,17 @@ function repository(overrides = {}) {
         ? [{ userId, vocabularyId: wordId, saved: true }]
         : [];
     },
+    async listSavedPublicPage(userId, _filter, { skip, limit }) {
+      const items = String(userId) === String(studentA)
+        ? [{ vocabulary: word, savedAt: new Date() }]
+        : [];
+      return { items: items.slice(skip, skip + limit), total: items.length };
+    },
+    async listSavedIds(userId, vocabularyIds) {
+      return String(userId) === String(studentA) && vocabularyIds.some((id) => String(id) === String(wordId))
+        ? [{ vocabularyId: wordId }]
+        : [];
+    },
     ...overrides,
   };
 }
@@ -94,11 +114,11 @@ test("vocabulary saves and lists are scoped to the authenticated student", async
   assert.equal(String(savedOwner), String(studentA));
   assert.equal(String(removedOwner), String(studentB));
   assert.equal(
-    (await service.listSaved({ _id: studentA, role: "student" })).length,
+    (await service.listSaved({ _id: studentA, role: "student" })).data.length,
     1,
   );
   assert.equal(
-    (await service.listSaved({ _id: studentB, role: "student" })).length,
+    (await service.listSaved({ _id: studentB, role: "student" })).data.length,
     0,
   );
 });
@@ -106,6 +126,9 @@ test("vocabulary saves and lists are scoped to the authenticated student", async
 test("draft or hidden hierarchy vocabulary is unavailable to students", async () => {
   const service = createVocabularyService(
     repository({
+      async listPublicPage() {
+        return { items: [], total: 0 };
+      },
       async listPublishedCourses() {
         return [];
       },
@@ -117,6 +140,58 @@ test("draft or hidden hierarchy vocabulary is unavailable to students", async ()
     () => service.save({ _id: studentA, role: "student" }, String(wordId)),
     { status: 404 },
   );
+});
+
+test("admin Vocabulary uses database pagination with search and filters", async () => {
+  let received;
+  const service = createVocabularyService(
+    repository({
+      async listPage(filter, options) {
+        received = { filter, options };
+        return [];
+      },
+      async count() {
+        return 21;
+      },
+    }),
+    fakeCharacterData,
+  );
+  const result = await service.listAdmin({
+    page: 2,
+    pageSize: 10,
+    search: "学+",
+    hskLevel: "HSK 1",
+    status: "published",
+  });
+  assert.deepEqual(received.options, { skip: 10, limit: 10 });
+  assert.equal(received.filter.status, "published");
+  assert.equal(received.filter.hskLevel, "HSK 1");
+  assert.equal(received.filter.$or[0].simplified.$regex, "学\\+");
+  assert.equal(result.pagination.totalPages, 3);
+});
+
+test("public Vocabulary pagination totals only hierarchy-visible rows", async () => {
+  let received;
+  const service = createVocabularyService(
+    repository({
+      async listPublicPage(filter, options) {
+        received = { filter, options };
+        return { items: [word], total: 13 };
+      },
+    }),
+    fakeCharacterData,
+  );
+  const result = await service.listPublic({
+    page: 2,
+    pageSize: 10,
+    search: "学",
+    hskLevel: "HSK 1",
+  });
+  assert.deepEqual(received.options, { skip: 10, limit: 10 });
+  assert.equal(received.filter.hskLevel, "HSK 1");
+  assert.ok(received.filter.$or);
+  assert.equal(result.pagination.total, 13);
+  assert.equal(result.pagination.totalPages, 2);
 });
 
 function importRow(overrides = {}) {

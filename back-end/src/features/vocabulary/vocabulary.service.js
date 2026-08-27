@@ -5,6 +5,12 @@ import {
   validateVocabularyImport,
   VocabularyValidationError,
 } from "./vocabulary.validation.js";
+import {
+  paginationResult,
+  parsePagination,
+  parseSearch,
+  searchFilter,
+} from "../../utils/pagination.js";
 
 export class VocabularyServiceError extends Error {
   constructor(status, message) {
@@ -87,16 +93,6 @@ async function filterPublicHierarchy(repository, items) {
   return items.filter((item) => publicLessonIds.has(String(item.lessonId)));
 }
 
-function publicListOptions(filters = {}) {
-  const page = Math.max(1, Number.parseInt(filters.page, 10) || 1);
-  const pageSize = Math.min(50, Math.max(1, Number.parseInt(filters.pageSize, 10) || 12));
-  return {
-    page,
-    pageSize,
-    search: String(filters.search || "").trim().toLocaleLowerCase("vi"),
-  };
-}
-
 export function createVocabularyService(
   repository = vocabularyRepository,
   characterDataLoader = loadCharacterData,
@@ -175,33 +171,53 @@ export function createVocabularyService(
 
   return {
     async listPublic(filters = {}) {
-      const query = { status: "published" };
-      if (filters.hskLevel) query.hskLevel = String(filters.hskLevel).trim();
+      const query = {};
+      const paging = parsePagination(filters, { defaultPageSize: 12, maxPageSize: 100 });
+      const search = parseSearch(filters.search);
+      if (filters.hskLevel) query.hskLevel = parseSearch(filters.hskLevel, 40);
       if (filters.lessonId)
         query.lessonId = requireId(repository, filters.lessonId, "lessonId");
-      let items = await filterPublicHierarchy(repository, await repository.list(query));
-      const options = publicListOptions(filters);
-      if (options.search) {
-        items = items.filter((item) =>
-          `${item.simplified} ${item.traditional || ""} ${item.pinyin} ${item.meaningVietnamese} ${item.meaningEnglish || ""}`
-            .toLocaleLowerCase("vi")
-            .includes(options.search),
-        );
-      }
-      const total = items.length;
-      const start = (options.page - 1) * options.pageSize;
+      if (search) Object.assign(query, searchFilter(search, [
+        "simplified",
+        "traditional",
+        "pinyin",
+        "meaningVietnamese",
+        "meaningEnglish",
+        "exampleChinese",
+      ]));
+      const { items, total } = await repository.listPublicPage(query, {
+        skip: paging.skip,
+        limit: paging.pageSize,
+      });
       return {
-        data: items.slice(start, start + options.pageSize).map(serialize),
-        pagination: {
-          page: options.page,
-          pageSize: options.pageSize,
-          total,
-          totalPages: Math.max(1, Math.ceil(total / options.pageSize)),
-        },
+        data: items.map(serialize),
+        pagination: paginationResult(paging, total),
       };
     },
-    async listAdmin() {
-      return (await repository.list()).map(serialize);
+    async listAdmin(filters = {}) {
+      const query = {};
+      const paging = parsePagination(filters, { defaultPageSize: 10, maxPageSize: 100 });
+      const search = parseSearch(filters.search);
+      const status = String(filters.status || "").trim();
+      if (status && !["draft", "published"].includes(status)) {
+        throw new VocabularyValidationError("status must be one of: draft, published");
+      }
+      if (search) Object.assign(query, searchFilter(search, [
+        "simplified",
+        "traditional",
+        "pinyin",
+        "meaningVietnamese",
+        "meaningEnglish",
+        "exampleChinese",
+      ]));
+      if (filters.hskLevel) query.hskLevel = parseSearch(filters.hskLevel, 40);
+      if (filters.lessonId) query.lessonId = requireId(repository, filters.lessonId, "lessonId");
+      if (status) query.status = status;
+      const [items, total] = await Promise.all([
+        repository.listPage(query, { skip: paging.skip, limit: paging.pageSize }),
+        repository.count(query),
+      ]);
+      return { data: items.map(serialize), pagination: paginationResult(paging, total) };
     },
     async getAdmin(id) {
       requireId(repository, id);
@@ -398,23 +414,40 @@ export function createVocabularyService(
       await repository.unsave(user._id, id);
       return { vocabularyId: String(id), saved: false };
     },
-    async listSaved(user) {
+    async listSaved(user, filters = {}) {
       if (user?.role !== "student")
         throw new VocabularyServiceError(403, "Student access required");
-      const progress = await repository.listSavedProgress(user._id);
-      const items = await repository.list({
-        _id: { $in: progress.map((item) => item.vocabularyId) },
-        status: "published",
+      const paging = parsePagination(filters, { defaultPageSize: 12, maxPageSize: 100 });
+      const query = {};
+      const search = parseSearch(filters.search);
+      if (search) Object.assign(query, searchFilter(search, [
+        "simplified",
+        "traditional",
+        "pinyin",
+        "meaningVietnamese",
+        "meaningEnglish",
+      ]));
+      if (filters.hskLevel) query.hskLevel = parseSearch(filters.hskLevel, 40);
+      const { items, total } = await repository.listSavedPublicPage(user._id, query, {
+        skip: paging.skip,
+        limit: paging.pageSize,
       });
-      const visible = await filterPublicHierarchy(repository, items);
-      const savedAt = new Map(
-        progress.map((item) => [String(item.vocabularyId), item.updatedAt]),
-      );
-      return visible.map((item) => ({
-        ...serialize(item),
-        saved: true,
-        savedAt: savedAt.get(String(item._id)),
-      }));
+      return {
+        data: items.map((item) => ({
+          ...serialize(item.vocabulary),
+          saved: true,
+          savedAt: item.savedAt,
+        })),
+        pagination: paginationResult(paging, total),
+      };
+    },
+    async savedStatus(user, ids = []) {
+      if (user?.role !== "student")
+        throw new VocabularyServiceError(403, "Student access required");
+      const normalized = [...new Set(ids.map(String))].slice(0, 100);
+      normalized.forEach((id) => requireId(repository, id, "ids"));
+      const rows = await repository.listSavedIds(user._id, normalized);
+      return rows.map((item) => String(item.vocabularyId));
     },
   };
 }

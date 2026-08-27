@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   getAdminLearningSummary,
-  listAdminLearning,
+  listAdminCourseOptions,
   listAdminProgress,
 } from '../../../services/adminService.js';
 import { useDebouncedValue } from '../hooks/useDebouncedValue.js';
+import { PAGE_SIZE_OPTIONS } from '../constants.js';
 import { AdminAlert, AdminEmpty, AdminSkeletonRows } from './AdminFeedback.jsx';
 import AdminIcon from './AdminIcon.jsx';
 import AdminPageHeader from './AdminPageHeader.jsx';
@@ -56,7 +57,14 @@ export default function AdminProgressPanel({ onUnauthorized }) {
         setStatus('error');
       }
     },
-    [courseId, enrollmentStatus, onUnauthorized, pagination.page, pagination.pageSize, search],
+    [
+      courseId,
+      enrollmentStatus,
+      onUnauthorized,
+      pagination.page,
+      pagination.pageSize,
+      search,
+    ],
   );
 
   useEffect(() => {
@@ -67,7 +75,7 @@ export default function AdminProgressPanel({ onUnauthorized }) {
 
   useEffect(() => {
     const controller = new AbortController();
-    listAdminLearning('courses', { signal: controller.signal })
+    listAdminCourseOptions({ pageSize: 100, signal: controller.signal })
       .then((response) => setCourses(response.data || []))
       .catch((caught) => {
         if (caught.name !== 'AbortError' && caught.status === 401) onUnauthorized(caught);
@@ -150,6 +158,23 @@ export default function AdminProgressPanel({ onUnauthorized }) {
             <option value="active">Đang học</option>
             <option value="archived">Đã rời</option>
           </select>
+          <select
+            aria-label="Số dòng tiến độ mỗi trang"
+            onChange={(event) =>
+              setPagination((current) => ({
+                ...current,
+                page: 1,
+                pageSize: Number(event.target.value),
+              }))
+            }
+            value={pagination.pageSize}
+          >
+            {PAGE_SIZE_OPTIONS.map((size) => (
+              <option key={size} value={size}>
+                {size}/trang
+              </option>
+            ))}
+          </select>
         </div>
 
         {status === 'loading' ? (
@@ -180,7 +205,9 @@ export default function AdminProgressPanel({ onUnauthorized }) {
                         <small>{row.course.status}</small>
                       </td>
                       <td>
-                        <span className={`admin-learning-badge is-${row.enrollmentStatus}`}>
+                        <span
+                          className={`admin-learning-badge is-${row.enrollmentStatus}`}
+                        >
                           {row.enrollmentStatus === 'active' ? 'Đang học' : 'Đã rời'}
                         </span>
                       </td>
@@ -198,9 +225,7 @@ export default function AdminProgressPanel({ onUnauthorized }) {
               </table>
             </div>
             <AdminPagination
-              onPageChange={(page) =>
-                setPagination((current) => ({ ...current, page }))
-              }
+              onPageChange={(page) => setPagination((current) => ({ ...current, page }))}
               pagination={pagination}
             />
           </>

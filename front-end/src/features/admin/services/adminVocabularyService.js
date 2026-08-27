@@ -1,7 +1,15 @@
 import { apiRequest } from '../../../services/httpClient.js';
 
 export function listAdminVocabulary(options = {}) {
-  return apiRequest('/admin/vocabulary', {
+  const params = new URLSearchParams({
+    page: String(options.page || 1),
+    pageSize: String(options.pageSize || 10),
+  });
+  if (options.search) params.set('search', options.search);
+  if (options.hskLevel) params.set('hskLevel', options.hskLevel);
+  if (options.lessonId) params.set('lessonId', options.lessonId);
+  if (options.status) params.set('status', options.status);
+  return apiRequest(`/admin/vocabulary?${params.toString()}`, {
     auth: true,
     signal: options.signal,
   });

@@ -14,14 +14,6 @@ const CONTENT_LABELS = {
   posts: 'Blog',
 };
 
-function includesQuery(item, query) {
-  return Object.values(item || {})
-    .filter((value) => typeof value === 'string' || typeof value === 'number')
-    .join(' ')
-    .toLocaleLowerCase('vi')
-    .includes(query);
-}
-
 function resultFor(section, item) {
   if (section === 'vocabulary') {
     return {
@@ -29,7 +21,9 @@ function resultFor(section, item) {
       section,
       group: CONTENT_LABELS[section],
       label: item.simplified || 'Từ vựng',
-      detail: [item.pinyin, item.meaningVietnamese, item.status].filter(Boolean).join(' · '),
+      detail: [item.pinyin, item.meaningVietnamese, item.status]
+        .filter(Boolean)
+        .join(' · '),
     };
   }
   if (section === 'characters') {
@@ -38,7 +32,9 @@ function resultFor(section, item) {
       section,
       group: CONTENT_LABELS[section],
       label: item.simplified || 'Hán tự',
-      detail: [item.pinyin, item.meaningVietnamese, item.status].filter(Boolean).join(' · '),
+      detail: [item.pinyin, item.meaningVietnamese, item.status]
+        .filter(Boolean)
+        .join(' · '),
     };
   }
   return {
@@ -95,21 +91,24 @@ export default function AdminQuickSearch({ currentUser, open, onClose, onNavigat
     const timer = window.setTimeout(async () => {
       setStatus('loading');
       try {
-        const [courses, units, lessons, vocabulary, characters, posts] = await Promise.all([
-          listAdminLearning('courses'),
-          listAdminLearning('units'),
-          listAdminLearning('lessons'),
-          listAdminVocabulary(),
-          listAdminCharacters({ search: query, page: 1, pageSize: 6 }),
-          listAdminContent('posts', { search: query, page: 1, pageSize: 6 }),
-        ]);
+        const [courses, units, lessons, vocabulary, characters, posts] =
+          await Promise.all([
+            listAdminLearning('courses', { search: query, page: 1, pageSize: 4 }),
+            listAdminLearning('units', { search: query, page: 1, pageSize: 4 }),
+            listAdminLearning('lessons', { search: query, page: 1, pageSize: 5 }),
+            listAdminVocabulary({ search: query, page: 1, pageSize: 5 }),
+            listAdminCharacters({ search: query, page: 1, pageSize: 6 }),
+            listAdminContent('posts', { search: query, page: 1, pageSize: 6 }),
+          ]);
         if (!active) return;
         const results = [
-          ...(courses.data || []).filter((item) => includesQuery(item, normalized)).slice(0, 4).map((item) => resultFor('courses', item)),
-          ...(units.data || []).filter((item) => includesQuery(item, normalized)).slice(0, 4).map((item) => resultFor('units', item)),
-          ...(lessons.data || []).filter((item) => includesQuery(item, normalized)).slice(0, 5).map((item) => resultFor('lessons', item)),
-          ...(vocabulary.data || []).filter((item) => includesQuery(item, normalized)).slice(0, 5).map((item) => resultFor('vocabulary', item)),
-          ...(characters.data || []).slice(0, 5).map((item) => resultFor('characters', item)),
+          ...(courses.data || []).map((item) => resultFor('courses', item)),
+          ...(units.data || []).map((item) => resultFor('units', item)),
+          ...(lessons.data || []).map((item) => resultFor('lessons', item)),
+          ...(vocabulary.data || []).map((item) => resultFor('vocabulary', item)),
+          ...(characters.data || [])
+            .slice(0, 5)
+            .map((item) => resultFor('characters', item)),
           ...(posts.data || []).slice(0, 5).map((item) => resultFor('posts', item)),
         ].slice(0, 20);
         setContentResults(results);
@@ -161,7 +160,9 @@ export default function AdminQuickSearch({ currentUser, open, onClose, onNavigat
         </label>
 
         <div className="admin-command-search__results">
-          {query.trim().length >= 2 && <small className="admin-command-search__label">Nội dung</small>}
+          {query.trim().length >= 2 && (
+            <small className="admin-command-search__label">Nội dung</small>
+          )}
           {status === 'loading' && <p>Đang tìm trong CMS…</p>}
           {status === 'error' && <p>Không thể tải kết quả nội dung.</p>}
           {contentResults.map((item) => (
@@ -181,9 +182,13 @@ export default function AdminQuickSearch({ currentUser, open, onClose, onNavigat
               <i>→</i>
             </button>
           ))}
-          {status === 'ready' && !contentResults.length && <p>Không tìm thấy nội dung phù hợp.</p>}
+          {status === 'ready' && !contentResults.length && (
+            <p>Không tìm thấy nội dung phù hợp.</p>
+          )}
 
-          {sectionResults.length > 0 && <small className="admin-command-search__label">Khu vực</small>}
+          {sectionResults.length > 0 && (
+            <small className="admin-command-search__label">Khu vực</small>
+          )}
           {sectionResults.map((item) => (
             <button
               key={`section-${item.key}`}

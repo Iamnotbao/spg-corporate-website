@@ -4,8 +4,8 @@ import { vocabularyService } from "./vocabulary.service.js";
 export async function listPublic(req, res) {
   return res.json(await vocabularyService.listPublic(req.query));
 }
-export async function listAdmin(_req, res) {
-  return res.json({ data: await vocabularyService.listAdmin() });
+export async function listAdmin(req, res) {
+  return res.json(await vocabularyService.listAdmin(req.query));
 }
 export async function getAdmin(req, res) {
   return res.json({ data: await vocabularyService.getAdmin(req.params.id) });
@@ -46,5 +46,9 @@ export async function unsave(req, res) {
   });
 }
 export async function listSaved(req, res) {
-  return res.json({ data: await vocabularyService.listSaved(req.user) });
+  return res.json(await vocabularyService.listSaved(req.user, req.query));
+}
+export async function savedStatus(req, res) {
+  const ids = String(req.query.ids || "").split(",").filter(Boolean);
+  return res.json({ data: await vocabularyService.savedStatus(req.user, ids) });
 }
