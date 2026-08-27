@@ -152,7 +152,7 @@ export function createVocabularyDeduplicationService(
       summary: {
         ...rawSummary,
         actionableRecords,
-        deletableRecords: actionableRecords,
+        deletableRecords: rawSummary.unreferencedRecords,
         protectedRecords: rawSummary.manualRecords,
       },
     };
