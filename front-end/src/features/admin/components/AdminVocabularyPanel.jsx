@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { listAdminLearning } from '../../../services/adminService.js';
 import {
+  analyzeAdminVocabularyDuplicates,
+  cleanupAdminVocabularyDuplicates,
   createAdminVocabulary,
   deleteAdminVocabulary,
   listAdminVocabulary,
@@ -75,6 +77,9 @@ export default function AdminVocabularyPanel({ onNotify, onUnauthorized }) {
   const [selectedIds, setSelectedIds] = useState(() => new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [duplicateReport, setDuplicateReport] = useState(null);
+  const [duplicateBusy, setDuplicateBusy] = useState(false);
+  const [confirmDuplicateCleanup, setConfirmDuplicateCleanup] = useState(false);
 
   const load = useCallback(async () => {
     setStatus('loading');
@@ -213,6 +218,54 @@ export default function AdminVocabularyPanel({ onNotify, onUnauthorized }) {
     }
   }
 
+  async function inspectDuplicates() {
+    if (duplicateBusy) return;
+    setDuplicateBusy(true);
+    try {
+      const response = await analyzeAdminVocabularyDuplicates();
+      const report = response.data;
+      setDuplicateReport(report);
+      if (!report?.summary?.duplicateGroups) {
+        onNotify('Không phát hiện từ vựng trùng lặp.');
+        return;
+      }
+      if (!report.summary.deletableRecords) {
+        onNotify(
+          `Phát hiện ${report.summary.duplicateGroups} nhóm trùng nhưng các bản ghi dư đều có lịch sử học viên nên chưa thể xóa tự động.`,
+          'error',
+        );
+        return;
+      }
+      setConfirmDuplicateCleanup(true);
+    } catch (caught) {
+      if (caught.status === 401 && onUnauthorized(caught)) return;
+      onNotify(caught.message || 'Không thể kiểm tra từ trùng.', 'error');
+    } finally {
+      setDuplicateBusy(false);
+    }
+  }
+
+  async function cleanupDuplicates() {
+    if (duplicateBusy) return;
+    setDuplicateBusy(true);
+    try {
+      const response = await cleanupAdminVocabularyDuplicates();
+      const result = response.data;
+      setConfirmDuplicateCleanup(false);
+      setDuplicateReport(result);
+      await load();
+      const protectedText = result?.summary?.protectedRecords
+        ? ` ${result.summary.protectedRecords} bản ghi có lịch sử học viên được giữ lại.`
+        : '';
+      onNotify(`Đã xóa ${result?.deleted || 0} bản ghi từ vựng trùng.${protectedText}`);
+    } catch (caught) {
+      if (caught.status === 401 && onUnauthorized(caught)) return;
+      onNotify(caught.message || 'Không thể xóa các từ trùng.', 'error');
+    } finally {
+      setDuplicateBusy(false);
+    }
+  }
+
   async function confirmDeletion() {
     if (!confirmDelete?.length || bulkBusy) return;
     setBulkBusy(true);
@@ -258,6 +311,7 @@ export default function AdminVocabularyPanel({ onNotify, onUnauthorized }) {
           <div className="admin-vocabulary-actions">
             <button className="admin-button admin-button--secondary" onClick={downloadTemplate} type="button">Mẫu CSV</button>
             <button className="admin-button admin-button--secondary" disabled={!items.length} onClick={exportVocabulary} type="button">Export CSV</button>
+            <button className="admin-button admin-button--secondary" disabled={!items.length || duplicateBusy} onClick={inspectDuplicates} type="button"><AdminIcon name="search" size={16} /> {duplicateBusy ? 'Đang kiểm tra…' : 'Tìm từ trùng'}</button>
             <button className="admin-button admin-button--secondary" disabled={!lessons.length} onClick={() => setImportOpen(true)} type="button"><AdminIcon name="upload" size={16} /> Import</button>
             <button className="admin-button admin-button--primary" disabled={!lessons.length} onClick={beginCreate} type="button"><AdminIcon name="plus" size={17} /> Tạo từ vựng</button>
           </div>
@@ -271,6 +325,12 @@ export default function AdminVocabularyPanel({ onNotify, onUnauthorized }) {
         <AdminAlert>
           Chưa có Lesson nên Mandora chưa thể gắn từ vựng vào lộ trình học. Hãy tạo Course → Unit →{' '}
           <Link className="admin-inline-link" to="/admin/lessons">Lesson trước</Link>.
+        </AdminAlert>
+      )}
+
+      {duplicateReport?.summary?.protectedRecords > 0 && (
+        <AdminAlert>
+          Còn {duplicateReport.summary.protectedRecords} bản ghi trùng có dữ liệu học tập của học viên. Hệ thống giữ lại các bản ghi này thay vì xóa tự động để tránh mất lịch sử học.
         </AdminAlert>
       )}
 
@@ -354,6 +414,16 @@ export default function AdminVocabularyPanel({ onNotify, onUnauthorized }) {
         onConfirm={confirmDeletion}
         open={Boolean(confirmDelete?.length)}
         title="Xác nhận xóa từ vựng?"
+      />
+
+      <AdminConfirmDialog
+        confirmLabel={`Xóa ${duplicateReport?.summary?.deletableRecords || 0} bản ghi trùng`}
+        description={`Phát hiện ${duplicateReport?.summary?.duplicateGroups || 0} nhóm từ trùng và ${duplicateReport?.summary?.redundantRecords || 0} bản ghi dư. Hệ thống chỉ xóa ${duplicateReport?.summary?.deletableRecords || 0} bản ghi không có dữ liệu học tập. ${duplicateReport?.summary?.protectedRecords || 0} bản ghi có lịch sử học viên sẽ được giữ lại.`}
+        loading={duplicateBusy}
+        onCancel={() => setConfirmDuplicateCleanup(false)}
+        onConfirm={cleanupDuplicates}
+        open={confirmDuplicateCleanup}
+        title="Xóa các từ vựng trùng?"
       />
     </div>
   );

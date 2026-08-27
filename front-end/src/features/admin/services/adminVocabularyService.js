@@ -23,6 +23,20 @@ export function importAdminVocabulary(payload) {
   });
 }
 
+export function analyzeAdminVocabularyDuplicates(options = {}) {
+  return apiRequest('/admin/vocabulary/duplicates', {
+    auth: true,
+    signal: options.signal,
+  });
+}
+
+export function cleanupAdminVocabularyDuplicates() {
+  return apiRequest('/admin/vocabulary/duplicates/cleanup', {
+    auth: true,
+    method: 'POST',
+  });
+}
+
 export function updateAdminVocabulary(id, payload) {
   return apiRequest(`/admin/vocabulary/${encodeURIComponent(id)}`, {
     auth: true,
