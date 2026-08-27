@@ -1,9 +1,112 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { EmptyState, ErrorState, LoadingState } from '../../../components/ui/ContentState.jsx';
+import {
+  EmptyState,
+  ErrorState,
+  LoadingState,
+} from '../../../components/ui/ContentState.jsx';
 import PageHeader from '../../../components/ui/PageHeader.jsx';
 import PublicPagination from '../../../components/ui/PublicPagination.jsx';
 import { usePageTitle } from '../../../hooks/usePageTitle.js';
 import { listHskMockAttempts } from '../services/hskExamService.js';
 import '../styles/hsk-exams.css';
-export default function HskMockHistoryPage() { usePageTitle('Lịch sử thi thử HSK'); const { examId } = useParams(); const [page, setPage] = useState(1); const [state, setState] = useState({ status: 'loading', data: [], pagination: null, error: '' }); const load = useCallback((signal) => { listHskMockAttempts(examId, { page, pageSize: 10, signal }).then((response) => setState({ status: 'ready', data: response.data || [], pagination: response.pagination, error: '' })).catch((error) => { if (error.name !== 'AbortError') setState({ status: 'error', data: [], pagination: null, error: error.message }); }); }, [examId, page]); useEffect(() => { const controller = new AbortController(); load(controller.signal); return () => controller.abort(); }, [load]); return <><PageHeader eyebrow="Student results" title="Lịch sử thi thử HSK" description="Mỗi lần làm bài được lưu riêng với ảnh chụp câu hỏi và kết quả tại thời điểm nộp." /><section className="hsk-history"><div className="public-container">{state.status === 'loading' && <LoadingState label="Đang tải lịch sử" />}{state.status === 'error' && <ErrorState message={state.error} onRetry={() => load()} />}{state.status === 'ready' && !state.data.length && <EmptyState icon="试" title="Chưa có kết quả" description="Hoàn thành một đề thi thử để xem lịch sử." />}{state.data.map((item) => <article key={item.id}><div><span>{new Intl.DateTimeFormat('vi-VN', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(item.submittedAt))}</span><strong>{item.score}/100</strong><small>{item.correctCount} đúng · {item.wrongCount} sai</small></div><Link to={`/hsk-mock-tests/${examId}/attempt/${item.id}`}>Xem lại</Link></article>)}{state.pagination?.totalPages > 1 && <PublicPagination page={state.pagination.page} pageSize={state.pagination.pageSize} total={state.pagination.total} onPageChange={setPage} />}</div></section></>; }
+
+export default function HskMockHistoryPage() {
+  usePageTitle('Lịch sử thi thử HSK');
+  const { examId } = useParams();
+  const [page, setPage] = useState(1);
+  const [state, setState] = useState({
+    status: 'loading',
+    data: [],
+    pagination: null,
+    error: '',
+  });
+
+  const load = useCallback(
+    (signal) => {
+      listHskMockAttempts(examId, { page, pageSize: 10, signal })
+        .then((response) =>
+          setState({
+            status: 'ready',
+            data: response.data || [],
+            pagination: response.pagination,
+            error: '',
+          }),
+        )
+        .catch((error) => {
+          if (error.name !== 'AbortError') {
+            setState({
+              status: 'error',
+              data: [],
+              pagination: null,
+              error: error.message,
+            });
+          }
+        });
+    },
+    [examId, page],
+  );
+
+  useEffect(() => {
+    const controller = new AbortController();
+    load(controller.signal);
+    return () => controller.abort();
+  }, [load]);
+
+  return (
+    <>
+      <PageHeader
+        eyebrow="Student results"
+        title="Lịch sử thi thử HSK"
+        description="Mỗi lần làm bài được lưu riêng với ảnh chụp câu hỏi và kết quả tại thời điểm nộp."
+      />
+      <section className="hsk-history">
+        <div className="public-container">
+          {state.status === 'loading' && <LoadingState label="Đang tải lịch sử" />}
+          {state.status === 'error' && (
+            <ErrorState message={state.error} onRetry={() => load()} />
+          )}
+          {state.status === 'ready' && !state.data.length && (
+            <EmptyState
+              icon="试"
+              title="Chưa có kết quả"
+              description="Hoàn thành một đề thi thử để xem lịch sử."
+            />
+          )}
+          {state.data.map((item) => {
+            const maxHskScore = item.maxHskScore || 100;
+            const hskScore =
+              item.hskScore ?? Math.round((item.score / 100) * maxHskScore);
+            return (
+              <article key={item.id}>
+                <div>
+                  <span>
+                    {new Intl.DateTimeFormat('vi-VN', {
+                      dateStyle: 'medium',
+                      timeStyle: 'short',
+                    }).format(new Date(item.submittedAt))}
+                  </span>
+                  <strong>
+                    {hskScore}/{maxHskScore}
+                  </strong>
+                  <small>
+                    {item.score}% · {item.correctCount} đúng · {item.wrongCount} sai
+                  </small>
+                </div>
+                <Link to={`/hsk-mock-tests/${examId}/attempt/${item.id}`}>Xem lại</Link>
+              </article>
+            );
+          })}
+          {state.pagination?.totalPages > 1 && (
+            <PublicPagination
+              page={state.pagination.page}
+              pageSize={state.pagination.pageSize}
+              total={state.pagination.total}
+              onPageChange={setPage}
+            />
+          )}
+        </div>
+      </section>
+    </>
+  );
+}
