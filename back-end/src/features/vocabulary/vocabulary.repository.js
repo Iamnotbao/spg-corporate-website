@@ -23,6 +23,7 @@ export async function ensureVocabularyIndexes() {
           collection.createIndex({ lessonId: 1, status: 1 }),
           collection.createIndex({ status: 1, hskLevel: 1, simplified: 1, _id: 1 }),
           collection.createIndex({ characterIds: 1 }),
+          collection.createIndex({ deletedAt: 1, trashRoot: 1 }),
         ]),
       ),
       getCollection(VOCABULARY_COLLECTIONS.progress).then((collection) =>
@@ -66,36 +67,48 @@ function idFilter(id) {
   return value ? { _id: value } : { _id: null };
 }
 
+function active(filter = {}) {
+  return { ...filter, deletedAt: { $exists: false } };
+}
+
 export const vocabularyRepository = {
   async list(filter = {}) {
     return (await collection(VOCABULARY_COLLECTIONS.vocabulary))
-      .find(filter)
+      .find(active(filter))
       .sort({ hskLevel: 1, simplified: 1, _id: 1 })
       .toArray();
   },
   async listPage(filter = {}, { skip = 0, limit = 10 } = {}) {
     return (await collection(VOCABULARY_COLLECTIONS.vocabulary))
-      .find(filter)
+      .find(active(filter))
       .sort({ hskLevel: 1, simplified: 1, _id: 1 })
       .skip(skip)
       .limit(limit)
       .toArray();
   },
   async count(filter = {}) {
-    return (await collection(VOCABULARY_COLLECTIONS.vocabulary)).countDocuments(filter);
+    return (await collection(VOCABULARY_COLLECTIONS.vocabulary)).countDocuments(
+      active(filter),
+    );
   },
   async listPublicPage(filter = {}, { skip = 0, limit = 12 } = {}) {
     const [result = { data: [], metadata: [] }] = await (
       await collection(VOCABULARY_COLLECTIONS.vocabulary)
     )
       .aggregate([
-        { $match: { ...filter, status: "published" } },
+        { $match: active({ ...filter, status: "published" }) },
         {
           $lookup: {
             from: LEARNING_COLLECTIONS.lessons,
             let: { lessonId: "$lessonId" },
             pipeline: [
-              { $match: { $expr: { $eq: ["$_id", "$$lessonId"] }, status: "published" } },
+              {
+                $match: {
+                  $expr: { $eq: ["$_id", "$$lessonId"] },
+                  status: "published",
+                  deletedAt: { $exists: false },
+                },
+              },
               { $project: { unitId: 1 } },
             ],
             as: "publicLesson",
@@ -105,8 +118,15 @@ export const vocabularyRepository = {
         {
           $lookup: {
             from: LEARNING_COLLECTIONS.units,
-            localField: "publicLesson.unitId",
-            foreignField: "_id",
+            let: { unitId: "$publicLesson.unitId" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: { $eq: ["$_id", "$$unitId"] },
+                  deletedAt: { $exists: false },
+                },
+              },
+            ],
             as: "publicUnit",
           },
         },
@@ -116,7 +136,13 @@ export const vocabularyRepository = {
             from: LEARNING_COLLECTIONS.courses,
             let: { courseId: "$publicUnit.courseId" },
             pipeline: [
-              { $match: { $expr: { $eq: ["$_id", "$$courseId"] }, status: "published" } },
+              {
+                $match: {
+                  $expr: { $eq: ["$_id", "$$courseId"] },
+                  status: "published",
+                  deletedAt: { $exists: false },
+                },
+              },
               { $project: { _id: 1 } },
             ],
             as: "publicCourse",
@@ -153,6 +179,7 @@ export const vocabularyRepository = {
                 $match: {
                   $expr: { $eq: ["$_id", "$$vocabularyId"] },
                   status: "published",
+                  deletedAt: { $exists: false },
                   ...vocabularyFilter,
                 },
               },
@@ -166,7 +193,13 @@ export const vocabularyRepository = {
             from: LEARNING_COLLECTIONS.lessons,
             let: { lessonId: "$vocabulary.lessonId" },
             pipeline: [
-              { $match: { $expr: { $eq: ["$_id", "$$lessonId"] }, status: "published" } },
+              {
+                $match: {
+                  $expr: { $eq: ["$_id", "$$lessonId"] },
+                  status: "published",
+                  deletedAt: { $exists: false },
+                },
+              },
               { $project: { unitId: 1 } },
             ],
             as: "publicLesson",
@@ -176,8 +209,15 @@ export const vocabularyRepository = {
         {
           $lookup: {
             from: LEARNING_COLLECTIONS.units,
-            localField: "publicLesson.unitId",
-            foreignField: "_id",
+            let: { unitId: "$publicLesson.unitId" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: { $eq: ["$_id", "$$unitId"] },
+                  deletedAt: { $exists: false },
+                },
+              },
+            ],
             as: "publicUnit",
           },
         },
@@ -187,7 +227,13 @@ export const vocabularyRepository = {
             from: LEARNING_COLLECTIONS.courses,
             let: { courseId: "$publicUnit.courseId" },
             pipeline: [
-              { $match: { $expr: { $eq: ["$_id", "$$courseId"] }, status: "published" } },
+              {
+                $match: {
+                  $expr: { $eq: ["$_id", "$$courseId"] },
+                  status: "published",
+                  deletedAt: { $exists: false },
+                },
+              },
               { $project: { _id: 1 } },
             ],
             as: "publicCourse",
@@ -224,10 +270,9 @@ export const vocabularyRepository = {
       .toArray();
   },
   async find(id, filter = {}) {
-    return (await collection(VOCABULARY_COLLECTIONS.vocabulary)).findOne({
-      ...idFilter(id),
-      ...filter,
-    });
+    return (await collection(VOCABULARY_COLLECTIONS.vocabulary)).findOne(
+      active({ ...idFilter(id), ...filter }),
+    );
   },
   async create(document) {
     const result = await (
@@ -260,24 +305,23 @@ export const vocabularyRepository = {
   },
   async listLessonIdentities(lessonId) {
     return (await collection(VOCABULARY_COLLECTIONS.vocabulary))
-      .find(
-        { lessonId: toObjectId(lessonId) },
-        { projection: { simplified: 1, pinyin: 1 } },
-      )
+      .find(active({ lessonId: toObjectId(lessonId) }), {
+        projection: { simplified: 1, pinyin: 1 },
+      })
       .toArray();
   },
   async update(id, update) {
     return (
       await collection(VOCABULARY_COLLECTIONS.vocabulary)
     ).findOneAndUpdate(
-      idFilter(id),
+      active(idFilter(id)),
       { $set: update },
       { returnDocument: "after" },
     );
   },
   async delete(id) {
     return (await collection(VOCABULARY_COLLECTIONS.vocabulary)).deleteOne(
-      idFilter(id),
+      active(idFilter(id)),
     );
   },
   async countProgress(vocabularyId) {
@@ -287,22 +331,22 @@ export const vocabularyRepository = {
   },
   async findLesson(id) {
     return (await collection(LEARNING_COLLECTIONS.lessons)).findOne(
-      idFilter(id),
+      active(idFilter(id)),
     );
   },
   async listPublishedLessons(ids) {
     return (await collection(LEARNING_COLLECTIONS.lessons))
-      .find({ _id: { $in: ids }, status: "published" })
+      .find(active({ _id: { $in: ids }, status: "published" }))
       .toArray();
   },
   async listUnits(ids) {
     return (await collection(LEARNING_COLLECTIONS.units))
-      .find({ _id: { $in: ids } })
+      .find(active({ _id: { $in: ids } }))
       .toArray();
   },
   async listPublishedCourses(ids) {
     return (await collection(LEARNING_COLLECTIONS.courses))
-      .find({ _id: { $in: ids }, status: "published" })
+      .find(active({ _id: { $in: ids }, status: "published" }))
       .toArray();
   },
   async listCharactersBySimplified(values, filter = {}) {
@@ -311,7 +355,7 @@ export const vocabularyRepository = {
     ].filter(Boolean);
     if (!simplified.length) return [];
     return (await collection(CHARACTER_COLLECTIONS.characters))
-      .find({ simplified: { $in: simplified }, ...filter })
+      .find(active({ simplified: { $in: simplified }, ...filter }))
       .toArray();
   },
   async insertCharacters(documents) {

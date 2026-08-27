@@ -22,6 +22,7 @@ export async function ensureQuizIndexes() {
         Promise.all([
           collection.createIndex({ lessonId: 1 }, { unique: true }),
           collection.createIndex({ status: 1, updatedAt: -1, _id: -1 }),
+          collection.createIndex({ deletedAt: 1, trashRoot: 1 }),
         ]),
       ),
       getCollection(QUIZ_COLLECTIONS.questions).then((collection) =>
@@ -60,17 +61,21 @@ function lessonIdentifierFilter(identifier) {
     : { slug: String(identifier) };
 }
 
+function active(filter = {}) {
+  return { ...filter, deletedAt: { $exists: false } };
+}
+
 export const quizRepository = {
   async listQuizzes(filter = {}) {
     return (await collection(QUIZ_COLLECTIONS.quizzes))
-      .find(filter)
+      .find(active(filter))
       .sort({ updatedAt: -1, title: 1, _id: -1 })
       .toArray();
   },
   async listQuizzesPage(filter = {}, { skip = 0, limit = 10 } = {}) {
     return (await collection(QUIZ_COLLECTIONS.quizzes))
       .aggregate([
-        { $match: filter },
+        { $match: active(filter) },
         { $sort: { updatedAt: -1, title: 1, _id: -1 } },
         { $skip: skip },
         { $limit: limit },
@@ -79,7 +84,7 @@ export const quizRepository = {
             from: QUIZ_COLLECTIONS.questions,
             localField: "_id",
             foreignField: "quizId",
-            pipeline: [{ $count: "total" }],
+            pipeline: [{ $match: { deletedAt: { $exists: false } } }, { $count: "total" }],
             as: "questionMetadata",
           },
         },
@@ -95,19 +100,17 @@ export const quizRepository = {
       .toArray();
   },
   async countQuizzes(filter = {}) {
-    return (await collection(QUIZ_COLLECTIONS.quizzes)).countDocuments(filter);
+    return (await collection(QUIZ_COLLECTIONS.quizzes)).countDocuments(active(filter));
   },
   async findQuiz(id, filter = {}) {
-    return (await collection(QUIZ_COLLECTIONS.quizzes)).findOne({
-      ...idFilter(id),
-      ...filter,
-    });
+    return (await collection(QUIZ_COLLECTIONS.quizzes)).findOne(
+      active({ ...idFilter(id), ...filter }),
+    );
   },
   async findQuizByLessonId(lessonId, filter = {}) {
-    return (await collection(QUIZ_COLLECTIONS.quizzes)).findOne({
-      lessonId: toObjectId(lessonId),
-      ...filter,
-    });
+    return (await collection(QUIZ_COLLECTIONS.quizzes)).findOne(
+      active({ lessonId: toObjectId(lessonId), ...filter }),
+    );
   },
   async createQuiz(document) {
     const result = await (
@@ -117,22 +120,22 @@ export const quizRepository = {
   },
   async updateQuiz(id, update) {
     return (await collection(QUIZ_COLLECTIONS.quizzes)).findOneAndUpdate(
-      idFilter(id),
+      active(idFilter(id)),
       { $set: update },
       { returnDocument: "after" },
     );
   },
   async deleteQuiz(id) {
-    return (await collection(QUIZ_COLLECTIONS.quizzes)).deleteOne(idFilter(id));
+    return (await collection(QUIZ_COLLECTIONS.quizzes)).deleteOne(active(idFilter(id)));
   },
   async listQuestions(filter = {}) {
     return (await collection(QUIZ_COLLECTIONS.questions))
-      .find(filter)
+      .find(active(filter))
       .sort({ order: 1, _id: 1 })
       .toArray();
   },
   async findQuestion(id) {
-    return (await collection(QUIZ_COLLECTIONS.questions)).findOne(idFilter(id));
+    return (await collection(QUIZ_COLLECTIONS.questions)).findOne(active(idFilter(id)));
   },
   async createQuestion(document) {
     const result = await (
@@ -142,20 +145,20 @@ export const quizRepository = {
   },
   async updateQuestion(id, update) {
     return (await collection(QUIZ_COLLECTIONS.questions)).findOneAndUpdate(
-      idFilter(id),
+      active(idFilter(id)),
       { $set: update },
       { returnDocument: "after" },
     );
   },
   async deleteQuestion(id) {
     return (await collection(QUIZ_COLLECTIONS.questions)).deleteOne(
-      idFilter(id),
+      active(idFilter(id)),
     );
   },
   async countQuestions(quizId) {
-    return (await collection(QUIZ_COLLECTIONS.questions)).countDocuments({
-      quizId: toObjectId(quizId),
-    });
+    return (await collection(QUIZ_COLLECTIONS.questions)).countDocuments(
+      active({ quizId: toObjectId(quizId) }),
+    );
   },
   async countAttempts(quizId) {
     return (await collection(QUIZ_COLLECTIONS.attempts)).countDocuments({
@@ -189,19 +192,17 @@ export const quizRepository = {
     });
   },
   async findLesson(identifier, filter = {}) {
-    return (await collection(LEARNING_COLLECTIONS.lessons)).findOne({
-      ...lessonIdentifierFilter(identifier),
-      ...filter,
-    });
+    return (await collection(LEARNING_COLLECTIONS.lessons)).findOne(
+      active({ ...lessonIdentifierFilter(identifier), ...filter }),
+    );
   },
   async findUnit(id) {
-    return (await collection(LEARNING_COLLECTIONS.units)).findOne(idFilter(id));
+    return (await collection(LEARNING_COLLECTIONS.units)).findOne(active(idFilter(id)));
   },
   async findCourse(id, filter = {}) {
-    return (await collection(LEARNING_COLLECTIONS.courses)).findOne({
-      ...idFilter(id),
-      ...filter,
-    });
+    return (await collection(LEARNING_COLLECTIONS.courses)).findOne(
+      active({ ...idFilter(id), ...filter }),
+    );
   },
   async findEnrollment(userId, courseId) {
     return (await collection(STUDENT_COLLECTIONS.enrollments)).findOne({

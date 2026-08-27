@@ -311,9 +311,11 @@ export default function AdminVocabularyPanel({ onNotify, onUnauthorized }) {
         onNotify('Không phát hiện từ vựng trùng lặp.');
         return;
       }
-      if (!report.summary.deletableRecords) {
+      const actionableRecords =
+        (report.summary.deletableRecords || 0) + (report.summary.mergeableRecords || 0);
+      if (!actionableRecords) {
         onNotify(
-          `Phát hiện ${report.summary.duplicateGroups} nhóm trùng nhưng các bản ghi dư đều có lịch sử học viên nên chưa thể xóa tự động.`,
+          `Phát hiện ${report.summary.duplicateGroups} nhóm trùng nhưng ${report.summary.manualRecords || report.summary.protectedRecords || 0} bản ghi cần kiểm tra thủ công trước khi gộp.`,
           'error',
         );
         return;
@@ -336,13 +338,21 @@ export default function AdminVocabularyPanel({ onNotify, onUnauthorized }) {
       setConfirmDuplicateCleanup(false);
       setDuplicateReport(result);
       await load();
-      const protectedText = result?.summary?.protectedRecords
-        ? ` ${result.summary.protectedRecords} bản ghi có lịch sử học viên được giữ lại.`
+      const parts = [];
+      if (result?.merged) parts.push(`đã gộp ${result.merged} bản ghi`);
+      if (result?.deleted) parts.push(`đã xóa ${result.deleted} bản không có dữ liệu học tập`);
+      if (result?.movedProgress) parts.push(`chuyển ${result.movedProgress} tiến độ học`);
+      if (result?.movedReviewHistory) {
+        parts.push(`chuyển ${result.movedReviewHistory} lịch sử ôn tập`);
+      }
+      const manualRecords = result?.summary?.manualRecords || result?.summary?.protectedRecords || 0;
+      const manualText = manualRecords
+        ? ` ${manualRecords} bản ghi còn lại cần kiểm tra thủ công.`
         : '';
-      onNotify(`Đã xóa ${result?.deleted || 0} bản ghi từ vựng trùng.${protectedText}`);
+      onNotify(`${parts.length ? parts.join(', ') : 'Không có bản ghi nào được xử lý'}.${manualText}`);
     } catch (caught) {
       if (caught.status === 401 && onUnauthorized(caught)) return;
-      onNotify(caught.message || 'Không thể xóa các từ trùng.', 'error');
+      onNotify(caught.message || 'Không thể gộp và xóa các từ trùng.', 'error');
     } finally {
       setDuplicateBusy(false);
     }
@@ -385,6 +395,12 @@ export default function AdminVocabularyPanel({ onNotify, onUnauthorized }) {
     downloadCsv('mandora-vocabulary-template.csv', vocabularyTemplateCsv());
     onNotify('Đã tải mẫu CSV. Không cần lessonId hoặc status trong file.');
   }
+
+  const duplicateActionableRecords =
+    (duplicateReport?.summary?.deletableRecords || 0) +
+    (duplicateReport?.summary?.mergeableRecords || 0);
+  const duplicateManualRecords =
+    duplicateReport?.summary?.manualRecords || duplicateReport?.summary?.protectedRecords || 0;
 
   return (
     <div className="admin-learning-page">
@@ -449,11 +465,10 @@ export default function AdminVocabularyPanel({ onNotify, onUnauthorized }) {
         </AdminAlert>
       )}
 
-      {duplicateReport?.summary?.protectedRecords > 0 && (
+      {duplicateManualRecords > 0 && (
         <AdminAlert>
-          Còn {duplicateReport.summary.protectedRecords} bản ghi trùng có dữ liệu học tập
-          của học viên. Hệ thống giữ lại các bản ghi này thay vì xóa tự động để tránh mất
-          lịch sử học.
+          Còn {duplicateManualRecords} bản ghi trùng cần kiểm tra thủ công. Hệ thống không
+          tự gộp khi cùng học viên có tiến độ ở cả hai bản hoặc đang có lượt ôn chờ đồng bộ.
         </AdminAlert>
       )}
 
@@ -809,13 +824,13 @@ export default function AdminVocabularyPanel({ onNotify, onUnauthorized }) {
       />
 
       <AdminConfirmDialog
-        confirmLabel={`Xóa ${duplicateReport?.summary?.deletableRecords || 0} bản ghi trùng`}
-        description={`Phát hiện ${duplicateReport?.summary?.duplicateGroups || 0} nhóm từ trùng và ${duplicateReport?.summary?.redundantRecords || 0} bản ghi dư. Hệ thống chỉ xóa ${duplicateReport?.summary?.deletableRecords || 0} bản ghi không có dữ liệu học tập. ${duplicateReport?.summary?.protectedRecords || 0} bản ghi có lịch sử học viên sẽ được giữ lại.`}
+        confirmLabel={`Gộp & xóa ${duplicateActionableRecords} bản trùng`}
+        description={`Phát hiện ${duplicateReport?.summary?.duplicateGroups || 0} nhóm từ trùng và ${duplicateReport?.summary?.redundantRecords || 0} bản ghi dư. ${duplicateReport?.summary?.deletableRecords || 0} bản có thể xóa trực tiếp; ${duplicateReport?.summary?.mergeableRecords || 0} bản có dữ liệu học viên sẽ được chuyển tiến độ và lịch sử ôn sang bản chính trước khi xóa. ${duplicateManualRecords} bản cần kiểm tra thủ công sẽ được giữ nguyên.`}
         loading={duplicateBusy}
         onCancel={() => setConfirmDuplicateCleanup(false)}
         onConfirm={cleanupDuplicates}
         open={confirmDuplicateCleanup}
-        title="Xóa các từ vựng trùng?"
+        title="Gộp & xóa từ vựng trùng?"
       />
     </div>
   );
