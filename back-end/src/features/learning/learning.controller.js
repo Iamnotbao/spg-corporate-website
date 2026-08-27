@@ -1,6 +1,7 @@
 import { learningRepository } from "./learning.repository.js";
 import { learningService } from "./learning.service.js";
 import { LESSON_TYPES } from "./learning.constants.js";
+import { trashService } from "../trash/trash.service.js";
 import {
   paginationResult,
   parsePagination,
@@ -45,8 +46,10 @@ export async function updateCourse(req, res) {
 }
 
 export async function deleteCourse(req, res) {
-  await learningService.deleteCourse(req.params.id);
-  return res.json({ ok: true });
+  return res.json({
+    ok: true,
+    data: await trashService.move("course", req.params.id, req.user),
+  });
 }
 
 export async function listUnits(req, res) {
@@ -70,8 +73,10 @@ export async function updateUnit(req, res) {
 }
 
 export async function deleteUnit(req, res) {
-  await learningService.deleteUnit(req.params.id);
-  return res.json({ ok: true });
+  return res.json({
+    ok: true,
+    data: await trashService.move("unit", req.params.id, req.user),
+  });
 }
 
 export async function listLessons(req, res) {
@@ -158,6 +163,8 @@ export async function updateLesson(req, res) {
 }
 
 export async function deleteLesson(req, res) {
-  await learningService.deleteLesson(req.params.id);
-  return res.json({ ok: true });
+  return res.json({
+    ok: true,
+    data: await trashService.move("lesson", req.params.id, req.user),
+  });
 }

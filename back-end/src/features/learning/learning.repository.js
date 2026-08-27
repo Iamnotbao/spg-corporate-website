@@ -11,15 +11,20 @@ export async function ensureLearningIndexes() {
         Promise.all([
           collection.createIndex({ slug: 1 }, { unique: true }),
           collection.createIndex({ status: 1, order: 1, _id: 1 }),
+          collection.createIndex({ deletedAt: 1, trashRoot: 1 }),
         ]),
       ),
       getCollection(LEARNING_COLLECTIONS.units).then((collection) =>
-        collection.createIndex({ courseId: 1, order: 1, _id: 1 }),
+        Promise.all([
+          collection.createIndex({ courseId: 1, order: 1, _id: 1 }),
+          collection.createIndex({ deletedAt: 1, trashRoot: 1 }),
+        ]),
       ),
       getCollection(LEARNING_COLLECTIONS.lessons).then((collection) =>
         Promise.all([
           collection.createIndex({ slug: 1 }, { unique: true }),
           collection.createIndex({ unitId: 1, status: 1, order: 1, _id: 1 }),
+          collection.createIndex({ deletedAt: 1, trashRoot: 1 }),
         ]),
       ),
     ]).catch((error) => {
@@ -47,29 +52,34 @@ function idFilter(id) {
   return value ? { _id: value } : { _id: null };
 }
 
+function active(filter = {}) {
+  return { ...filter, deletedAt: { $exists: false } };
+}
+
 export const learningRepository = {
   async listCourses(filter = {}) {
     return (await collection(LEARNING_COLLECTIONS.courses))
-      .find(filter)
+      .find(active(filter))
       .sort({ order: 1, title: 1, _id: 1 })
       .toArray();
   },
   async listCoursesPage(filter = {}, { skip = 0, limit = 10 } = {}) {
     return (await collection(LEARNING_COLLECTIONS.courses))
-      .find(filter)
+      .find(active(filter))
       .sort({ order: 1, title: 1, _id: 1 })
       .skip(skip)
       .limit(limit)
       .toArray();
   },
   async countCourses(filter = {}) {
-    return (await collection(LEARNING_COLLECTIONS.courses)).countDocuments(filter);
+    return (await collection(LEARNING_COLLECTIONS.courses)).countDocuments(
+      active(filter),
+    );
   },
   async findCourse(identifier, filter = {}) {
-    return (await collection(LEARNING_COLLECTIONS.courses)).findOne({
-      ...identifierFilter(identifier),
-      ...filter,
-    });
+    return (await collection(LEARNING_COLLECTIONS.courses)).findOne(
+      active({ ...identifierFilter(identifier), ...filter }),
+    );
   },
   async createCourse(document) {
     const result = await (
@@ -79,32 +89,34 @@ export const learningRepository = {
   },
   async updateCourse(id, update) {
     return (await collection(LEARNING_COLLECTIONS.courses)).findOneAndUpdate(
-      idFilter(id),
+      active(idFilter(id)),
       { $set: update },
       { returnDocument: "after" },
     );
   },
   async deleteCourse(id) {
     return (await collection(LEARNING_COLLECTIONS.courses)).deleteOne(
-      idFilter(id),
+      active(idFilter(id)),
     );
   },
   async listUnits(filter = {}) {
     return (await collection(LEARNING_COLLECTIONS.units))
-      .find(filter)
+      .find(active(filter))
       .sort({ order: 1, title: 1, _id: 1 })
       .toArray();
   },
   async listUnitsPage(filter = {}, { skip = 0, limit = 10 } = {}) {
     return (await collection(LEARNING_COLLECTIONS.units))
-      .find(filter)
+      .find(active(filter))
       .sort({ order: 1, title: 1, _id: 1 })
       .skip(skip)
       .limit(limit)
       .toArray();
   },
   async findUnit(id) {
-    return (await collection(LEARNING_COLLECTIONS.units)).findOne(idFilter(id));
+    return (await collection(LEARNING_COLLECTIONS.units)).findOne(
+      active(idFilter(id)),
+    );
   },
   async createUnit(document) {
     const result = await (
@@ -114,40 +126,39 @@ export const learningRepository = {
   },
   async updateUnit(id, update) {
     return (await collection(LEARNING_COLLECTIONS.units)).findOneAndUpdate(
-      idFilter(id),
+      active(idFilter(id)),
       { $set: update },
       { returnDocument: "after" },
     );
   },
   async deleteUnit(id) {
     return (await collection(LEARNING_COLLECTIONS.units)).deleteOne(
-      idFilter(id),
+      active(idFilter(id)),
     );
   },
   async countUnits(filter = {}) {
     return (await collection(LEARNING_COLLECTIONS.units)).countDocuments(
-      filter,
+      active(filter),
     );
   },
   async listLessons(filter = {}) {
     return (await collection(LEARNING_COLLECTIONS.lessons))
-      .find(filter)
+      .find(active(filter))
       .sort({ order: 1, title: 1, _id: 1 })
       .toArray();
   },
   async listLessonsPage(filter = {}, { skip = 0, limit = 10 } = {}) {
     return (await collection(LEARNING_COLLECTIONS.lessons))
-      .find(filter)
+      .find(active(filter))
       .sort({ order: 1, title: 1, _id: 1 })
       .skip(skip)
       .limit(limit)
       .toArray();
   },
   async findLesson(identifier, filter = {}) {
-    return (await collection(LEARNING_COLLECTIONS.lessons)).findOne({
-      ...identifierFilter(identifier),
-      ...filter,
-    });
+    return (await collection(LEARNING_COLLECTIONS.lessons)).findOne(
+      active({ ...identifierFilter(identifier), ...filter }),
+    );
   },
   async createLesson(document) {
     const result = await (
@@ -157,19 +168,19 @@ export const learningRepository = {
   },
   async updateLesson(id, update) {
     return (await collection(LEARNING_COLLECTIONS.lessons)).findOneAndUpdate(
-      idFilter(id),
+      active(idFilter(id)),
       { $set: update },
       { returnDocument: "after" },
     );
   },
   async deleteLesson(id) {
     return (await collection(LEARNING_COLLECTIONS.lessons)).deleteOne(
-      idFilter(id),
+      active(idFilter(id)),
     );
   },
   async countLessons(filter = {}) {
     return (await collection(LEARNING_COLLECTIONS.lessons)).countDocuments(
-      filter,
+      active(filter),
     );
   },
   toObjectId,

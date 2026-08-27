@@ -18,6 +18,7 @@ import AdminLearningPanel from './components/AdminLearningPanel.jsx';
 import AdminQuizPanel from './components/AdminQuizPanel.jsx';
 import AdminProgressPanel from './components/AdminProgressPanel.jsx';
 import AdminRouteState from './components/AdminRouteState.jsx';
+import AdminTrashPanel from './components/AdminTrashPanel.jsx';
 import AdminVocabularyPanel from './components/AdminVocabularyPanel.jsx';
 import AdminCharacterPanel from './components/AdminCharacterPanel.jsx';
 import CategoriesPanel from './components/CategoriesPanel.jsx';
@@ -104,6 +105,7 @@ export default function AdminApp() {
   else if (section === 'communications') page = <CommunicationsPanel onNotify={notify} onUnauthorized={auth.handleUnauthorized} />;
   else if (section === 'chat') page = <ChatPanel onNotify={notify} onUnauthorized={auth.handleUnauthorized} />;
   else if (section === 'categories') page = <CategoriesPanel onNotify={notify} onUnauthorized={auth.handleUnauthorized} />;
+  else if (section === 'trash') page = <AdminTrashPanel onNotify={notify} onUnauthorized={auth.handleUnauthorized} />;
   else page = <UsersPanel currentUser={auth.user} onNotify={notify} onUnauthorized={auth.handleUnauthorized} />;
 
   return (
