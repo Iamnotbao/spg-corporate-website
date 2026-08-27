@@ -87,7 +87,7 @@ export function createVocabularyDeduplicationService(
       const accumulatedUsers = new Set(
         canonicalRows.map((row) => String(row.userId || "")),
       );
-      let pendingInCanonical = hasPendingReview(canonicalRows);
+      const pendingInCanonical = hasPendingReview(canonicalRows);
       const deletableIds = [];
       const mergeableIds = [];
       const manualItems = [];
@@ -143,10 +143,10 @@ export function createVocabularyDeduplicationService(
       };
     });
 
-    const summary = analyzedGroups.reduce(
+    const rawSummary = analyzedGroups.reduce(
       (result, group) => {
         result.redundantRecords += group.duplicates.length;
-        result.deletableRecords += group.deletableIds.length;
+        result.unreferencedRecords += group.deletableIds.length;
         result.mergeableRecords += group.mergeableIds.length;
         result.manualRecords += group.manualIds.length;
         return result;
@@ -154,17 +154,22 @@ export function createVocabularyDeduplicationService(
       {
         duplicateGroups: analyzedGroups.length,
         redundantRecords: 0,
-        deletableRecords: 0,
+        unreferencedRecords: 0,
         mergeableRecords: 0,
         manualRecords: 0,
       },
     );
 
+    const actionableRecords =
+      rawSummary.unreferencedRecords + rawSummary.mergeableRecords;
+
     return {
       groups: analyzedGroups,
       summary: {
-        ...summary,
-        protectedRecords: summary.manualRecords,
+        ...rawSummary,
+        actionableRecords,
+        deletableRecords: actionableRecords,
+        protectedRecords: rawSummary.manualRecords,
       },
     };
   }
@@ -200,15 +205,25 @@ export function createVocabularyDeduplicationService(
         }
       }
 
+      const deletedUnreferenced = deleteResult.deletedCount || 0;
+      const processed = deletedUnreferenced + merged;
+      const manualRecords = report.summary.manualRecords + mergeFailures.length;
+
       return {
         ...report,
-        deleted: deleteResult.deletedCount || 0,
+        deletedUnreferenced,
+        deleted: processed,
         merged,
         movedProgress,
         movedReviewHistory,
         mergeFailures,
+        summary: {
+          ...report.summary,
+          manualRecords,
+          protectedRecords: manualRecords,
+        },
         message:
-          report.summary.manualRecords > 0 || mergeFailures.length > 0
+          manualRecords > 0
             ? "Đã xử lý các bản trùng an toàn. Một số bản ghi cần kiểm tra thủ công."
             : "Đã gộp dữ liệu học tập và xóa các bản ghi từ vựng trùng.",
       };
