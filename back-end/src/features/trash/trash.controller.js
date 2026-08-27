@@ -4,6 +4,13 @@ export async function listTrash(req, res) {
   return res.json(await trashService.list(req.query));
 }
 
+export async function moveToTrash(req, res) {
+  return res.json({
+    ok: true,
+    data: await trashService.move(req.params.type, req.params.id, req.user),
+  });
+}
+
 export async function restoreTrash(req, res) {
   return res.json({
     ok: true,
