@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import AdminIcon from './AdminIcon.jsx';
 
 const TYPE_LABELS = {
@@ -8,7 +8,9 @@ const TYPE_LABELS = {
   arrange_sentence: 'Sắp xếp câu',
 };
 
-function initialForm(question) {
+const ALL_TYPES = Object.keys(TYPE_LABELS);
+
+function initialForm(question, defaultType = 'multiple_choice') {
   return question
     ? {
         ...question,
@@ -17,10 +19,12 @@ function initialForm(question) {
       }
     : {
         question: '',
-        type: 'multiple_choice',
+        type: defaultType,
         explanation: '',
         points: '1',
         order: '0',
+        audioUrl: '',
+        imageUrl: '',
         options: [
           { content: '', isCorrect: true, order: 0 },
           { content: '', isCorrect: false, order: 1 },
@@ -30,12 +34,12 @@ function initialForm(question) {
       };
 }
 
-function questionPayload(form, allowMedia) {
+function questionPayload(form, allowMedia, fixedPoints) {
   const payload = {
     question: form.question,
     type: form.type,
     explanation: form.explanation,
-    points: Number(form.points),
+    points: fixedPoints ?? Number(form.points),
     order: Number(form.order),
   };
   if (allowMedia) {
@@ -63,9 +67,30 @@ function questionPayload(form, allowMedia) {
   return payload;
 }
 
-export default function AdminQuestionEditor({ allowMedia = false, onCancel, onSave, question, saving }) {
-  const [form, setForm] = useState(() => initialForm(question));
-  useEffect(() => setForm(initialForm(question)), [question]);
+export default function AdminQuestionEditor({
+  allowMedia = false,
+  allowedTypes = ALL_TYPES,
+  defaultType,
+  fixedPoints,
+  mediaHint = '',
+  onCancel,
+  onSave,
+  question,
+  requireAudio = false,
+  saving,
+}) {
+  const supportedTypes = useMemo(
+    () => (allowedTypes?.length ? allowedTypes : ALL_TYPES),
+    [allowedTypes],
+  );
+  const firstType = defaultType || supportedTypes[0] || 'multiple_choice';
+  const [form, setForm] = useState(() => initialForm(question, firstType));
+
+  useEffect(() => {
+    const next = initialForm(question, firstType);
+    if (!supportedTypes.includes(next.type)) next.type = firstType;
+    setForm(next);
+  }, [firstType, question, supportedTypes]);
 
   function changeType(type) {
     setForm((current) => ({
@@ -80,7 +105,7 @@ export default function AdminQuestionEditor({ allowMedia = false, onCancel, onSa
           : type === 'multiple_choice'
             ? current.options?.length >= 2
               ? current.options
-              : initialForm().options
+              : initialForm(null, firstType).options
             : [],
     }));
   }
@@ -99,7 +124,7 @@ export default function AdminQuestionEditor({ allowMedia = false, onCancel, onSa
       className="admin-form-section admin-question-form"
       onSubmit={(event) => {
         event.preventDefault();
-        onSave(questionPayload(form, allowMedia));
+        onSave(questionPayload(form, allowMedia, fixedPoints));
       }}
     >
       <div className="admin-form-section__heading">
@@ -108,7 +133,10 @@ export default function AdminQuestionEditor({ allowMedia = false, onCancel, onSa
         </span>
         <div>
           <h3>{question ? 'Chỉnh sửa câu hỏi' : 'Thêm câu hỏi'}</h3>
-          <p>Đáp án đúng chỉ được gửi cho học viên sau khi chấm điểm.</p>
+          <p>
+            Chỉ các kiểu câu phù hợp với phần thi hiện tại được hiển thị. Đáp án đúng chỉ
+            được gửi cho học viên sau khi backend chấm.
+          </p>
         </div>
       </div>
       <div className="admin-form-grid">
@@ -126,12 +154,22 @@ export default function AdminQuestionEditor({ allowMedia = false, onCancel, onSa
         {allowMedia && (
           <>
             <label className="admin-form-field">
-              <span>Audio URL (phần nghe)</span>
-              <input type="url" value={form.audioUrl || ''} onChange={(event) => setForm({ ...form, audioUrl: event.target.value })} />
+              <span>{requireAudio ? 'Audio URL *' : 'Audio URL (tùy chọn)'}</span>
+              <input
+                required={requireAudio}
+                type="url"
+                value={form.audioUrl || ''}
+                onChange={(event) => setForm({ ...form, audioUrl: event.target.value })}
+              />
+              {mediaHint && <small>{mediaHint}</small>}
             </label>
             <label className="admin-form-field">
               <span>Image URL (tùy chọn)</span>
-              <input type="url" value={form.imageUrl || ''} onChange={(event) => setForm({ ...form, imageUrl: event.target.value })} />
+              <input
+                type="url"
+                value={form.imageUrl || ''}
+                onChange={(event) => setForm({ ...form, imageUrl: event.target.value })}
+              />
             </label>
           </>
         )}
@@ -140,25 +178,34 @@ export default function AdminQuestionEditor({ allowMedia = false, onCancel, onSa
             Loại câu hỏi <b>*</b>
           </span>
           <select onChange={(event) => changeType(event.target.value)} value={form.type}>
-            {Object.entries(TYPE_LABELS).map(([value, label]) => (
+            {supportedTypes.map((value) => (
               <option key={value} value={value}>
-                {label}
+                {TYPE_LABELS[value] || value}
               </option>
             ))}
           </select>
         </label>
-        <label className="admin-form-field">
-          <span>
-            Điểm <b>*</b>
-          </span>
-          <input
-            min="1"
-            onChange={(event) => setForm({ ...form, points: event.target.value })}
-            required
-            type="number"
-            value={form.points}
-          />
-        </label>
+        {fixedPoints == null ? (
+          <label className="admin-form-field">
+            <span>
+              Điểm <b>*</b>
+            </span>
+            <input
+              min="1"
+              onChange={(event) => setForm({ ...form, points: event.target.value })}
+              required
+              type="number"
+              value={form.points}
+            />
+          </label>
+        ) : (
+          <div className="admin-form-field">
+            <span>Trọng số câu hỏi</span>
+            <div className="admin-hsk-fixed-score">
+              Mỗi câu = {fixedPoints} điểm nội bộ; điểm HSK được chuẩn hóa theo từng phần.
+            </div>
+          </div>
+        )}
         <label className="admin-form-field">
           <span>
             Thứ tự <b>*</b>
