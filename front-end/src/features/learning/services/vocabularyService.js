@@ -9,15 +9,6 @@ function vocabularyParams(filters = {}) {
   return params;
 }
 
-export function listPublicVocabulary(filters = {}) {
-  const params = vocabularyParams(filters);
-  if (filters.lessonId) params.set('lessonId', filters.lessonId);
-  const query = params.toString();
-  return apiRequest(`/vocabulary${query ? `?${query}` : ''}`, {
-    signal: filters.signal,
-  });
-}
-
 export function listLessonVocabulary(lessonId, filters = {}) {
   const params = vocabularyParams(filters);
   const query = params.toString();
@@ -25,6 +16,17 @@ export function listLessonVocabulary(lessonId, filters = {}) {
     `/lesson-vocabulary/${encodeURIComponent(lessonId)}${query ? `?${query}` : ''}`,
     { signal: filters.signal },
   );
+}
+
+export function listPublicVocabulary(filters = {}) {
+  if (filters.lessonId) {
+    return listLessonVocabulary(filters.lessonId, filters);
+  }
+  const params = vocabularyParams(filters);
+  const query = params.toString();
+  return apiRequest(`/vocabulary${query ? `?${query}` : ''}`, {
+    signal: filters.signal,
+  });
 }
 
 export function listSavedVocabulary(filters = {}) {
