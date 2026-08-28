@@ -1,4 +1,5 @@
 import { AdminEmpty, AdminSkeletonRows } from './AdminFeedback.jsx';
+import AdminCopyButton from './AdminCopyButton.jsx';
 import AdminPagination from './AdminPagination.jsx';
 import AdminFilterToolbar from './AdminFilterToolbar.jsx';
 
@@ -138,6 +139,7 @@ export default function AdminCharacterTable({
                       </span>
                     </td>
                     <td className="admin-learning-actions">
+                      <AdminCopyButton label="ID Hán tự" value={item.id} />
                       <button
                         className="admin-button admin-button--secondary"
                         onClick={() => beginEdit(item)}
