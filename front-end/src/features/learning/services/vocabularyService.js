@@ -1,16 +1,30 @@
 import { apiRequest } from '../../../services/httpClient.js';
 
-export function listPublicVocabulary(filters = {}) {
+function vocabularyParams(filters = {}) {
   const params = new URLSearchParams();
   if (filters.hskLevel) params.set('hskLevel', filters.hskLevel);
-  if (filters.lessonId) params.set('lessonId', filters.lessonId);
   if (filters.search) params.set('search', filters.search);
   if (filters.page) params.set('page', String(filters.page));
   if (filters.pageSize) params.set('pageSize', String(filters.pageSize));
+  return params;
+}
+
+export function listPublicVocabulary(filters = {}) {
+  const params = vocabularyParams(filters);
+  if (filters.lessonId) params.set('lessonId', filters.lessonId);
   const query = params.toString();
   return apiRequest(`/vocabulary${query ? `?${query}` : ''}`, {
     signal: filters.signal,
   });
+}
+
+export function listLessonVocabulary(lessonId, filters = {}) {
+  const params = vocabularyParams(filters);
+  const query = params.toString();
+  return apiRequest(
+    `/lesson-vocabulary/${encodeURIComponent(lessonId)}${query ? `?${query}` : ''}`,
+    { signal: filters.signal },
+  );
 }
 
 export function listSavedVocabulary(filters = {}) {
