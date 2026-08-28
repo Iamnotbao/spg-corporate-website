@@ -1,7 +1,38 @@
 import { useEffect, useMemo, useState } from 'react';
 
-const PAGE_BUDGET = 1450;
-const MAX_BLOCKS_PER_PAGE = 12;
+const PAGE_BUDGET = 1100;
+const MAX_BLOCKS_PER_PAGE = 9;
+const LONG_BLOCK_LIMIT = 260;
+
+function isStructuredBlock(value) {
+  return (
+    /^(mục tiêu|ghi nhớ|ví dụ|hội thoại|từ vựng|luyện tập|\d+[.)]\s)/iu.test(value) ||
+    /^[-•]\s/.test(value) ||
+    /^[A-ZÀ-Ỹ]:\s/u.test(value)
+  );
+}
+
+function splitLongBlock(value) {
+  const text = String(value || '').trim();
+  if (!text || text.length <= LONG_BLOCK_LIMIT || isStructuredBlock(text)) return [text];
+
+  const sentences = text.match(/[^.!?。！？]+[.!?。！？]?/gu) || [text];
+  const chunks = [];
+  let chunk = '';
+
+  sentences.forEach((sentence) => {
+    const next = `${chunk}${chunk ? ' ' : ''}${sentence.trim()}`.trim();
+    if (chunk && next.length > LONG_BLOCK_LIMIT) {
+      chunks.push(chunk);
+      chunk = sentence.trim();
+    } else {
+      chunk = next;
+    }
+  });
+
+  if (chunk) chunks.push(chunk);
+  return chunks.length ? chunks : [text];
+}
 
 function blockWeight(text) {
   const value = String(text || '').trim();
@@ -9,15 +40,16 @@ function blockWeight(text) {
   const heading = /^(mục tiêu|ghi nhớ|ví dụ|hội thoại|từ vựng|luyện tập|\d+[.)]\s)/iu.test(value);
   const bullet = /^[-•]\s/.test(value);
   const dialogue = /^[A-ZÀ-Ỹ]:\s/u.test(value);
-  const base = Math.max(90, Math.min(420, value.length * 3));
-  return base + (heading ? 80 : 0) + (bullet || dialogue ? 24 : 0);
+  const base = Math.max(90, Math.min(360, value.length * 3));
+  return base + (heading ? 90 : 0) + (bullet || dialogue ? 28 : 0);
 }
 
 function splitIntoPages(content) {
   const blocks = String(content || '')
     .split(/\r?\n/)
     .map((value) => value.trim())
-    .filter(Boolean);
+    .filter(Boolean)
+    .flatMap(splitLongBlock);
 
   if (!blocks.length) return [[]];
 
@@ -138,7 +170,7 @@ export default function LessonPaperReader({ content, lessonKey }) {
 
       <footer className="lesson-paper__controls">
         <button
-          className="button button--secondary"
+          className="button button--secondary lesson-paper__previous"
           disabled={safeIndex === 0}
           onClick={() => go(safeIndex - 1)}
           type="button"
@@ -160,7 +192,7 @@ export default function LessonPaperReader({ content, lessonKey }) {
         </div>
 
         <button
-          className="button button--primary"
+          className="button button--primary lesson-paper__next"
           disabled={safeIndex === pages.length - 1}
           onClick={() => go(safeIndex + 1)}
           type="button"
