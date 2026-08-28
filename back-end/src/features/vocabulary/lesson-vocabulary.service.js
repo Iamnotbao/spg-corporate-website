@@ -6,6 +6,7 @@ import {
 } from "../../utils/pagination.js";
 import { VocabularyValidationError } from "./vocabulary.validation.js";
 import { lessonVocabularyRepository } from "./lesson-vocabulary.repository.js";
+import { vocabularyRepository } from "./vocabulary.repository.js";
 
 function serialize(item) {
   return {
@@ -34,7 +35,10 @@ function requireObjectId(repository, value, field) {
   return id;
 }
 
-export function createLessonVocabularyService(repository = lessonVocabularyRepository) {
+export function createLessonVocabularyService(
+  repository = lessonVocabularyRepository,
+  libraryRepository = vocabularyRepository,
+) {
   async function requireLesson(lessonId, { published = false } = {}) {
     requireObjectId(repository, lessonId, "lessonId");
     const lesson = await repository.findLesson(lessonId, { published });
@@ -107,13 +111,32 @@ export function createLessonVocabularyService(repository = lessonVocabularyRepos
           ]),
         );
       }
+
       const linkedIds = await repository.listLinkedIds(lessonId);
-      const { items, total } = await repository.listLessonVocabularyPage(
-        lessonId,
-        linkedIds,
-        query,
-        { skip: paging.skip, limit: paging.pageSize },
-      );
+      let items;
+      let total;
+      if (linkedIds.length) {
+        const explicitFilter = {
+          _id: { $in: linkedIds },
+          status: "published",
+          ...query,
+        };
+        [items, total] = await Promise.all([
+          libraryRepository.listPage(explicitFilter, {
+            skip: paging.skip,
+            limit: paging.pageSize,
+          }),
+          libraryRepository.count(explicitFilter),
+        ]);
+      } else {
+        ({ items, total } = await repository.listLessonVocabularyPage(
+          lessonId,
+          [],
+          query,
+          { skip: paging.skip, limit: paging.pageSize },
+        ));
+      }
+
       return {
         data: items.map(serialize),
         pagination: paginationResult(paging, total),
