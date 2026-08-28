@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 
 const DEFAULT_DESCRIPTION =
-  'Mandora là nền tảng học tiếng Trung dành cho người Việt với khóa học, HSK, từ vựng, Hán tự và luyện tập theo lộ trình rõ ràng.';
+  'Hanyora là nền tảng học tiếng Trung dành cho người Việt với khóa học, HSK, từ vựng, Hán tự và luyện tập theo lộ trình rõ ràng.';
 
 function ensureMeta(selector, attributes) {
   let element = document.head.querySelector(selector);
@@ -34,7 +34,7 @@ export function usePageTitle(title, options = {}) {
   const noIndex = options.noIndex ?? isPrivatePath(window.location.pathname);
 
   useEffect(() => {
-    const pageTitle = title ? `${title} | Mandora` : 'Mandora';
+    const pageTitle = title ? `${title} | Hanyora` : 'Hanyora';
     const canonicalUrl = `${siteOrigin()}${window.location.pathname === '/' ? '/' : window.location.pathname}`;
 
     document.title = pageTitle;
