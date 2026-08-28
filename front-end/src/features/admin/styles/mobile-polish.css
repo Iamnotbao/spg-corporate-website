@@ -1,7 +1,51 @@
-@media (max-width: 900px) {
+@media (max-width: 1100px) {
+  .admin-shell--phase-three,
+  .admin-shell--phase-three.is-sidebar-collapsed {
+    display: block !important;
+    min-width: 0;
+  }
+
+  .admin-shell--phase-three .admin-workspace {
+    width: 100%;
+    min-width: 0;
+  }
+
   .admin-shell--phase-three.is-sidebar-collapsed .admin-sidebar,
   .admin-shell--phase-three .admin-sidebar {
+    position: fixed !important;
+    inset: 0 auto 0 0;
+    z-index: 60;
     width: min(86vw, 300px) !important;
+    height: 100dvh;
+    padding: 20px 14px 16px;
+    transform: translateX(-105%) !important;
+    box-shadow: 24px 0 60px rgba(0, 0, 0, 0.24);
+  }
+
+  .admin-shell--phase-three.is-drawer-open .admin-sidebar,
+  .admin-shell--phase-three.is-drawer-open.is-sidebar-collapsed .admin-sidebar {
+    transform: translateX(0) !important;
+  }
+
+  .admin-shell--phase-three .admin-drawer-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: block;
+    border: 0;
+    opacity: 0;
+    background: rgba(20, 15, 16, 0.48);
+    pointer-events: none;
+    transition: opacity 180ms ease;
+  }
+
+  .admin-shell--phase-three.is-drawer-open .admin-drawer-scrim {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .admin-shell--phase-three .admin-mobile-menu {
+    display: grid !important;
   }
 
   .admin-shell--phase-three.is-sidebar-collapsed .admin-brand {
@@ -45,6 +89,63 @@
   .admin-shell--phase-three .admin-nav {
     overflow-y: auto;
     overscroll-behavior: contain;
+  }
+
+  .admin-shell--phase-three .admin-header {
+    min-height: 82px;
+    padding: 14px 18px;
+  }
+
+  .admin-shell--phase-three .admin-main {
+    width: 100%;
+    min-width: 0;
+    padding: 24px 18px 44px;
+    overflow-x: hidden;
+  }
+
+  .admin-shell--phase-three .admin-account-chip {
+    display: none;
+  }
+
+  .admin-shell--phase-three .admin-global-search-button strong,
+  .admin-shell--phase-three .admin-global-search-button kbd {
+    display: none;
+  }
+
+  .admin-shell--phase-three .admin-global-search-button {
+    width: 42px;
+    min-width: 42px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .admin-page-header {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .admin-page-header__action,
+  .admin-page-header__action > button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 700px) {
+  .admin-shell--phase-three .admin-header {
+    gap: 10px;
+  }
+
+  .admin-shell--phase-three .admin-header__actions {
+    gap: 7px;
+  }
+
+  .admin-shell--phase-three .admin-header__logout {
+    display: grid;
+  }
+
+  .admin-shell--phase-three .admin-main {
+    padding-inline: 14px;
   }
 }
 

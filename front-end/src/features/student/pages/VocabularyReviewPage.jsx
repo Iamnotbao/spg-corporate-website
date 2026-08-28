@@ -155,9 +155,10 @@ export default function VocabularyReviewPage() {
     resetInteraction();
   }
 
-  function showAnswer() {
+  function toggleFlipCard() {
+    if (activeMode !== 'flip') return;
     setFeedback(null);
-    setRevealed(true);
+    setRevealed((value) => !value);
   }
 
   function checkTypedAnswer(event) {
@@ -204,14 +205,14 @@ export default function VocabularyReviewPage() {
     }
   }
 
-  const reviewPrompt = activeMode === 'typing' ? 'Nhập pinyin hoặc nghĩa tiếng Việt' : activeMode === 'choice' ? 'Chọn nghĩa đúng' : 'Tự nhớ nghĩa và pinyin trước khi lật thẻ';
+  const reviewPrompt = activeMode === 'typing' ? 'Nhập pinyin hoặc nghĩa tiếng Việt' : activeMode === 'choice' ? 'Chọn nghĩa đúng' : 'Nhấp cạnh trái/phải hoặc nhấp đúp để lật thẻ';
 
   return (
     <>
       <PageHeader
         eyebrow="Active recall · SRS"
         title="Ôn tập từ vựng"
-        description="Nhớ chủ động bằng flashcard, nhập đáp án hoặc trắc nghiệm. Mandora dùng kết quả tự đánh giá để xếp lịch ôn tiếp theo."
+        description="Nhớ chủ động bằng flashcard, nhập đáp án hoặc trắc nghiệm. Hanyora dùng kết quả tự đánh giá để xếp lịch ôn tiếp theo."
       />
       <section className="vocabulary-review-page">
         <div className="public-container">
@@ -286,7 +287,10 @@ export default function VocabularyReviewPage() {
               </div>
 
               <div className="review-flip-scene">
-                <article className={`review-flashcard${revealed ? ' is-revealed' : ''}`}>
+                <article
+                  className={`review-flashcard${revealed ? ' is-revealed' : ''}${activeMode === 'flip' ? ' is-interactive' : ''}`}
+                  onDoubleClick={activeMode === 'flip' ? toggleFlipCard : undefined}
+                >
                   <div className="review-flashcard__inner">
                     <div className="review-flashcard__face review-flashcard__front">
                       <div className="review-card-topline">
@@ -299,9 +303,10 @@ export default function VocabularyReviewPage() {
                       )}
 
                       {activeMode === 'flip' && (
-                        <button className="button button--primary review-reveal-button" type="button" onClick={showAnswer}>
-                          ↻ Lật thẻ
-                        </button>
+                        <div className="review-flip-zones" aria-label="Lật flashcard">
+                          <button aria-label="Lật thẻ từ cạnh trái" onClick={toggleFlipCard} type="button"><span>‹</span></button>
+                          <button aria-label="Lật thẻ từ cạnh phải" onClick={toggleFlipCard} type="button"><span>›</span></button>
+                        </div>
                       )}
 
                       {activeMode === 'typing' && (
@@ -365,7 +370,7 @@ export default function VocabularyReviewPage() {
                         )}
                         <div className="review-rating-heading">
                           <strong>Thẻ này với bạn thế nào?</strong>
-                          <small>Mandora dùng lựa chọn này để tính lịch ôn tiếp theo.</small>
+                          <small>Hanyora dùng lựa chọn này để tính lịch ôn tiếp theo.</small>
                         </div>
                         <div className="review-rating-grid">
                           {RATINGS.map((item) => (
@@ -384,8 +389,8 @@ export default function VocabularyReviewPage() {
                           ))}
                         </div>
                         {activeMode === 'flip' && (
-                          <button className="review-flip-back" onClick={() => setRevealed(false)} type="button">
-                            ↻ Xem lại mặt trước
+                          <button className="review-flip-back" onClick={toggleFlipCard} type="button">
+                            Xem lại mặt trước
                           </button>
                         )}
                       </div>

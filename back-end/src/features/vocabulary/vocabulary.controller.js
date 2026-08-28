@@ -1,11 +1,27 @@
+import { lessonVocabularyService } from "./lesson-vocabulary.service.js";
 import { vocabularyDeduplicationService } from "./vocabulary-deduplication.service.js";
 import { vocabularyService } from "./vocabulary.service.js";
 
 export async function listPublic(req, res) {
   return res.json(await vocabularyService.listPublic(req.query));
 }
+export async function listPublicForLesson(req, res) {
+  return res.json(
+    await lessonVocabularyService.listPublicForLesson(req.params.lessonId, req.query),
+  );
+}
 export async function listAdmin(req, res) {
   return res.json(await vocabularyService.listAdmin(req.query));
+}
+export async function listAdminLessonLinks(req, res) {
+  return res.json({
+    data: await lessonVocabularyService.listAdminLinks(req.params.lessonId),
+  });
+}
+export async function replaceAdminLessonLinks(req, res) {
+  return res.json({
+    data: await lessonVocabularyService.replaceAdminLinks(req.params.lessonId, req.body),
+  });
 }
 export async function getAdmin(req, res) {
   return res.json({ data: await vocabularyService.getAdmin(req.params.id) });

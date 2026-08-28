@@ -1,0 +1,68 @@
+.admin-page-header__back {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 10px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--admin-muted);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.admin-page-header__back:hover,
+.admin-page-header__back:focus-visible {
+  color: var(--admin-accent);
+}
+
+.admin-copy-button {
+  display: inline-flex;
+  min-width: 34px;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 9px;
+  border: 1px solid var(--admin-line);
+  border-radius: 9px;
+  background: var(--admin-surface-soft);
+  color: var(--admin-muted);
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    color 160ms ease,
+    background 160ms ease,
+    transform 160ms ease;
+}
+
+.admin-copy-button:hover:not(:disabled),
+.admin-copy-button:focus-visible {
+  border-color: color-mix(in srgb, var(--admin-accent) 38%, var(--admin-line));
+  color: var(--admin-accent);
+  transform: translateY(-1px);
+}
+
+.admin-copy-button.is-copied {
+  border-color: color-mix(in srgb, var(--admin-success) 45%, var(--admin-line));
+  color: var(--admin-success);
+  background: color-mix(in srgb, var(--admin-success) 8%, var(--admin-surface));
+}
+
+.admin-copy-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.admin-copy-button span {
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+:root[data-theme='dark'] .admin-copy-button {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: #202626;
+}

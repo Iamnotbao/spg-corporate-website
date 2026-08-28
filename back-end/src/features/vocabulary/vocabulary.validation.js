@@ -19,6 +19,7 @@ function text(value, field, { required = false, max = 1000 } = {}) {
   if (required && !normalized) {
     throw new VocabularyValidationError(`${field} is required`);
   }
+  if (!required && !normalized) return undefined;
   if (normalized.length > max) {
     throw new VocabularyValidationError(
       `${field} must be at most ${max} characters`,
@@ -56,7 +57,6 @@ export function validateVocabulary(input = {}, { partial = false } = {}) {
       "pinyin",
       "meaningVietnamese",
       "hskLevel",
-      "lessonId",
       "status",
     ];
     const suppliedRequired =
@@ -102,14 +102,14 @@ export function validateVocabularyImport(input = {}) {
     );
   }
 
-  const lessonId = text(input.lessonId, "lessonId", { required: true, max: 24 });
+  const lessonId = text(input.lessonId, "lessonId", { required: false, max: 24 });
   const status = text(input.status, "status", { required: true, max: 20 });
   const duplicateMode = text(input.duplicateMode, "duplicateMode", {
     required: true,
     max: 20,
   });
 
-  if (!/^[a-f\d]{24}$/i.test(lessonId)) {
+  if (lessonId && !/^[a-f\d]{24}$/i.test(lessonId)) {
     throw new VocabularyValidationError("lessonId must be a valid id");
   }
   if (!STATUSES.includes(status)) {

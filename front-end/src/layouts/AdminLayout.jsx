@@ -38,7 +38,7 @@ export default function AdminLayout({
   }, []);
 
   useEffect(() => {
-    const media = window.matchMedia('(max-width: 900px)');
+    const media = window.matchMedia('(max-width: 1100px)');
     const syncMobileState = () => {
       if (media.matches) setSidebarCollapsed(false);
       else setDrawerOpen(false);
