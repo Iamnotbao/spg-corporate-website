@@ -33,7 +33,7 @@ export default function VideosPage() {
       <PageHeader
         eyebrow="Video learning"
         title="Học qua video"
-        description="Video bài học Hanyora theo cấp HSK. Video tự phát ở chế độ tắt tiếng để không làm gián đoạn trải nghiệm; bạn có thể bật âm thanh khi cần."
+        description="Video bài học Hanyora theo cấp HSK, tự phát liên tục ở chế độ tắt tiếng để tạo trải nghiệm trực quan mà không làm gián đoạn việc học."
       />
       <section className="video-catalog">
         <div className="public-container">
