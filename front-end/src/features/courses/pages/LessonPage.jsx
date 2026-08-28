@@ -87,6 +87,7 @@ export default function LessonPage() {
   const [vocabularySearch, setVocabularySearch] = useState('');
   const [vocabularyFilter, setVocabularyFilter] = useState('all');
   const [outlineOpen, setOutlineOpen] = useState(false);
+  const [lessonPanel, setLessonPanel] = useState('content');
 
   const lessons = useMemo(
     () =>
@@ -166,6 +167,7 @@ export default function LessonPage() {
 
   useEffect(() => {
     setOutlineOpen(false);
+    setLessonPanel('content');
   }, [lessonSlug]);
 
   useEffect(() => {
@@ -443,20 +445,66 @@ export default function LessonPage() {
               Hỏi AI về bài này
             </Link>
           </header>
-          <div className="lesson-body lesson-body--plain">
-            {lesson.data.content
-              .split(/\r?\n/)
-              .map((paragraph, index) =>
-                paragraph ? (
-                  <p key={`${paragraph.slice(0, 24)}-${index}`}>{paragraph}</p>
-                ) : (
-                  <br key={index} />
-                ),
-              )}
-          </div>
 
           {isVocabularyLesson && (
-            <section className="lesson-vocabulary-section">
+            <nav className="lesson-content-tabs" aria-label="Nội dung bài học">
+              <button
+                aria-selected={lessonPanel === 'content'}
+                className={lessonPanel === 'content' ? 'is-active' : undefined}
+                onClick={() => setLessonPanel('content')}
+                role="tab"
+                type="button"
+              >
+                <span>Nội dung bài học</span>
+                <small>Đọc lý thuyết & ví dụ</small>
+              </button>
+              <button
+                aria-selected={lessonPanel === 'vocabulary'}
+                className={lessonPanel === 'vocabulary' ? 'is-active' : undefined}
+                onClick={() => setLessonPanel('vocabulary')}
+                role="tab"
+                type="button"
+              >
+                <span>Từ vựng</span>
+                <small>
+                  {vocabularyStatus === 'ready'
+                    ? `${lessonVocabulary.length} từ trong bài`
+                    : 'Đang tải danh sách'}
+                </small>
+              </button>
+            </nav>
+          )}
+
+          {(!isVocabularyLesson || lessonPanel === 'content') && (
+            <div className="lesson-panel lesson-panel--content">
+              <div className="lesson-body lesson-body--plain">
+                {lesson.data.content
+                  .split(/\r?\n/)
+                  .map((paragraph, index) =>
+                    paragraph ? (
+                      <p key={`${paragraph.slice(0, 24)}-${index}`}>{paragraph}</p>
+                    ) : (
+                      <br key={index} />
+                    ),
+                  )}
+              </div>
+              {isVocabularyLesson && lessonVocabulary.length > 0 && (
+                <button
+                  className="lesson-panel-next"
+                  onClick={() => {
+                    setLessonPanel('vocabulary');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  type="button"
+                >
+                  Học {lessonVocabulary.length} từ vựng của bài →
+                </button>
+              )}
+            </div>
+          )}
+
+          {isVocabularyLesson && lessonPanel === 'vocabulary' && (
+            <section className="lesson-vocabulary-section lesson-vocabulary-section--tabbed">
               <div className="lesson-vocabulary-section__heading">
                 <div>
                   <span>Từ vựng trong bài</span>
@@ -518,24 +566,18 @@ export default function LessonPage() {
                   </p>
                 )}
               {vocabularyStatus === 'ready' && filteredVocabulary.length > 0 && (
-                <div
-                  className="lesson-vocabulary-scroll"
-                  tabIndex="0"
-                  aria-label="Danh sách từ vựng trong bài"
-                >
-                  <div className="lesson-vocabulary-grid">
-                    {filteredVocabulary.map((item) => (
-                      <VocabularyCard
-                        busy={busyVocabularyId === item.id}
-                        item={item}
-                        key={item.id}
-                        onAskAi={askAiAboutVocabulary}
-                        onPracticeCharacter={setPracticeCharacter}
-                        onToggleSave={toggleSaveVocabulary}
-                        saved={savedIds.has(item.id)}
-                      />
-                    ))}
-                  </div>
+                <div className="lesson-vocabulary-grid">
+                  {filteredVocabulary.map((item) => (
+                    <VocabularyCard
+                      busy={busyVocabularyId === item.id}
+                      item={item}
+                      key={item.id}
+                      onAskAi={askAiAboutVocabulary}
+                      onPracticeCharacter={setPracticeCharacter}
+                      onToggleSave={toggleSaveVocabulary}
+                      saved={savedIds.has(item.id)}
+                    />
+                  ))}
                 </div>
               )}
             </section>
