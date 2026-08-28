@@ -18,6 +18,21 @@ export function listAdminVocabulary(options = {}) {
   });
 }
 
+export function getAdminLessonVocabularyLinks(lessonId, options = {}) {
+  return apiRequest(`/admin/vocabulary/lessons/${encodeURIComponent(lessonId)}`, {
+    auth: true,
+    signal: options.signal,
+  });
+}
+
+export function replaceAdminLessonVocabularyLinks(lessonId, vocabularyIds) {
+  return apiRequest(`/admin/vocabulary/lessons/${encodeURIComponent(lessonId)}`, {
+    auth: true,
+    method: 'PUT',
+    body: { vocabularyIds },
+  });
+}
+
 export function createAdminVocabulary(payload) {
   return apiRequest('/admin/vocabulary', {
     auth: true,
