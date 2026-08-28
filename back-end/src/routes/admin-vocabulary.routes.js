@@ -14,5 +14,13 @@ router.post(
   "/duplicates/cleanup",
   asyncHandler(vocabularyController.cleanupDuplicates),
 );
+router.get(
+  "/lessons/:lessonId",
+  asyncHandler(vocabularyController.listAdminLessonLinks),
+);
+router.put(
+  "/lessons/:lessonId",
+  asyncHandler(vocabularyController.replaceAdminLessonLinks),
+);
 
 export default router;
