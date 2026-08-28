@@ -1,3 +1,5 @@
+# Keep SPA rewrites pointed at / instead of /index.html. Cloudflare Pages
+# canonicalizes /index.html to /, which would turn deep links into redirects.
 /courses / 200
 /courses/* / 200
 /hsk / 200
