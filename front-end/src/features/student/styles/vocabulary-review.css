@@ -191,6 +191,11 @@
   min-height: 560px;
 }
 
+.review-flashcard.is-interactive {
+  cursor: default;
+  user-select: none;
+}
+
 .review-flashcard__inner {
   position: relative;
   min-height: 560px;
@@ -221,6 +226,70 @@
   gap: 18px;
   padding: clamp(32px, 6vw, 68px);
   text-align: center;
+}
+
+.review-flip-zones {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.review-flip-zones button {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 27%;
+  padding: 0 16px;
+  border: 0;
+  background: transparent;
+  color: var(--mandora-red-700);
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.review-flip-zones button:first-child {
+  left: 0;
+  text-align: left;
+}
+
+.review-flip-zones button:last-child {
+  right: 0;
+  text-align: right;
+}
+
+.review-flip-zones button span {
+  display: inline-grid;
+  width: 38px;
+  height: 58px;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--mandora-paper) 72%, transparent);
+  font-size: 2rem;
+  opacity: 0.24;
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease,
+    border-color 180ms ease,
+    background 180ms ease;
+}
+
+.review-flip-zones button:hover span,
+.review-flip-zones button:focus-visible span {
+  border-color: var(--mandora-line);
+  background: color-mix(in srgb, var(--mandora-red-100) 72%, var(--mandora-paper));
+  opacity: 0.9;
+}
+
+.review-flip-zones button:first-child:hover span,
+.review-flip-zones button:first-child:focus-visible span {
+  transform: translateX(-3px);
+}
+
+.review-flip-zones button:last-child:hover span,
+.review-flip-zones button:last-child:focus-visible span {
+  transform: translateX(3px);
 }
 
 .review-card-topline {
@@ -258,13 +327,10 @@
   color: var(--mandora-muted);
 }
 
-.review-reveal-button {
-  min-width: 150px;
-  margin-top: 12px;
-}
-
 .review-answer-form,
 .review-choice-form {
+  position: relative;
+  z-index: 4;
   display: grid;
   width: min(520px, 100%);
   gap: 12px;
@@ -513,12 +579,19 @@
     border-radius: 24px 24px 24px 8px;
   }
 
+  .review-flip-zones button {
+    width: 24%;
+    padding-inline: 8px;
+  }
+
+  .review-flip-zones button span {
+    width: 32px;
+    height: 48px;
+    font-size: 1.65rem;
+  }
+
   .review-choice-grid,
   .review-rating-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .review-session-toolbar {
-    align-items: flex-start;
   }
 }
