@@ -4,8 +4,7 @@ import { trashService } from "../features/trash/trash.service.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
 const router = Router();
-
-router.use(auth, requireAdmin);
+const adminOnly = [auth, requireAdmin];
 
 function move(type) {
   return asyncHandler(async (req, res) => {
@@ -31,14 +30,14 @@ function bulkMove(type) {
   });
 }
 
-router.delete("/vocabulary/:id", move("vocabulary"));
-router.delete("/quizzes/:id", move("quiz"));
-router.delete("/characters/:id", move("character"));
-router.delete("/posts/:id", move("post"));
-router.delete("/jobs/:id", move("job"));
+router.delete("/vocabulary/:id", ...adminOnly, move("vocabulary"));
+router.delete("/quizzes/:id", ...adminOnly, move("quiz"));
+router.delete("/characters/:id", ...adminOnly, move("character"));
+router.delete("/posts/:id", ...adminOnly, move("post"));
+router.delete("/jobs/:id", ...adminOnly, move("job"));
 
-router.post("/characters/bulk-delete", bulkMove("character"));
-router.post("/posts/bulk-delete", bulkMove("post"));
-router.post("/jobs/bulk-delete", bulkMove("job"));
+router.post("/characters/bulk-delete", ...adminOnly, bulkMove("character"));
+router.post("/posts/bulk-delete", ...adminOnly, bulkMove("post"));
+router.post("/jobs/bulk-delete", ...adminOnly, bulkMove("job"));
 
 export default router;
