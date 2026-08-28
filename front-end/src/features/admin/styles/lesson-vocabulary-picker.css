@@ -12,7 +12,8 @@
 .admin-vocabulary-picker__dialog {
   display: grid;
   width: min(1040px, 96vw);
-  max-height: min(820px, 92vh);
+  max-height: min(820px, calc(100dvh - 48px));
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto;
   overflow: hidden;
   border: 1px solid var(--admin-line);
   border-radius: 22px;
@@ -27,6 +28,7 @@
   justify-content: space-between;
   gap: 18px;
   padding: 20px 22px;
+  background: var(--admin-surface);
 }
 
 .admin-vocabulary-picker__dialog > header {
@@ -85,9 +87,21 @@
 }
 
 .admin-vocabulary-picker__table-wrap {
-  min-height: 330px;
+  min-height: 0;
   overflow: auto;
   padding: 0 22px;
+  overscroll-behavior: contain;
+}
+
+.admin-vocabulary-picker__table {
+  margin-bottom: 0;
+}
+
+.admin-vocabulary-picker__table thead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--admin-surface);
 }
 
 .admin-vocabulary-picker__table tbody tr {
@@ -113,7 +127,10 @@
 }
 
 .admin-vocabulary-picker__dialog > footer {
+  position: relative;
+  z-index: 3;
   border-top: 1px solid var(--admin-line);
+  box-shadow: 0 -10px 28px rgba(24, 17, 18, 0.06);
 }
 
 .admin-vocabulary-picker__dialog > footer > div {
@@ -152,6 +169,25 @@
 
 .admin-learning-editor-back {
   justify-self: start;
+}
+
+@media (max-height: 760px) and (min-width: 701px) {
+  .admin-vocabulary-picker {
+    padding-block: 12px;
+  }
+
+  .admin-vocabulary-picker__dialog {
+    max-height: calc(100dvh - 24px);
+  }
+
+  .admin-vocabulary-picker__dialog > header,
+  .admin-vocabulary-picker__dialog > footer {
+    padding-block: 14px;
+  }
+
+  .admin-vocabulary-picker__toolbar {
+    padding-block: 12px;
+  }
 }
 
 @media (max-width: 700px) {
