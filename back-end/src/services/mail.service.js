@@ -9,13 +9,13 @@ function publicUrl(pathname, token) {
 function messageFor(kind, url) {
   if (kind === "password-reset") {
     return {
-      subject: "Đặt lại mật khẩu Mandora",
-      text: `Mở liên kết sau để đặt lại mật khẩu Mandora. Liên kết hết hạn sau 30 phút:\n\n${url}`,
+      subject: "Đặt lại mật khẩu Hanyora",
+      text: `Mở liên kết sau để đặt lại mật khẩu Hanyora. Liên kết hết hạn sau 30 phút:\n\n${url}`,
     };
   }
   return {
-    subject: "Xác minh email Mandora",
-    text: `Mở liên kết sau để xác minh email Mandora. Liên kết hết hạn sau 24 giờ:\n\n${url}`,
+    subject: "Xác minh email Hanyora",
+    text: `Mở liên kết sau để xác minh email Hanyora. Liên kết hết hạn sau 24 giờ:\n\n${url}`,
   };
 }
 
@@ -48,7 +48,7 @@ export function createMailService({
       headers: {
         Authorization: `Bearer ${config.resendApiKey}`,
         "Content-Type": "application/json",
-        "User-Agent": "Mandora/1.0",
+        "User-Agent": "Hanyora/1.0",
       },
       body: JSON.stringify({
         from: config.from,
