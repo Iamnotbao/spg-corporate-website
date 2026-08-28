@@ -9,6 +9,7 @@ import './styles/categories.css';
 import './styles/admin-phase-three.css';
 import './styles/admin-utilities.css';
 import './styles/learning.css';
+import './styles/lesson-vocabulary-picker.css';
 import './styles/quiz-polish.css';
 import './styles/vocabulary-import-polish.css';
 import './styles/chat.css';
