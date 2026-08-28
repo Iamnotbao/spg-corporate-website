@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { ObjectId } from "mongodb";
+import { createLessonVocabularyService } from "./lesson-vocabulary.service.js";
 import { createVocabularyService, extractHanCharacters } from "./vocabulary.service.js";
 import { MAX_VOCABULARY_IMPORT_ROWS } from "./vocabulary.validation.js";
 
@@ -33,9 +34,6 @@ function repository(overrides = {}) {
     },
     async count() {
       return 1;
-    },
-    async listPublicPage(_filter, { skip, limit }) {
-      return { items: [word].slice(skip, skip + limit), total: 1 };
     },
     async find(id, filter = {}) {
       return String(id) === String(wordId) &&
@@ -72,16 +70,60 @@ function repository(overrides = {}) {
         ? [{ userId, vocabularyId: wordId, saved: true }]
         : [];
     },
-    async listSavedPublicPage(userId, _filter, { skip, limit }) {
+    async listSavedIds(userId, vocabularyIds) {
+      return String(userId) === String(studentA) &&
+        vocabularyIds.some((id) => String(id) === String(wordId))
+        ? [{ vocabularyId: wordId }]
+        : [];
+    },
+    ...overrides,
+  };
+}
+
+function lessonLinks(overrides = {}) {
+  return {
+    async listSavedLibraryPage(userId, _filter, { skip, limit }) {
       const items = String(userId) === String(studentA)
         ? [{ vocabulary: word, savedAt: new Date() }]
         : [];
       return { items: items.slice(skip, skip + limit), total: items.length };
     },
-    async listSavedIds(userId, vocabularyIds) {
-      return String(userId) === String(studentA) && vocabularyIds.some((id) => String(id) === String(wordId))
-        ? [{ vocabularyId: wordId }]
-        : [];
+    async removeVocabularyLinks() {
+      return { deletedCount: 0 };
+    },
+    ...overrides,
+  };
+}
+
+function lessonRelationRepository(overrides = {}) {
+  return {
+    toObjectId(value) {
+      return ObjectId.isValid(value) ? new ObjectId(value) : null;
+    },
+    async findLesson(id, { published = false } = {}) {
+      if (String(id) !== String(lessonId)) return null;
+      if (published) return { _id: lessonId, unitId, status: "published" };
+      return { _id: lessonId, unitId, status: "published" };
+    },
+    async findUnit(id) {
+      return String(id) === String(unitId) ? { _id: unitId, courseId } : null;
+    },
+    async findPublishedCourse(id) {
+      return String(id) === String(courseId)
+        ? { _id: courseId, status: "published" }
+        : null;
+    },
+    async listLinkedIds() {
+      return [wordId];
+    },
+    async listLessonVocabularyPage(_lessonId, _linkedIds, _query, { skip, limit }) {
+      return { items: [word].slice(skip, skip + limit), total: 1 };
+    },
+    async countVocabulary(ids) {
+      return ids.length;
+    },
+    async replaceLinks() {
+      return [];
     },
     ...overrides,
   };
@@ -108,6 +150,7 @@ test("vocabulary saves and lists are scoped to the authenticated student", async
       },
     }),
     fakeCharacterData,
+    lessonLinks(),
   );
   await service.save({ _id: studentA, role: "student" }, String(wordId));
   await service.unsave({ _id: studentB, role: "student" }, String(wordId));
@@ -123,21 +166,44 @@ test("vocabulary saves and lists are scoped to the authenticated student", async
   );
 });
 
-test("draft or hidden hierarchy vocabulary is unavailable to students", async () => {
-  const service = createVocabularyService(
-    repository({
-      async listPublicPage() {
-        return { items: [], total: 0 };
-      },
-      async listPublishedCourses() {
-        return [];
+test("published Vocabulary library is independent from Lesson hierarchy", async () => {
+  const service = createVocabularyService(repository(), fakeCharacterData, lessonLinks());
+  const result = await service.listPublic();
+  assert.equal(result.data.length, 1);
+  assert.equal(result.data[0].simplified, "学");
+  await assert.doesNotReject(() =>
+    service.save({ _id: studentA, role: "student" }, String(wordId)),
+  );
+});
+
+test("Lesson vocabulary requires a published Lesson and published parent Course", async () => {
+  const visibleService = createLessonVocabularyService(lessonRelationRepository());
+  const visible = await visibleService.listPublicForLesson(String(lessonId));
+  assert.equal(visible.data.length, 1);
+  assert.equal(visible.data[0].simplified, "学");
+
+  const draftLessonService = createLessonVocabularyService(
+    lessonRelationRepository({
+      async findLesson(id, { published = false } = {}) {
+        if (String(id) !== String(lessonId)) return null;
+        return published ? null : { _id: lessonId, unitId, status: "draft" };
       },
     }),
-    fakeCharacterData,
   );
-  assert.deepEqual((await service.listPublic()).data, []);
   await assert.rejects(
-    () => service.save({ _id: studentA, role: "student" }, String(wordId)),
+    () => draftLessonService.listPublicForLesson(String(lessonId)),
+    { status: 404 },
+  );
+
+  const hiddenCourseService = createLessonVocabularyService(
+    lessonRelationRepository({
+      async findPublishedCourse() {
+        return null;
+      },
+    }),
+  );
+  await assert.rejects(
+    () => hiddenCourseService.listPublicForLesson(String(lessonId)),
     { status: 404 },
   );
 });
@@ -170,13 +236,16 @@ test("admin Vocabulary uses database pagination with search and filters", async 
   assert.equal(result.pagination.totalPages, 3);
 });
 
-test("public Vocabulary pagination totals only hierarchy-visible rows", async () => {
+test("public Vocabulary pagination totals published library rows", async () => {
   let received;
   const service = createVocabularyService(
     repository({
-      async listPublicPage(filter, options) {
+      async listPage(filter, options) {
         received = { filter, options };
-        return { items: [word], total: 13 };
+        return [word];
+      },
+      async count() {
+        return 13;
       },
     }),
     fakeCharacterData,
@@ -188,6 +257,7 @@ test("public Vocabulary pagination totals only hierarchy-visible rows", async ()
     hskLevel: "HSK 1",
   });
   assert.deepEqual(received.options, { skip: 10, limit: 10 });
+  assert.equal(received.filter.status, "published");
   assert.equal(received.filter.hskLevel, "HSK 1");
   assert.ok(received.filter.$or);
   assert.equal(result.pagination.total, 13);
