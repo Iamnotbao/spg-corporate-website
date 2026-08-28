@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { API_URL, apiRequest, getStudentToken } from '../../../services/httpClient.js';
 import {
   clearAllStudentNotifications,
@@ -31,8 +31,10 @@ function rememberGuestRead(id) {
 
 export default function PublicCommunications() {
   const signedIn = Boolean(getStudentToken());
+  const centerRef = useRef(null);
   const [data, setData] = useState({ banner: null, notifications: [] });
   const [open, setOpen] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
   const [flash, setFlash] = useState('');
   const [studentPage, setStudentPage] = useState(1);
   const [studentTotalPages, setStudentTotalPages] = useState(1);
@@ -94,6 +96,25 @@ export default function PublicCommunications() {
     window.addEventListener('mandora:open-notifications', openNotifications);
     return () => window.removeEventListener('mandora:open-notifications', openNotifications);
   }, []);
+
+  useEffect(() => {
+    if (!open) {
+      setConfirmClear(false);
+      return undefined;
+    }
+    const onPointerDown = (event) => {
+      if (centerRef.current && !centerRef.current.contains(event.target)) setOpen(false);
+    };
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open]);
 
   const notifications = useMemo(() => data.notifications, [data.notifications]);
   const banner = data.banner;
@@ -161,13 +182,13 @@ export default function PublicCommunications() {
   }
 
   async function clearAll() {
-    if (!window.confirm('Ẩn tất cả thông báo hiện có khỏi tài khoản của bạn?')) return;
     try {
       await clearAllStudentNotifications();
       setStudentUnread(0);
       setStudentPage(1);
       setStudentTotalPages(1);
       setData((current) => ({ ...current, notifications: [] }));
+      setConfirmClear(false);
       setOpen(false);
     } catch {
       // Preserve the current list when the owned update fails.
@@ -179,30 +200,20 @@ export default function PublicCommunications() {
       {banner && (
         <aside
           className={`public-event-banner is-${banner.style || 'event'}`}
-          style={
-            banner.backgroundImageUrl
-              ? { '--event-background': `url("${banner.backgroundImageUrl}")` }
-              : undefined
-          }
+          style={banner.backgroundImageUrl ? { '--event-background': `url("${banner.backgroundImageUrl}")` } : undefined}
         >
           <div className="public-container public-event-banner__inner">
             <div className="public-event-banner__content">
               <strong>{banner.title || 'Thông báo từ Hanyora'}</strong>
-              {banner.message && (
-                <div className="public-event-banner__marquee">
-                  <span>{banner.message}</span>
-                </div>
-              )}
+              {banner.message && <div className="public-event-banner__marquee"><span>{banner.message}</span></div>}
             </div>
-            {banner.link && (
-              <a href={banner.link}>Xem chi tiết <span aria-hidden="true">→</span></a>
-            )}
+            {banner.link && <a href={banner.link}>Xem chi tiết <span aria-hidden="true">→</span></a>}
           </div>
         </aside>
       )}
 
       {notifications.length > 0 && (
-        <div className="public-notification-center">
+        <div className="public-notification-center" ref={centerRef}>
           <button
             aria-expanded={open}
             aria-label={`Thông báo Hanyora, ${unreadCount} chưa xem`}
@@ -216,27 +227,25 @@ export default function PublicCommunications() {
           {open && (
             <section className="public-notification-center__panel" aria-label="Thông báo Hanyora">
               <header>
-                <div>
-                  <small>Hanyora</small>
-                  <strong>Thông báo</strong>
-                </div>
+                <div><small>Hanyora</small><strong>Thông báo</strong></div>
                 <button aria-label="Đóng thông báo" onClick={() => setOpen(false)} type="button">×</button>
               </header>
               {signedIn && (
                 <div className="public-notification-center__bulk-actions">
-                  <button disabled={!studentUnread} onClick={markAllRead} type="button">
-                    Đánh dấu tất cả đã đọc
-                  </button>
-                  <button onClick={clearAll} type="button">Xóa tất cả</button>
+                  <button disabled={!studentUnread} onClick={markAllRead} type="button">Đánh dấu tất cả đã đọc</button>
+                  {confirmClear ? (
+                    <>
+                      <button className="is-danger" onClick={clearAll} type="button">Xác nhận xóa</button>
+                      <button onClick={() => setConfirmClear(false)} type="button">Hủy</button>
+                    </>
+                  ) : (
+                    <button onClick={() => setConfirmClear(true)} type="button">Xóa tất cả</button>
+                  )}
                 </div>
               )}
               <div className="public-notification-center__list">
                 {notifications.map((item, index) => (
-                  <article
-                    className={`${item.read ? 'is-read' : 'is-unread'} is-${item.type || 'info'}`}
-                    key={itemId(item, index)}
-                    onClick={() => viewNotification(item)}
-                  >
+                  <article className={`${item.read ? 'is-read' : 'is-unread'} is-${item.type || 'info'}`} key={itemId(item, index)} onClick={() => viewNotification(item)}>
                     <div className="public-notification-center__item-copy">
                       <strong>{item.title}</strong>
                       <p>{item.message}</p>
@@ -246,23 +255,16 @@ export default function PublicCommunications() {
                       <button
                         aria-label={`Ẩn thông báo ${item.title}`}
                         className="public-notification-center__dismiss"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          dismissNotification(item);
-                        }}
+                        onClick={(event) => { event.stopPropagation(); dismissNotification(item); }}
                         type="button"
-                      >
-                        ×
-                      </button>
+                      >×</button>
                     )}
                   </article>
                 ))}
               </div>
               {signedIn && studentPage < studentTotalPages && (
                 <footer className="public-notification-center__footer">
-                  <button disabled={loadingMore} onClick={loadMore} type="button">
-                    {loadingMore ? 'Đang tải…' : 'Xem thêm thông báo'}
-                  </button>
+                  <button disabled={loadingMore} onClick={loadMore} type="button">{loadingMore ? 'Đang tải…' : 'Xem thêm thông báo'}</button>
                 </footer>
               )}
             </section>
@@ -270,12 +272,7 @@ export default function PublicCommunications() {
         </div>
       )}
 
-      {flash && (
-        <div className="public-realtime-flash" role="status">
-          <span aria-hidden="true">✓</span>
-          <p>{flash}</p>
-        </div>
-      )}
+      {flash && <div className="public-realtime-flash" role="status"><span aria-hidden="true">✓</span><p>{flash}</p></div>}
     </>
   );
 }
