@@ -59,6 +59,19 @@ test("unknown routes return a JSON 404 response", async () => {
   assert.deepEqual(await response.json(), { error: "Route not found" });
 });
 
+test("admin login reaches the public login handler without authentication", async () => {
+  const response = await fetch(`${baseUrl}/api/admin/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({}),
+  });
+
+  assert.equal(response.status, 400);
+  assert.deepEqual(await response.json(), {
+    error: "Username and password are required",
+  });
+});
+
 test("admin image upload requires authentication", async () => {
   const response = await fetch(`${baseUrl}/api/admin/uploads/images`, {
     method: "POST",
