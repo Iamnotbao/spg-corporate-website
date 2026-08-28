@@ -10,10 +10,34 @@
 /register
   X-Robots-Tag: noindex, nofollow
 
+/oauth/callback
+  X-Robots-Tag: noindex, nofollow
+
+/forgot-password
+  X-Robots-Tag: noindex, nofollow
+
+/reset-password
+  X-Robots-Tag: noindex, nofollow
+
+/verify-email
+  X-Robots-Tag: noindex, nofollow
+
+/dashboard
+  X-Robots-Tag: noindex, nofollow
+
 /my-courses
   X-Robots-Tag: noindex, nofollow
 
 /progress
+  X-Robots-Tag: noindex, nofollow
+
+/review
+  X-Robots-Tag: noindex, nofollow
+
+/ai-tutor
+  X-Robots-Tag: noindex, nofollow
+
+/hsk-mock-tests/*
   X-Robots-Tag: noindex, nofollow
 
 /courses/*/lessons/*/quiz
