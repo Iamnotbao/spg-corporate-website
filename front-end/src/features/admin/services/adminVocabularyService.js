@@ -18,6 +18,13 @@ export function listAdminVocabulary(options = {}) {
   });
 }
 
+export function getAdminVocabulary(id, options = {}) {
+  return apiRequest(`/admin/vocabulary/${encodeURIComponent(id)}`, {
+    auth: true,
+    signal: options.signal,
+  });
+}
+
 export function getAdminLessonVocabularyLinks(lessonId, options = {}) {
   return apiRequest(`/admin/vocabulary/lessons/${encodeURIComponent(lessonId)}`, {
     auth: true,
