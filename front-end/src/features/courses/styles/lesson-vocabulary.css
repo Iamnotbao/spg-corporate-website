@@ -1,3 +1,67 @@
+.lesson-content-tabs {
+  position: sticky;
+  top: 72px;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 24px 0 28px;
+  padding: 8px;
+  border: 1px solid var(--mandora-line);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--mandora-paper) 94%, transparent);
+  backdrop-filter: blur(14px);
+}
+
+.lesson-content-tabs button {
+  display: grid;
+  gap: 3px;
+  padding: 12px 14px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--mandora-muted);
+  text-align: left;
+  cursor: pointer;
+}
+
+.lesson-content-tabs button span {
+  color: inherit;
+  font-size: 0.88rem;
+  font-weight: 900;
+}
+
+.lesson-content-tabs button small {
+  color: var(--mandora-muted);
+  font-size: 0.7rem;
+}
+
+.lesson-content-tabs button.is-active {
+  background: var(--mandora-red-100);
+  color: var(--mandora-red-700);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--mandora-red-700) 18%, transparent);
+}
+
+.lesson-panel {
+  min-width: 0;
+}
+
+.lesson-panel-next {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 32px;
+  padding: 17px 18px;
+  border: 1px solid color-mix(in srgb, var(--mandora-red-700) 22%, var(--mandora-line));
+  border-radius: 16px;
+  background: var(--mandora-red-100);
+  color: var(--mandora-red-700);
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
 .lesson-vocabulary-section {
   display: grid;
   min-width: 0;
@@ -5,6 +69,12 @@
   margin-top: 42px;
   padding-top: 34px;
   border-top: 1px solid var(--mandora-line);
+}
+
+.lesson-vocabulary-section--tabbed {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
 }
 
 .lesson-vocabulary-section__heading {
@@ -42,7 +112,7 @@
 
 .lesson-vocabulary-toolbar {
   position: sticky;
-  top: 88px;
+  top: 160px;
   z-index: 3;
   display: grid;
   grid-template-columns: minmax(240px, 1fr) auto auto;
@@ -109,19 +179,6 @@
   white-space: nowrap;
 }
 
-.lesson-vocabulary-scroll {
-  max-height: min(68vh, 760px);
-  overflow: auto;
-  padding: 2px 8px 10px 2px;
-  scrollbar-gutter: stable;
-}
-
-.lesson-vocabulary-scroll:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--mandora-red-700) 55%, transparent);
-  outline-offset: 5px;
-  border-radius: 16px;
-}
-
 .lesson-vocabulary-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(260px, 1fr));
@@ -162,6 +219,7 @@
 }
 
 @media (max-width: 980px) {
+  .lesson-content-tabs,
   .lesson-vocabulary-toolbar {
     position: static;
   }
@@ -169,15 +227,13 @@
   .lesson-vocabulary-grid {
     grid-template-columns: repeat(2, minmax(220px, 1fr));
   }
-
-  .lesson-vocabulary-scroll {
-    max-height: none;
-    overflow: visible;
-    padding-right: 0;
-  }
 }
 
 @media (max-width: 640px) {
+  .lesson-content-tabs {
+    grid-template-columns: 1fr;
+  }
+
   .lesson-vocabulary-section__heading {
     align-items: flex-start;
     flex-direction: column;
