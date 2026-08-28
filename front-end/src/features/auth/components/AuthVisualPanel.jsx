@@ -55,7 +55,7 @@ export default function AuthVisualPanel() {
       </div>
 
       <p className="student-auth-visual__note">
-        <span /> Nội dung minh họa cho trải nghiệm học tập Mandora
+        <span /> Nội dung minh họa cho trải nghiệm học tập Hanyora
       </p>
     </aside>
   );
