@@ -96,7 +96,7 @@ export default function LoginPage({ initialMode = 'login' }) {
     <section className="student-login-shell" aria-labelledby="student-login-title">
       <div className="student-login-panel">
         <header className="student-login-panel__header">
-          <p className="public-eyebrow">Mandora dành cho học viên</p>
+          <p className="public-eyebrow">Hanyora dành cho học viên</p>
           <h1 id="student-login-title">{title}</h1>
           <p>
             {isRegister

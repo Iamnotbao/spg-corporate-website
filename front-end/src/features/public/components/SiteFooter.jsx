@@ -39,13 +39,13 @@ export default function SiteFooter() {
           </nav>
         </div>
         {hasMap && (
-          <div className="public-footer__map" aria-label="Bản đồ Mandora">
-            <GoogleMapEmbed location={location} title={location?.name || 'Mandora trên Google Maps'} />
+          <div className="public-footer__map" aria-label="Bản đồ Hanyora">
+            <GoogleMapEmbed location={location} title={location?.name || 'Hanyora trên Google Maps'} />
           </div>
         )}
       </div>
       <div className="public-container public-footer__bottom">
-        <span>© {new Date().getFullYear()} Mandora. Bảo lưu mọi quyền.</span>
+        <span>© {new Date().getFullYear()} Hanyora. Bảo lưu mọi quyền.</span>
         <span>Học vững nền tảng. Tiến bộ mỗi ngày.</span>
       </div>
     </footer>

@@ -66,13 +66,13 @@ export default function AdminLayout({
       <aside className="admin-sidebar" id="admin-sidebar">
         <div className="admin-sidebar__top">
           <button
-            aria-label="Về Dashboard Mandora"
+            aria-label="Về Dashboard Hanyora"
             className="admin-brand"
             onClick={() => navigate('dashboard')}
             type="button"
           >
             <span className="admin-brand__mark" aria-hidden="true">文</span>
-            <span className="admin-brand__name">Mandora</span>
+            <span className="admin-brand__name">Hanyora</span>
           </button>
           <button
             aria-label={sidebarCollapsed ? 'Mở rộng thanh bên' : 'Thu gọn thanh bên'}
@@ -109,12 +109,12 @@ export default function AdminLayout({
         <div className="admin-sidebar__footer">
           <div className="admin-sidebar__account">
             <span>
-              {String(currentUser?.displayName || currentUser?.username || 'M')
+              {String(currentUser?.displayName || currentUser?.username || 'H')
                 .charAt(0)
                 .toUpperCase()}
             </span>
             <div>
-              <strong>{currentUser?.displayName || currentUser?.username || 'Mandora User'}</strong>
+              <strong>{currentUser?.displayName || currentUser?.username || 'Hanyora User'}</strong>
               <small>{role === 'admin' ? 'Administrator' : 'CMS staff'}</small>
             </div>
           </div>
@@ -139,7 +139,7 @@ export default function AdminLayout({
               <AdminIcon name="menu" />
             </button>
             <div>
-              <p className="admin-eyebrow">Mandora CMS</p>
+              <p className="admin-eyebrow">Hanyora CMS</p>
               <h1>{headerTitle}</h1>
             </div>
           </div>
@@ -156,12 +156,12 @@ export default function AdminLayout({
             <ThemeToggle compact />
             <div className="admin-account-chip">
               <span>
-                {String(currentUser?.displayName || currentUser?.username || 'M')
+                {String(currentUser?.displayName || currentUser?.username || 'H')
                   .charAt(0)
                   .toUpperCase()}
               </span>
               <div>
-                <strong>{currentUser?.displayName || currentUser?.username || 'Mandora User'}</strong>
+                <strong>{currentUser?.displayName || currentUser?.username || 'Hanyora User'}</strong>
                 <small>{role}</small>
               </div>
             </div>

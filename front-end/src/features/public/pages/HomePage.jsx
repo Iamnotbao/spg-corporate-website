@@ -191,7 +191,7 @@ export default function HomePage() {
       <section className="mandora-hero home-hero">
         <div className="public-container mandora-hero__grid">
           <div className="mandora-hero__copy">
-            <p className="public-eyebrow">Mandora · Tiếng Trung cho người Việt</p>
+            <p className="public-eyebrow">Hanyora · Tiếng Trung cho người Việt</p>
             <h1>
               Học tiếng Trung dễ dàng,<span> từng bước mỗi ngày.</span>
             </h1>
@@ -246,12 +246,12 @@ export default function HomePage() {
       {partners.length > 0 && (
         <section className="home-partners" aria-label="Đối tác và thương hiệu">
           <div className="public-container">
-            <p className="public-eyebrow">Đồng hành cùng Mandora</p>
+            <p className="public-eyebrow">Đồng hành cùng Hanyora</p>
             <div className="home-partners__viewport">
               <div className="home-partners__track">
                 {[...partners, ...partners].map((partner, index) => {
                   const content = partner.logoUrl ? (
-                    <img alt={partner.name || 'Đối tác Mandora'} src={partner.logoUrl} />
+                    <img alt={partner.name || 'Đối tác Hanyora'} src={partner.logoUrl} />
                   ) : (
                     <strong>{partner.name}</strong>
                   );
@@ -373,7 +373,7 @@ export default function HomePage() {
               Một trải nghiệm gọn gàng và có định hướng.
             </h2>
             <p>
-              Mandora đặt nội dung học ở trung tâm, với điều hướng nhất quán và những bước
+              Hanyora đặt nội dung học ở trung tâm, với điều hướng nhất quán và những bước
               tiếp theo dễ hiểu.
             </p>
           </div>
@@ -419,7 +419,7 @@ export default function HomePage() {
       <section className="mandora-cta home-final-cta">
         <div className="public-container mandora-cta__inner">
           <div>
-            <p className="public-eyebrow public-eyebrow--light">Hành trình Mandora</p>
+            <p className="public-eyebrow public-eyebrow--light">Hành trình Hanyora</p>
             <h2>Bắt đầu từ một bài học nhỏ hôm nay.</h2>
           </div>
           <div className="home-final-cta__actions">

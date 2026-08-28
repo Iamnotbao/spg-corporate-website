@@ -14,13 +14,13 @@ export default function AdminLogin({ error, onSubmit, submitting, checking = fal
   return (
     <main className="admin-login">
       <section className="admin-login__card" aria-labelledby="admin-login-title">
-        <div className="admin-login__brand" aria-label="Mandora">
-          Mandora<span>.</span>
+        <div className="admin-login__brand" aria-label="Hanyora">
+          Hanyora<span>.</span>
         </div>
         <p className="admin-eyebrow">Cổng quản trị nội dung</p>
         <h1 id="admin-login-title">Chào mừng trở lại</h1>
         <p className="admin-login__subtitle">
-          Đăng nhập bằng tài khoản được cấp để quản lý nội dung Mandora.
+          Đăng nhập bằng tài khoản được cấp để quản lý nội dung Hanyora.
         </p>
 
         {checking ? (

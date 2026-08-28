@@ -110,16 +110,16 @@ export default function SocialChatDock() {
   return (
     <div className="public-social-chat">
       {open && chatEnabled && (
-        <section className="public-chat-panel" aria-label="Chat với Mandora">
+        <section className="public-chat-panel" aria-label="Chat với Hanyora">
           <header>
-            <div><small>Mandora Support</small><strong>Chat với admin</strong></div>
+            <div><small>Hanyora Support</small><strong>Chat với admin</strong></div>
             <button type="button" onClick={() => setOpen(false)} aria-label="Đóng chat">×</button>
           </header>
           <div className="public-chat-panel__messages" aria-live="polite">
-            {!messages.length && <div className="public-chat-panel__welcome"><strong>Xin chào</strong><p>{settings.welcomeMessage || 'Mandora có thể hỗ trợ bạn về khóa học, HSK, từ vựng và việc học tiếng Trung.'}</p></div>}
+            {!messages.length && <div className="public-chat-panel__welcome"><strong>Xin chào</strong><p>{settings.welcomeMessage || 'Hanyora có thể hỗ trợ bạn về khóa học, HSK, từ vựng và việc học tiếng Trung.'}</p></div>}
             {messages.map((item, index) => (
               <article className={`is-${item.sender || 'bot'}`} key={messageId(item, index)}>
-                <small>{item.sender === 'visitor' ? 'Bạn' : item.sender === 'admin' ? 'Mandora Admin' : item.provider === 'openai' ? 'Trợ lý AI' : 'Trợ lý tự động'}</small>
+                <small>{item.sender === 'visitor' ? 'Bạn' : item.sender === 'admin' ? 'Hanyora Admin' : item.provider === 'openai' ? 'Trợ lý AI' : 'Trợ lý tự động'}</small>
                 <p>{item.text}</p>
               </article>
             ))}
@@ -130,7 +130,7 @@ export default function SocialChatDock() {
             <textarea rows="2" maxLength="1200" placeholder="Nhập tin nhắn…" value={text} onChange={(event) => setText(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }} />
             <button disabled={sending || !text.trim()} type="submit" aria-label="Gửi tin nhắn">{sending ? '…' : '→'}</button>
           </form>
-          <footer>Trợ lý tự động hỗ trợ câu hỏi phổ biến; admin Mandora có thể tiếp quản hội thoại.</footer>
+          <footer>Trợ lý tự động hỗ trợ câu hỏi phổ biến; admin Hanyora có thể tiếp quản hội thoại.</footer>
         </section>
       )}
 

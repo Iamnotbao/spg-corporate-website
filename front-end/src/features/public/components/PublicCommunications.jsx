@@ -76,7 +76,7 @@ export default function PublicCommunications() {
       try {
         const payload = JSON.parse(event.data || '{}');
         if (payload.kind === 'notification' && payload.action === 'created') {
-          setFlash(payload.item?.title || 'Mandora vừa có thông báo mới.');
+          setFlash(payload.item?.title || 'Hanyora vừa có thông báo mới.');
           window.setTimeout(() => setFlash(''), 4500);
         }
       } catch {
@@ -187,7 +187,7 @@ export default function PublicCommunications() {
         >
           <div className="public-container public-event-banner__inner">
             <div className="public-event-banner__content">
-              <strong>{banner.title || 'Thông báo từ Mandora'}</strong>
+              <strong>{banner.title || 'Thông báo từ Hanyora'}</strong>
               {banner.message && (
                 <div className="public-event-banner__marquee">
                   <span>{banner.message}</span>
@@ -205,7 +205,7 @@ export default function PublicCommunications() {
         <div className="public-notification-center">
           <button
             aria-expanded={open}
-            aria-label={`Thông báo Mandora, ${unreadCount} chưa xem`}
+            aria-label={`Thông báo Hanyora, ${unreadCount} chưa xem`}
             className="public-notification-center__trigger"
             onClick={() => setOpen((current) => !current)}
             type="button"
@@ -214,10 +214,10 @@ export default function PublicCommunications() {
             {unreadCount > 0 && <b>{Math.min(unreadCount, 99)}</b>}
           </button>
           {open && (
-            <section className="public-notification-center__panel" aria-label="Thông báo Mandora">
+            <section className="public-notification-center__panel" aria-label="Thông báo Hanyora">
               <header>
                 <div>
-                  <small>Mandora</small>
+                  <small>Hanyora</small>
                   <strong>Thông báo</strong>
                 </div>
                 <button aria-label="Đóng thông báo" onClick={() => setOpen(false)} type="button">×</button>
