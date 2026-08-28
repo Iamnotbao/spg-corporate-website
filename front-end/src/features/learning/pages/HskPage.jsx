@@ -11,7 +11,7 @@ export default function HskPage() {
   return (
     <>
       <PageHeader
-        description="Chọn cấp độ để khám phá những khóa học phù hợp. Mandora không hiển thị số liệu hoặc cam kết chưa được kiểm chứng."
+        description="Chọn cấp độ để khám phá những khóa học phù hợp. Hanyora không hiển thị số liệu hoặc cam kết chưa được kiểm chứng."
         eyebrow="Định hướng theo cấp độ"
         title="Khám phá HSK"
       />
