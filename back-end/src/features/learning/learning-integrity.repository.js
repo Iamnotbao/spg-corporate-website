@@ -7,6 +7,7 @@ const RELATED_COLLECTIONS = Object.freeze({
   lessonProgress: "lesson_progress",
   quizzes: "quizzes",
   vocabulary: "vocabularies",
+  lessonVocabulary: "lesson_vocabulary",
 });
 
 export const learningIntegrityRepository = {
@@ -18,18 +19,25 @@ export const learningIntegrityRepository = {
 
   async getLessonDependencies(lessonId) {
     const id = toObjectId(lessonId);
-    const [progress, vocabulary, quizzes] = await Promise.all([
+    const [progress, legacyVocabulary, linkedVocabulary, quizzes] = await Promise.all([
       getCollection(RELATED_COLLECTIONS.lessonProgress).then((collection) =>
         collection.countDocuments({ lessonId: id }),
       ),
       getCollection(RELATED_COLLECTIONS.vocabulary).then((collection) =>
         collection.countDocuments({ lessonId: id }),
       ),
+      getCollection(RELATED_COLLECTIONS.lessonVocabulary).then((collection) =>
+        collection.countDocuments({ lessonId: id }),
+      ),
       getCollection(RELATED_COLLECTIONS.quizzes).then((collection) =>
         collection.countDocuments({ lessonId: id }),
       ),
     ]);
-    return { progress, vocabulary, quizzes };
+    return {
+      progress,
+      vocabulary: legacyVocabulary + linkedVocabulary,
+      quizzes,
+    };
   },
 
   async hasPublishedQuiz(lessonId) {
