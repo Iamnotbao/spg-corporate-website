@@ -23,6 +23,7 @@ import {
 } from '../../student/services/studentLearningService.js';
 import CourseOutline from '../components/CourseOutline.jsx';
 import LessonNavigation from '../components/LessonNavigation.jsx';
+import LessonPaperReader from '../components/LessonPaperReader.jsx';
 import LessonRelatedVocabulary from '../components/LessonRelatedVocabulary.jsx';
 import { getPublicCourse, getPublicLesson } from '../services/courseCatalogService.js';
 import '../styles/courses.css';
@@ -477,17 +478,7 @@ export default function LessonPage() {
 
           {(!isVocabularyLesson || lessonPanel === 'content') && (
             <div className="lesson-panel lesson-panel--content">
-              <div className="lesson-body lesson-body--plain">
-                {lesson.data.content
-                  .split(/\r?\n/)
-                  .map((paragraph, index) =>
-                    paragraph ? (
-                      <p key={`${paragraph.slice(0, 24)}-${index}`}>{paragraph}</p>
-                    ) : (
-                      <br key={index} />
-                    ),
-                  )}
-              </div>
+              <LessonPaperReader content={lesson.data.content} lessonKey={lesson.data.id} />
               {isVocabularyLesson && lessonVocabulary.length > 0 && (
                 <button
                   className="lesson-panel-next"
